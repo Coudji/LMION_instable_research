@@ -1,5 +1,6 @@
 local LMION = require "LMION/API"
 local DefinitionBootstrap = require "LMION/Bootstrap/Definitions"
+local DefinitionIndexDiagnostics = require "LMION/Diagnostics/DefinitionIndex"
 
 DefinitionBootstrap.run(LMION)
 
@@ -10,3 +11,5 @@ print(string.format(
     stats.definitions,
     stats.extensions
 ))
+
+DefinitionIndexDiagnostics.run()
