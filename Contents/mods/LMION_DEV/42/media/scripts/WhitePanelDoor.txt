@@ -1,0 +1,85 @@
+module Base
+{
+    item LMION_WhitePanelDoor
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 17.0,
+        Tags = base:usedisplayname,
+    }
+
+    xuiSkin default
+    {
+        entity ES_LMION_WhitePanelDoor
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = White Panel Door,
+            Icon = Build_DoorWood,
+        }
+    }
+
+    entity WhitePanelDoor
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_WhitePanelDoor,
+            uiEnabled = false,
+        }
+
+        component CraftRecipe
+        {
+            timedAction = BuildWallHammer,
+            time = 150,
+            category = LMION,
+            SkillRequired = Woodwork:6,
+            xpAward = Woodwork:35,
+
+            inputs
+            {
+                item 1 tags[base:hammer] mode:keep flags[Prop1;MayDegradeVeryLight],
+                item 1 [Base.Screwdriver] mode:keep,
+                item 4 [Base.Plank],
+                item 4 [Base.Nails],
+                item 2 [Base.Hinge],
+                item 4 [Base.Screws],
+                item 1 [Base.Doorknob],
+            }
+        }
+
+        component SpriteConfig
+        {
+            face W
+            {
+                layer
+                {
+                    row = fixtures_doors_01_0,
+                }
+            }
+
+            face N
+            {
+                layer
+                {
+                    row = fixtures_doors_01_1,
+                }
+            }
+
+            face W_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_01_2,
+                }
+            }
+
+            face N_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_01_3,
+                }
+            }
+        }
+    }
+}
