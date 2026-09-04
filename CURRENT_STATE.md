@@ -96,57 +96,92 @@ Future hypothetical types such as `LargeSliding` / `PairedSliding` must not driv
 
 ## First active V3 foundation checkpoint
 
-Commit:
+Foundation commit:
 
 ```text
 5e7c117245f88f13b0e03d76f5cbb574982d230b
 ```
 
-Documentation commit:
-
-```text
-919771ac619e3669a0aa5cb62496112c9cbcfaea
-```
-
-The following data-only foundation now exists under `Contents/mods/LMION_DEV/42/media/lua/shared/`:
+The data-only foundation under `Contents/mods/LMION_DEV/42/media/lua/shared/` contains:
 
 ```text
 LMION/
 ├─ API.lua
-├─ Bootstrap/
-│  └─ Definitions.lua
+├─ Bootstrap/Definitions.lua
 ├─ Definitions/
 │  ├─ Registry.lua
 │  ├─ Resolver.lua
 │  ├─ Validation.lua
 │  ├─ BuiltinContent.lua
 │  ├─ Defaults/
-│  │  └─ Doors/WoodFourPanels.lua
 │  └─ Catalog/
-│     └─ Doors/Single/Wooden/WhitePanelDoor.lua
-├─ Domain/
-│  └─ DoorTypes.lua
-└─ Support/
-   └─ TableUtils.lua
+├─ Domain/DoorTypes.lua
+└─ Support/TableUtils.lua
 
 LMION_DEV.lua
 ```
 
 Responsibilities are documented in `Docs/Architecture/FoundationFiles.md`.
 
-Important design choices already applied:
+Design choices already applied:
 
 - `Registry` only stores raw registered data;
 - `Validation` only validates public data shape;
 - `Resolver` only produces effective definitions/defaults;
 - `DoorTypes` owns the finite semantic type vocabulary and type-derived frame requirement;
-- definitions expose `doorType`; transitional V2 `frame` data was deliberately not migrated into the first V3 default;
-- `API.lua` is a small public facade and currently reports API version `1`;
+- definitions expose `doorType`; transitional V2 `frame` data is deliberately not migrated when the requirement is already implied by `doorType`;
+- `API.lua` is the small public facade;
 - built-in data is explicitly listed in `Definitions/BuiltinContent.lua`; there is no directory scanning;
-- `Bootstrap/Definitions.lua` registers built-ins exactly once through the same public API third-party addons use;
-- `LMION_DEV.lua` is deliberately tiny and currently only bootstraps definitions and prints registration stats.
+- `Bootstrap/Definitions.lua` registers built-ins once through the same public API third-party addons use;
+- `LMION_DEV.lua` remains a tiny bootstrap/diagnostic entry point.
 
-The first migrated concrete opening is `Doors.Wood.WhitePanelDoor`, using the V2 reviewed explicit N/W geometry and `Doors.Wood.FourPanels` default values.
+### Runtime validation
+
+**VALIDÉ EN JEU** on 2026-09-04:
+
+```text
+LOG  : Lua          f:0> [LMION:DEV] definitions ready: 1 defaults, 1 definitions, 0 extensions
+```
+
+This validates the Workshop package path, shared Lua bootstrap, API -> Bootstrap -> Validation -> Registry chain, and the first pilot definition load.
+
+## First catalog migration checkpoint
+
+Commit:
+
+```text
+7545ec6d9e111f89ae8996714c07c19fbdb7ea58
+```
+
+The first reviewed Simple-metal slice has now been migrated from V2 data into the V3 layout.
+
+New defaults:
+
+```text
+Doors.Metal.Base
+Doors.Metal.OneGlass
+Doors.Metal.Service
+Doors.Metal.TwoGlass
+```
+
+New concrete definitions:
+
+```text
+Doors.Metal.BlackMetalDoorWithWindow
+Doors.Metal.BlackServiceDoor
+Doors.Metal.BlackTwoPaneMetalDoor
+Doors.Metal.BlueServiceDoor
+```
+
+Together with the existing `Doors.Wood.FourPanels` / `Doors.Wood.WhitePanelDoor` pilot, the next expected bootstrap count is:
+
+```text
+[LMION:DEV] definitions ready: 5 defaults, 5 definitions, 0 extensions
+```
+
+For these migrated Simple defaults, the old redundant V2 `frame = "standard"` field was intentionally removed. `doorType = "Simple"` is the public semantic fact; `Domain/DoorTypes.lua` owns the derived standard-frame requirement.
+
+No runtime/hook behavior changed in this migration.
 
 ### What is intentionally NOT in V3 yet
 
@@ -219,11 +254,9 @@ Do not resume speculative patching on that stack. Recover validated Legacy behav
 
 ## Immediate next step
 
-Before adding runtime behavior, continue the data foundation in small auditable steps:
-
-1. verify the first foundation boots cleanly in PZ and logs exactly one migrated default + one definition;
-2. then migrate the remaining reviewed DefinitionDefaults/Catalog data, removing only transitional fields whose V3 replacement is already explicit;
-3. add the entity/world-object lookup layer only after the data catalog is established and after re-reading the relevant research;
-4. start runtime behavior with one simple 1x1 door path before Paired/Garage/LargeGate.
+1. pull and validate the current data-only checkpoint; expected log is `5 defaults, 5 definitions, 0 extensions`;
+2. continue migrating reviewed Simple 1x1 defaults/catalog data in coherent family slices;
+3. only after the data catalog is established, re-read `CoreEntityLookup.md` and add the entity/world-object lookup layer;
+4. start runtime behavior with one Simple 1x1 door path before Paired/Garage/LargeGate.
 
 When a conversation resumes, read this file first, then `Docs/Architecture/FoundationFiles.md`, then only the research relevant to the subsystem being changed.
