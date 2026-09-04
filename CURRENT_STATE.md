@@ -48,6 +48,23 @@ Do not reintroduce feature toggles as a substitute for separate submods: load-ti
 
 Debug may remain a separate development tool because it is not player-facing gameplay functionality.
 
+### Mandatory Build consequences
+
+Build is part of the base LMION V3 product and is never optional.
+
+This creates two hard gameplay contracts:
+
+1. **Every LMION-created/finalized/reinstalled door or opening is an `IsoDoor`.** `IsoThumpable(isDoor)` may still appear as a vanilla/external/source representation at compatibility boundaries, but it is never the final LMION-managed representation.
+2. **Supported vanilla LargeGates are always constructed as independent A and B leaves.** The old compatibility behavior where vanilla builds a complete A+B gate when Build is absent no longer exists because there is no Build-absent V3 composition.
+
+Legacy already implements the Build-active vanilla large-gate split path. Recover its validated engine behavior when V3 reaches that subsystem, but reorganize it by V3 responsibility rather than copying the old addon structure.
+
+Canonical decision document:
+
+```text
+Docs/Decisions/CanonicalDoorsAndLargeGates.md
+```
+
 ## V3 code-quality rules
 
 - one function = one responsibility/intention;
@@ -101,7 +118,7 @@ When V2/refactor behavior conflicts with already validated behavior, `Coudji/LMI
 
 Important established contracts to preserve unless explicitly redesigned:
 
-- LMION-managed final world doors use `IsoDoor` where the established path expects that representation;
+- every LMION-managed final world door/opening is `IsoDoor`;
 - HP/max HP survive pickup and replacement;
 - standard framed doors require the correct frame;
 - inventory right-click Place uses LMION-owned placement UI/cursor behavior where already established;
@@ -109,6 +126,7 @@ Important established contracts to preserve unless explicitly redesigned:
 - Garage inventory placement supports variable width;
 - Garage toolbar intentionally remains fixed L3 through vanilla multisprite behavior;
 - LargeGate operates per A/B leaf, each leaf containing two physical members/parcels;
+- supported vanilla LargeGate construction is split into A/B leaves because Build is always active;
 - Garage and LargeGate placement can consume compatible required parcels from inventory and nearby floor where Legacy supports it;
 - compatible multi-part parcels are interchangeable by part identity; no bundle/assembly identity is currently desired;
 - definitions should contain explicit geometry rather than inferred sprite arithmetic for complex types.
