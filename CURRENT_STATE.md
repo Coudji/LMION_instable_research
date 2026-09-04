@@ -10,6 +10,35 @@ This file is the canonical handoff for active V3 development in `Coudji/LMION_in
 - `Coudji/LMION_Legacy` — V1/V2 archaeology, behavioral oracle and historical research source.
 - separate clean LMION repository — reserved for release-quality source/history once V3 is validated. Do not use it as the unstable development target.
 
+## Local development layout
+
+This repository is designed to be pulled directly into a folder under the user's `Zomboid/Workshop/` directory.
+
+The repository root must therefore remain directly usable by Project Zomboid Workshop tooling:
+
+```text
+LMION_instable_research/
+├─ workshop.txt
+├─ Contents/
+│  └─ mods/
+│     └─ LMION_DEV/
+│        └─ 42/
+│           └─ mod.info
+├─ Docs/
+├─ README.md
+└─ CURRENT_STATE.md
+```
+
+Development identity is intentionally distinct from the future release mod:
+
+```text
+Workshop title: Let Me In... Or Not [DEV]
+Mod id:         LMION_DEV
+Mod folder:     Contents/mods/LMION_DEV
+```
+
+Keep `[DEV]` / `LMION_DEV` during unstable development so the development copy is visually and technically distinct from the future release package. The release repository may later use the normal `LMION` identity.
+
 ## Current product direction
 
 LMION V3 will be **one gameplay mod with all official gameplay systems loaded together**.
@@ -131,4 +160,4 @@ Do not resume speculative patching on that V2 stack. Recover validated Legacy be
 
 ## Immediate next step
 
-Create the clean V3 package skeleton in this repository, then begin migrating the minimal data/API foundation from `LMION_Legacy` without bringing over V2's oversized runtime files or obsolete independent-mod packaging.
+Begin migrating the minimal data/API foundation from `LMION_Legacy` into `Contents/mods/LMION_DEV/42/` without bringing over V2's oversized runtime files or obsolete independent-mod packaging.
