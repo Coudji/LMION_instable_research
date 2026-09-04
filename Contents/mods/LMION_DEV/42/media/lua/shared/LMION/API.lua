@@ -6,13 +6,22 @@ local DefinitionLookup = require "LMION/Services/DefinitionLookup"
 
 local API = {}
 
-local function registerList(list, register)
+local function registerList(list, register, label)
     if list == nil then
         return
     end
 
     for index = 1, #list do
-        register(list[index])
+        local value = list[index]
+
+        if type(value) ~= "table" then
+            error(
+                "LMION: " .. label .. "[" .. tostring(index) .. "] did not load a table",
+                2
+            )
+        end
+
+        register(value)
     end
 end
 
@@ -37,9 +46,9 @@ end
 
 function API.registerContent(content)
     Validation.content(content)
-    registerList(content.defaults, API.registerDefault)
-    registerList(content.definitions, API.registerDefinition)
-    registerList(content.extensions, API.registerExtension)
+    registerList(content.defaults, API.registerDefault, "defaults")
+    registerList(content.definitions, API.registerDefinition, "definitions")
+    registerList(content.extensions, API.registerExtension, "extensions")
 end
 
 function API.getEffectiveDefault(defaultId)
