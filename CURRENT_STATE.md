@@ -65,6 +65,18 @@ Canonical decision: `Docs/Decisions/CanonicalDoorsAndLargeGates.md`.
 - abstractions solve existing duplicated contracts, not hypothetical future needs;
 - organize source by technical responsibility first, family specialization second.
 
+## Development diagnostics policy
+
+During unstable V3 development, prefer useful targeted logs over silent behavior.
+
+- Add logs at important runtime boundaries when they help identify which branch/path actually executed.
+- Include stable context such as definition ID, entity ID, door type, facing/member/leaf/role, selected vanilla boundary and success/failure reason when relevant.
+- Avoid per-frame/per-tick spam unless temporarily diagnosing that exact loop.
+- Diagnostic logs may be removed or reduced before release once the behavior is validated.
+- When a bug crosses a vanilla hook boundary, log the narrow control point before adding speculative patches.
+
+The user explicitly prefers extra development logs now rather than having to reproduce opaque failures later.
+
 ## Public addon API
 
 External addons target:
@@ -203,7 +215,13 @@ Schema cleanup applied during migration:
 - LargeGate definitions keep explicit A/B geometry; A/B remains stable logical identity;
 - exact entity IDs, explicit sprite geometry and gameplay-data overrides were preserved from the reviewed V2 dataset.
 
-This full migration is **DATA-ONLY / NOT SEPARATELY VALIDATED IN GAME**. Do not ask for one PZ restart per catalog batch. The user explicitly wants meaningful runtime checkpoints only.
+**VALIDÉ EN JEU** on 2026-09-04 after restoring the omitted `Doors.Wood.RoughWoodenDoor` catalog file:
+
+```text
+LOG  : Lua          f:0> [LMION:DEV] definitions ready: 23 defaults, 72 definitions, 0 extensions
+```
+
+This confirms that the complete built-in catalog now registers successfully as one block. The earlier failure `LMION: definition must be a table` was caused by `BuiltinContent.lua` referencing `RoughWoodenDoor` while that file had not been migrated. `API.registerContent` now reports the failing list/index more explicitly if a future content entry does not load a table.
 
 The catalog/data migration is complete. Do not keep revisiting it unless a concrete defect, missing definition or API requirement is discovered.
 
@@ -343,6 +361,7 @@ Next:
 2. map the known-good Legacy Simple 1x1 path to exact functions and vanilla boundaries;
 3. port the smallest Simple 1x1 runtime slice under responsibility-based modules;
 4. keep hooks narrow and preserve vanilla behavior where possible;
-5. request one meaningful in-game test once pickup/replacement of a Simple 1x1 door can actually be exercised.
+5. add targeted development logs at meaningful runtime boundaries;
+6. request one meaningful in-game test once pickup/replacement of a Simple 1x1 door can actually be exercised.
 
 When resuming a future conversation, read this file first, then the architecture notes, then only the research relevant to the subsystem being changed.
