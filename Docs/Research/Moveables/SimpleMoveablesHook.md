@@ -1,6 +1,6 @@
 # Simple 1x1 Moveables integration — V3 control points
 
-Status: implementation target recovered from validated Legacy behavior; V3 integration pending runtime validation.
+Status: implementation target recovered from validated Legacy behavior; first V3 cold-start reached hook installation/index diagnostics, then failed during `OnLoadedTileDefinitions` profile construction. Fix committed; full Simple cycle still pending runtime validation.
 
 This note is the required control-point map before V3 installs its first vanilla Moveables hooks.
 
@@ -83,9 +83,33 @@ The Legacy Simple path successfully required `Moveables/ISMoveableSpriteProps` f
 
 Door sprite `IsMoveAble` properties are applied only from `OnLoadedTileDefinitions`, because tile-derived sprite state is not treated as stable earlier.
 
+## First V3 runtime failure
+
+**ÉCHEC TESTÉ / NE PAS REFAIRE** — 2026-09-04, B42.20.4.
+
+Cold start reached:
+
+```text
+[LMION:DEV] Simple Moveables hooks installed
+[LMION:DEV] definitions ready: 23 defaults, 72 definitions, 0 extensions
+[LMION:DEV] entity index ready: 77 mappings; Base.WhitePanelDoor -> Doors.Wood.WhitePanelDoor
+```
+
+Then `OnLoadedTileDefinitions` called `SimpleDoorSprites.configure()`, which built the Simple profile index. `SimpleDoorProfiles.getSingleSkillLevel()` used the global Lua `next()` function and Kahlua reported:
+
+```text
+Object tried to call nil in getSingleSkillLevel
+```
+
+So the failure happened before any world Pickup/placement path was exercised. The game continued loading because the event callback error was contained.
+
+Fix: iterate the skill table with `pairs()` and count entries explicitly instead of relying on global `next()`.
+
+This failure does **not** invalidate the catalog or entity reverse index; both completed before the event error.
+
 ## Restart requirement
 
-The first V3 pilot also adds a new `media/scripts` inventory item definition. A cold PZ restart is therefore required for its first meaningful runtime validation. Lua reload alone is not sufficient evidence for that checkpoint.
+The first V3 pilot adds a new `media/scripts` inventory item definition. A cold PZ restart remains required for the next meaningful runtime validation. Lua reload alone is not sufficient evidence for that checkpoint.
 
 ## Runtime logs
 
@@ -102,4 +126,4 @@ Simple placement finalized
 
 No per-frame placement-validation spam.
 
-Sources: active `Docs/Research/Architecture/DoorObjectAbstraction.md`, active `Docs/Research/Moveables/VanillaMoveablesBehavior.md`, Legacy `LMION/Pickup/Doors/Hooks.lua`, Legacy `LMION/Pickup/Doors/Registry.lua`.
+Sources: active `Docs/Research/Architecture/DoorObjectAbstraction.md`, active `Docs/Research/Moveables/VanillaMoveablesBehavior.md`, Legacy `LMION/Pickup/Doors/Hooks.lua`, Legacy `LMION/Pickup/Doors/Registry.lua`, and the 2026-09-04 B42.20.4 runtime console.
