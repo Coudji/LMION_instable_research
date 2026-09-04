@@ -8,28 +8,25 @@ This file is the canonical handoff for active V3 development in `Coudji/LMION_in
 
 - `Coudji/LMION_instable_research` — active V3 development/research workspace. Experimental commits and branches are acceptable here.
 - `Coudji/LMION_Legacy` — V1/V2 archaeology, behavioral oracle and historical research source.
-- separate clean LMION repository — reserved for release-quality source/history once V3 is validated. Do not use it as the unstable development target.
+- separate clean LMION repository — reserved for release-quality source/history once V3 is validated.
 
 ## Local development layout
 
-This repository is designed to be pulled directly into a folder under the user's `Zomboid/Workshop/` directory.
-
-The repository root must therefore remain directly usable by Project Zomboid Workshop tooling:
+The repository is pulled directly under the user's `Zomboid/Workshop/` directory and must stay directly usable by PZ Workshop tooling:
 
 ```text
-LMION_instable_research/
+repo root/
 ├─ workshop.txt
 ├─ Contents/
 │  └─ mods/
 │     └─ LMION_DEV/
 │        └─ 42/
-│           └─ mod.info
 ├─ Docs/
 ├─ README.md
 └─ CURRENT_STATE.md
 ```
 
-Development identity is intentionally distinct from the future release mod:
+Development identity:
 
 ```text
 Workshop title: Let Me In... Or Not [DEV]
@@ -37,33 +34,26 @@ Mod id:         LMION_DEV
 Mod folder:     Contents/mods/LMION_DEV
 ```
 
-Keep `[DEV]` / `LMION_DEV` during unstable development so the development copy is visually and technically distinct from the future release package. The release repository may later use the normal `LMION` identity.
+Keep `[DEV]` / `LMION_DEV` during unstable development so the dev copy cannot be confused with the future release package.
 
 ## Current product direction
 
-LMION V3 will be **one gameplay mod with all official gameplay systems loaded together**.
+LMION V3 is **one gameplay mod with all official gameplay systems loaded together**.
 
-The previous goal of independently loadable gameplay submods (`Core`, `Pickup`, `Build`, later `Lock`) is abandoned.
-Do not reintroduce feature toggles as a substitute for separate submods: load-time hooks, SpriteGrid/script mutations and lifecycle-sensitive behavior make true runtime disablement unreliable and would recreate the same complexity.
+The old independently loadable `Core`, `Pickup`, `Build`, later `Lock` product architecture is abandoned. Do not reintroduce official feature toggles as a substitute.
 
-Debug may remain a separate development tool because it is not player-facing gameplay functionality.
+Debug may remain a separate development tool.
 
 ### Mandatory Build consequences
 
-Build is part of the base LMION V3 product and is never optional.
+Build is part of base LMION V3 and is never optional.
 
-This creates two hard gameplay contracts:
+Hard contracts:
 
-1. **Every LMION-created/finalized/reinstalled door or opening is an `IsoDoor`.** `IsoThumpable(isDoor)` may still appear as a vanilla/external/source representation at compatibility boundaries, but it is never the final LMION-managed representation.
-2. **Supported vanilla LargeGates are always constructed as independent A and B leaves.** The old compatibility behavior where vanilla builds a complete A+B gate when Build is absent no longer exists because there is no Build-absent V3 composition.
+1. Every LMION-created/finalized/reinstalled door or opening is an `IsoDoor`. `IsoThumpable(isDoor)` may be read as a vanilla/external/source representation but is never a final LMION-managed representation.
+2. Supported vanilla LargeGates are always constructed as independent A and B leaves. The old "Build absent -> construct complete gate" path no longer exists.
 
-Legacy already implements the Build-active vanilla large-gate split path. Recover its validated engine behavior when V3 reaches that subsystem, but reorganize it by V3 responsibility rather than copying the old addon structure.
-
-Canonical decision document:
-
-```text
-Docs/Decisions/CanonicalDoorsAndLargeGates.md
-```
+See `Docs/Decisions/CanonicalDoorsAndLargeGates.md`.
 
 ## V3 code-quality rules
 
@@ -71,33 +61,25 @@ Docs/Decisions/CanonicalDoorsAndLargeGates.md
 - one file = one identifiable responsibility;
 - hooks are small adapters and delegate business logic;
 - one owner per vanilla hook/behavior boundary;
-- prefer calling the previous/original vanilla implementation instead of copying vanilla behavior;
-- LMION takes control only where vanilla cannot satisfy the intended behavior, then gives control back as soon as practical;
-- no generic routers/managers/bridges that know every family merely to reduce line count;
-- prefer a few simple specialized implementations over one huge branch-heavy abstraction;
-- do not mix pure code moves/refactors with behavior changes;
-- abstractions must solve an existing duplicated contract, not hypothetical future needs;
-- directory organization must make it obvious to a human where a behavior lives.
+- prefer calling previous/original vanilla behavior rather than copying it;
+- LMION takes control only where vanilla cannot satisfy the intended behavior;
+- no generic routers/managers/bridges accumulating every family;
+- prefer simple specialized implementations over branch-heavy abstractions;
+- do not mix structural refactors with behavior changes;
+- abstractions solve existing duplicated contracts, not hypothetical future needs;
+- directory organization optimizes for human navigation.
 
 ## Public addon API direction
 
-LMION remains addon-friendly for external modders.
-
-External addons should target a small stable facade such as:
+External addons should target:
 
 ```lua
 local LMION = require "LMION/API"
 ```
 
-Internal implementation paths are private and may change.
+Internal modules are private and may change.
 
-V2 concepts worth preserving after audit:
-
-- explicit `definitionId`, `defaultId`, `extensionId`;
-- pure data definitions/defaults;
-- private Registry/Resolver internals;
-- registration API such as `registerDefinition`, `registerDefault`, `registerExtension`, `registerContent`;
-- explicit semantic `doorType`.
+Public data vocabulary currently includes explicit `defaultId`, `definitionId`, `extensionId` and semantic `doorType`.
 
 Current `doorType` vocabulary:
 
@@ -110,72 +92,138 @@ LargeGate
 Garage
 ```
 
-Future hypothetical types such as `LargeSliding` / `PairedSliding` are not implemented and must not drive present abstractions.
+Future hypothetical types such as `LargeSliding` / `PairedSliding` must not drive current abstractions.
+
+## First active V3 foundation checkpoint
+
+Commit:
+
+```text
+5e7c117245f88f13b0e03d76f5cbb574982d230b
+```
+
+Documentation commit:
+
+```text
+919771ac619e3669a0aa5cb62496112c9cbcfaea
+```
+
+The following data-only foundation now exists under `Contents/mods/LMION_DEV/42/media/lua/shared/`:
+
+```text
+LMION/
+├─ API.lua
+├─ Bootstrap/
+│  └─ Definitions.lua
+├─ Definitions/
+│  ├─ Registry.lua
+│  ├─ Resolver.lua
+│  ├─ Validation.lua
+│  ├─ BuiltinContent.lua
+│  ├─ Defaults/
+│  │  └─ Doors/WoodFourPanels.lua
+│  └─ Catalog/
+│     └─ Doors/Single/Wooden/WhitePanelDoor.lua
+├─ Domain/
+│  └─ DoorTypes.lua
+└─ Support/
+   └─ TableUtils.lua
+
+LMION_DEV.lua
+```
+
+Responsibilities are documented in `Docs/Architecture/FoundationFiles.md`.
+
+Important design choices already applied:
+
+- `Registry` only stores raw registered data;
+- `Validation` only validates public data shape;
+- `Resolver` only produces effective definitions/defaults;
+- `DoorTypes` owns the finite semantic type vocabulary and type-derived frame requirement;
+- definitions expose `doorType`; transitional V2 `frame` data was deliberately not migrated into the first V3 default;
+- `API.lua` is a small public facade and currently reports API version `1`;
+- built-in data is explicitly listed in `Definitions/BuiltinContent.lua`; there is no directory scanning;
+- `Bootstrap/Definitions.lua` registers built-ins exactly once through the same public API third-party addons use;
+- `LMION_DEV.lua` is deliberately tiny and currently only bootstraps definitions and prints registration stats.
+
+The first migrated concrete opening is `Doors.Wood.WhitePanelDoor`, using the V2 reviewed explicit N/W geometry and `Doors.Wood.FourPanels` default values.
+
+### What is intentionally NOT in V3 yet
+
+There is currently no:
+
+- Pickup runtime;
+- Build hook;
+- Moveables hook;
+- IsoDoor canonicalization runtime;
+- Entity/world-object index;
+- Garage runtime;
+- LargeGate mutation;
+- gameplay UI/cursor code.
+
+Do not add those by bulk-copying V2 files.
 
 ## Behavioral source of truth
 
 When V2/refactor behavior conflicts with already validated behavior, `Coudji/LMION_Legacy/Legacy/Contents` wins.
 
-Important established contracts to preserve unless explicitly redesigned:
+Established contracts to preserve unless explicitly redesigned:
 
-- every LMION-managed final world door/opening is `IsoDoor`;
-- HP/max HP survive pickup and replacement;
+- every LMION-managed final world opening is `IsoDoor`;
+- HP/max HP survive pickup/replacement;
 - standard framed doors require the correct frame;
-- inventory right-click Place uses LMION-owned placement UI/cursor behavior where already established;
-- vanilla Moveables toolbar should retain vanilla ghost/facing/click-drag behavior unless a narrow LMION adaptation is required;
+- inventory right-click Place uses LMION-owned placement UX where established;
+- vanilla Moveables toolbar keeps vanilla ghost/facing/click-drag behavior unless a narrow LMION adaptation is required;
 - Garage inventory placement supports variable width;
-- Garage toolbar intentionally remains fixed L3 through vanilla multisprite behavior;
+- Garage toolbar intentionally remains fixed L3;
 - LargeGate operates per A/B leaf, each leaf containing two physical members/parcels;
-- supported vanilla LargeGate construction is split into A/B leaves because Build is always active;
-- Garage and LargeGate placement can consume compatible required parcels from inventory and nearby floor where Legacy supports it;
-- compatible multi-part parcels are interchangeable by part identity; no bundle/assembly identity is currently desired;
-- definitions should contain explicit geometry rather than inferred sprite arithmetic for complex types.
+- supported vanilla LargeGate construction is split into A/B leaves;
+- Garage/LargeGate placement can use compatible required parcels from inventory and nearby floor where Legacy supports it;
+- compatible multipart parcels are interchangeable by part identity, with no bundle identity;
+- definitions use explicit geometry rather than inferred sprite arithmetic for complex types.
 
 ## Research guardrail
 
-Before changing a PZ integration point that has already been researched, read the corresponding note first.
+Before changing a PZ integration point already researched, read the relevant note first.
 
-High-value source material currently lives in `Coudji/LMION_Legacy/Legacy/Research`, especially:
+High-value Legacy sources:
 
 ```text
-Engine/B42LuaLoadOrder.md
-Engine/LoadLifecycle.md
-Moveables/VanillaMoveablesBehavior.md
-Architecture/CoreEntityLookup.md
-Architecture/DoorObjectAbstraction.md
+Legacy/Research/Engine/B42LuaLoadOrder.md
+Legacy/Research/Engine/LoadLifecycle.md
+Legacy/Research/Moveables/VanillaMoveablesBehavior.md
+Legacy/Research/Architecture/CoreEntityLookup.md
+Legacy/Research/Architecture/DoorObjectAbstraction.md
 ```
-
-Selected active research should be migrated into this repository under `Docs/Research/` as V3 needs it. Keep the legacy repo intact as the archival source.
 
 Important known lifecycle facts:
 
-- `media/scripts` are parsed before Lua and require full restart after changes;
-- normal initial Lua execution is shared, then client; server Lua comes later in SP;
+- `media/scripts` parse before Lua and require cold restart after changes;
+- normal initial Lua execution is shared then client; server Lua comes later in SP;
 - dedicated server discovers but does not execute client Lua;
-- files in an active Lua tree auto-execute in case-insensitive alphabetical path order;
+- active Lua-tree files autoexecute in case-insensitive alphabetical path order;
 - shared/client code must not require server-only vanilla Lua before server phase;
-- `OnLoadedTileDefinitions` is authoritative for tile/sprite-derived mutations such as SpriteGrid/property state that can be reset by tile loading;
-- `OnGameBoot` is used for script/GameEntity topology mutations when appropriate;
-- `LoadGridsquare` / `OnObjectAdded` are for live world-instance adoption, not script topology;
+- `OnLoadedTileDefinitions` is authoritative for tile/sprite-derived mutations that tile loading may reset;
+- `OnGameBoot` is the validated point for selected GameEntity/SpriteConfig topology mutation;
+- `LoadGridsquare` / `OnObjectAdded` concern live instances, not script topology;
 - active cursors/actions/UI can retain stale closures after Lua reload;
-- after hook/load-order structure changes, use a cold restart before concluding behavior is broken.
+- after hook/load-order structure changes, cold restart before rejecting behavior.
+
+Any expensive new discovery must be written into active `Docs/Research/` before the related work is considered done.
 
 ## Known V2 regression to avoid carrying forward
 
-The last V2 LargeGate refactor ended with a toolbar ghost that displayed correctly but clicking did not place the gate.
-The exact cancellation boundary was not instrumented before V2 was abandoned.
+The last V2 LargeGate refactor produced a complete toolbar ghost but clicking did not place the gate. The exact cancellation boundary was never instrumented.
 
-Do not resume speculative patching on that V2 stack. Recover validated Legacy behavior and instrument narrow vanilla boundaries before changing behavior.
-
-## Initial V3 migration strategy
-
-1. Seed this repository with only active V3 guardrails/docs and a clean package skeleton.
-2. Copy/migrate data/API foundations only after auditing them; do not bulk-copy V2 runtime.
-3. Port one small validated behavior path at a time.
-4. Keep family implementations and hook ownership explicit and easy to locate.
-5. Write expensive new discoveries into `Docs/Research/` before considering a bug/work item complete.
-6. Keep this file updated at meaningful checkpoints and before/through long operations likely to span a conversation limit.
+Do not resume speculative patching on that stack. Recover validated Legacy behavior and instrument narrow boundaries when V3 reaches LargeGate.
 
 ## Immediate next step
 
-Begin migrating the minimal data/API foundation from `LMION_Legacy` into `Contents/mods/LMION_DEV/42/` without bringing over V2's oversized runtime files or obsolete independent-mod packaging.
+Before adding runtime behavior, continue the data foundation in small auditable steps:
+
+1. verify the first foundation boots cleanly in PZ and logs exactly one migrated default + one definition;
+2. then migrate the remaining reviewed DefinitionDefaults/Catalog data, removing only transitional fields whose V3 replacement is already explicit;
+3. add the entity/world-object lookup layer only after the data catalog is established and after re-reading the relevant research;
+4. start runtime behavior with one simple 1x1 door path before Paired/Garage/LargeGate.
+
+When a conversation resumes, read this file first, then `Docs/Architecture/FoundationFiles.md`, then only the research relevant to the subsystem being changed.
