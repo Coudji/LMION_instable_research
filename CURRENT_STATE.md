@@ -120,9 +120,12 @@ LMION/
 │  ├─ Resolver.lua
 │  ├─ Validation.lua
 │  ├─ BuiltinContent.lua
+│  ├─ EntityIndex.lua
 │  ├─ Defaults/
 │  └─ Catalog/
 ├─ Domain/DoorTypes.lua
+├─ PZ/WorldObjectIdentity.lua
+├─ Services/DefinitionLookup.lua
 └─ Support/TableUtils.lua
 
 LMION_DEV.lua
@@ -130,15 +133,18 @@ LMION_DEV.lua
 
 Responsibilities:
 
-- `Registry` stores raw registered data only;
+- `Registry` stores raw registered data and owns a registration revision counter;
 - `Validation` validates public data shape only;
 - `Resolver` resolves defaults/definitions/extensions only;
+- `EntityIndex` derives `GameEntity full name -> definitionId` from effective definitions and rebuilds lazily when Registry revision changes;
+- `PZ/WorldObjectIdentity` only reads `object:getEntityScript():getFullName()`;
+- `Services/DefinitionLookup` combines object/entity identity with definition resolution;
 - `DoorTypes` owns semantic type vocabulary and type-derived frame requirement;
 - `BuiltinContent.lua` explicitly lists built-in registrations; no directory scanning;
 - `Bootstrap/Definitions.lua` registers built-ins once through the same public API used by third parties;
 - `LMION_DEV.lua` stays a tiny bootstrap/diagnostic entry point.
 
-See `Docs/Architecture/FoundationFiles.md`.
+See `Docs/Architecture/FoundationFiles.md`, `Docs/Architecture/CatalogData.md` and `Docs/Architecture/EntityLookup.md`.
 
 ## In-game foundation validation
 
@@ -162,12 +168,6 @@ Main migration commit:
 
 ```text
 94d935485ca5baaa4731615bef39b7846f13ba6f
-```
-
-Architecture note:
-
-```text
-Docs/Architecture/CatalogData.md
 ```
 
 The entire reviewed V2 `DefinitionDefaults` + `Catalog` dataset listed by Legacy `Core/BuiltinContent.lua` has now been migrated into the V3 responsibility-based layout.
@@ -194,7 +194,7 @@ SlidingDoors          2
 Total                 72
 ```
 
-### Schema cleanup applied during migration
+Schema cleanup applied during migration:
 
 - old redundant `frame = "standard"`, `"paired"` or `"none"` fields were removed where `doorType` already expresses the semantic type;
 - standalone definitions that cannot inherit `doorType` now state it explicitly;
@@ -205,7 +205,65 @@ Total                 72
 
 This full migration is **DATA-ONLY / NOT SEPARATELY VALIDATED IN GAME**. Do not ask for one PZ restart per catalog batch. The user explicitly wants meaningful runtime checkpoints only.
 
-The catalog/data migration is now considered complete. Do not keep revisiting it unless a concrete defect, missing definition or API requirement is discovered.
+The catalog/data migration is complete. Do not keep revisiting it unless a concrete defect, missing definition or API requirement is discovered.
+
+## GameEntity lookup foundation
+
+Research migration commit:
+
+```text
+5b45221c1893ff876f79d2a9bbc9f94ce046da94
+```
+
+Implementation commit:
+
+```text
+4ef94ad72b5f72fb1aaff1b8ea9e34962af571ef
+```
+
+Active research note:
+
+```text
+Docs/Research/Architecture/CoreEntityLookup.md
+```
+
+Architecture note:
+
+```text
+Docs/Architecture/EntityLookup.md
+```
+
+Public API now includes:
+
+```lua
+LMION.getDefinitionIdByEntity(entityId)
+LMION.getEffectiveDefinitionByEntity(entityId)
+LMION.getEntityIdForObject(object)
+LMION.getDefinitionIdForObject(object)
+LMION.getEffectiveDefinitionForObject(object)
+```
+
+The identity chain is:
+
+```text
+world object
+-> GameEntityScript full name
+-> EntityIndex
+-> definitionId
+-> effective definition
+```
+
+Important boundaries:
+
+- no sprite-based primary identity lookup;
+- no world scanning;
+- unknown valid entities return nil;
+- entity collisions between different definitions are errors;
+- index derives from effective definitions;
+- index freshness uses Registry revision, not API/Registry knowledge of derived caches;
+- no PZ event, hook or monkey-patch is installed by this layer.
+
+This lookup foundation is **NOT YET VALIDATED IN GAME**. No dedicated restart is requested; validation can be folded into the first meaningful Simple runtime checkpoint.
 
 ## What is intentionally NOT in V3 yet
 
@@ -215,7 +273,6 @@ There is currently no:
 - Build hook/runtime;
 - Moveables hook;
 - IsoDoor canonicalization runtime;
-- entity/world-object reverse lookup layer;
 - Garage runtime;
 - LargeGate mutation/runtime;
 - gameplay UI/cursor code.
@@ -278,14 +335,14 @@ Do not resume speculative patching on that stack. Recover validated Legacy behav
 
 ## Immediate next step
 
-The catalog migration is finished.
+The data catalog and pure GameEntity lookup foundation are established.
 
 Next:
 
-1. re-read/migrate the relevant `CoreEntityLookup.md` research;
-2. design the smallest responsibility-focused entity -> definition reverse lookup layer, with no vanilla hooks yet;
-3. validate that lookup against the registered catalog without introducing gameplay behavior;
-4. then port the first known-good Simple 1x1 runtime path from Legacy;
-5. request an in-game test only at a meaningful runtime checkpoint, not for every data commit.
+1. re-read the active/Legacy research for door object abstraction and vanilla Moveables behavior relevant to Simple 1x1;
+2. map the known-good Legacy Simple 1x1 path to exact functions and vanilla boundaries;
+3. port the smallest Simple 1x1 runtime slice under responsibility-based modules;
+4. keep hooks narrow and preserve vanilla behavior where possible;
+5. request one meaningful in-game test once pickup/replacement of a Simple 1x1 door can actually be exercised.
 
-When resuming a future conversation, read this file first, then `Docs/Architecture/FoundationFiles.md` / `CatalogData.md`, then only the research relevant to the subsystem being changed.
+When resuming a future conversation, read this file first, then the architecture notes, then only the research relevant to the subsystem being changed.
