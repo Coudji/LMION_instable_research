@@ -1,0 +1,5 @@
+version=1
+title=Let Me In... Or Not [DEV]
+description=Development build of Let Me In... Or Not for Project Zomboid Build 42. Unstable research/testing version.
+tags=Build 42
+visibility=public
