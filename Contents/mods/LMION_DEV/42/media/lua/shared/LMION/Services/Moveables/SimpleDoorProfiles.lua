@@ -10,16 +10,23 @@ local function getSingleSkillLevel(skill)
         return 0
     end
 
-    local skillName, level = next(skill)
-    if skillName == nil then
+    local entryCount = 0
+    local singleLevel = nil
+
+    for _, level in pairs(skill) do
+        entryCount = entryCount + 1
+        if entryCount > 1 then
+            return nil
+        end
+
+        singleLevel = level
+    end
+
+    if entryCount == 0 then
         return 0
     end
 
-    if next(skill, skillName) ~= nil then
-        return nil
-    end
-
-    return tonumber(level) or 0
+    return tonumber(singleLevel) or 0
 end
 
 local function getSingleToolName(tools)
