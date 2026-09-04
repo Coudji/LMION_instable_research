@@ -1,8 +1,10 @@
 local LMION = require "LMION/API"
 local DefinitionBootstrap = require "LMION/Bootstrap/Definitions"
+local MoveablesBootstrap = require "LMION/Bootstrap/Moveables"
 local DefinitionIndexDiagnostics = require "LMION/Diagnostics/DefinitionIndex"
 
 DefinitionBootstrap.run(LMION)
+MoveablesBootstrap.run()
 
 local stats = LMION.getRegistrationStats()
 print(string.format(
