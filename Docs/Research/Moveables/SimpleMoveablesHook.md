@@ -1,8 +1,8 @@
 # Simple 1x1 Moveables integration — V3 control points
 
-Status: implementation target recovered from validated Legacy behavior; first V3 cold-start reached hook installation/index diagnostics, then failed during `OnLoadedTileDefinitions` profile construction. Fix committed; full Simple cycle still pending runtime validation.
+Status: **VALIDÉ EN JEU** for the White Panel Door pilot on 2026-09-04.
 
-This note is the required control-point map before V3 installs its first vanilla Moveables hooks.
+This note is the required control-point map for V3's first vanilla Moveables hooks.
 
 ## Vanilla path
 
@@ -85,9 +85,9 @@ Door sprite `IsMoveAble` properties are applied only from `OnLoadedTileDefinitio
 
 ## First V3 runtime failure
 
-**ÉCHEC TESTÉ / NE PAS REFAIRE** — 2026-09-04, B42.20.4.
+**ÉCHEC TESTÉ / NE PAS REFAIRE** — 2026-09-04, B42.20.x.
 
-Cold start reached:
+The first cold start reached:
 
 ```text
 [LMION:DEV] Simple Moveables hooks installed
@@ -101,19 +101,50 @@ Then `OnLoadedTileDefinitions` called `SimpleDoorSprites.configure()`, which bui
 Object tried to call nil in getSingleSkillLevel
 ```
 
-So the failure happened before any world Pickup/placement path was exercised. The game continued loading because the event callback error was contained.
+The failure happened before any world Pickup/placement path was exercised. Fix: iterate the skill table with `pairs()` and count entries explicitly instead of relying on global `next()`.
 
-Fix: iterate the skill table with `pairs()` and count entries explicitly instead of relying on global `next()`.
+This failure did **not** invalidate the catalog or entity reverse index; both completed before the event error.
 
-This failure does **not** invalidate the catalog or entity reverse index; both completed before the event error.
+## VALIDÉ EN JEU — complete White Panel Door loop
+
+2026-09-04, after the profile fix and Build pilot completion.
+
+The successful cold-start console contains:
+
+```text
+[LMION:DEV] Simple Moveables hooks installed
+[LMION:DEV] definitions ready: 23 defaults, 72 definitions, 0 extensions
+[LMION:DEV] entity index ready: 77 mappings; Base.WhitePanelDoor -> Doors.Wood.WhitePanelDoor
+[LMION:DEV] Simple Moveables sprites configured: 4
+```
+
+The user then constructed a White Panel Door, picked it up and replaced it successfully. Runtime logs showed:
+
+```text
+[LMION:DEV] Simple pickup state captured: definition=Doors.Wood.WhitePanelDoor health=725 max=725
+[LMION:DEV] Simple transport item serialized: definition=Doors.Wood.WhitePanelDoor item=Base.LMION_WhitePanelDoor
+[LMION:DEV] Simple placement started: definition=Doors.Wood.WhitePanelDoor facing=W sprite=fixtures_doors_01_0
+[LMION:DEV] Simple placement finalized: definition=Doors.Wood.WhitePanelDoor sprite=fixtures_doors_01_0 health=725 max=725
+```
+
+User validation additionally confirmed:
+
+- pickup works;
+- replacement works;
+- the standard frame requirement is enforced correctly;
+- HP/max-HP persist through pickup and replacement.
+
+This validates the first integrated `GameEntity -> definition -> Simple profile -> vanilla Moveables -> LMION finalization` path. It does not yet prove every Simple definition, Paired, FenceGate, Sliding, Garage or LargeGate.
 
 ## Restart requirement
 
-The first V3 pilot adds a new `media/scripts` inventory item definition. A cold PZ restart remains required for the next meaningful runtime validation. Lua reload alone is not sufficient evidence for that checkpoint.
+The pilot contains a `media/scripts` inventory item definition. A cold PZ restart was required for this validation and has now been performed successfully.
+
+Further pure-Lua/data expansion should be grouped before requesting another restart. A new restart is required only when the next meaningful integrated milestone or new `media/scripts` topology needs it.
 
 ## Runtime logs
 
-The first validation should log only meaningful boundaries:
+Keep meaningful boundaries during unstable development:
 
 ```text
 Simple Moveables hooks installed
@@ -126,4 +157,4 @@ Simple placement finalized
 
 No per-frame placement-validation spam.
 
-Sources: active `Docs/Research/Architecture/DoorObjectAbstraction.md`, active `Docs/Research/Moveables/VanillaMoveablesBehavior.md`, Legacy `LMION/Pickup/Doors/Hooks.lua`, Legacy `LMION/Pickup/Doors/Registry.lua`, and the 2026-09-04 B42.20.4 runtime console.
+Sources: active `Docs/Research/Architecture/DoorObjectAbstraction.md`, active `Docs/Research/Moveables/VanillaMoveablesBehavior.md`, Legacy `LMION/Pickup/Doors/Hooks.lua`, Legacy `LMION/Pickup/Doors/Registry.lua`, and the 2026-09-04 runtime consoles.
