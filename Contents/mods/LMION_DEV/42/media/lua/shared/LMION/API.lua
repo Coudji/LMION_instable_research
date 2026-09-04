@@ -2,6 +2,7 @@ local DoorTypes = require "LMION/Domain/DoorTypes"
 local Registry = require "LMION/Definitions/Registry"
 local Resolver = require "LMION/Definitions/Resolver"
 local Validation = require "LMION/Definitions/Validation"
+local DefinitionLookup = require "LMION/Services/DefinitionLookup"
 
 local API = {}
 
@@ -47,6 +48,26 @@ end
 
 function API.getEffectiveDefinition(definitionId)
     return Resolver.resolveDefinition(definitionId)
+end
+
+function API.getDefinitionIdByEntity(entityId)
+    return DefinitionLookup.getDefinitionIdByEntity(entityId)
+end
+
+function API.getEffectiveDefinitionByEntity(entityId)
+    return DefinitionLookup.getEffectiveDefinitionByEntity(entityId)
+end
+
+function API.getEntityIdForObject(object)
+    return DefinitionLookup.getEntityIdForObject(object)
+end
+
+function API.getDefinitionIdForObject(object)
+    return DefinitionLookup.getDefinitionIdForObject(object)
+end
+
+function API.getEffectiveDefinitionForObject(object)
+    return DefinitionLookup.getEffectiveDefinitionForObject(object)
 end
 
 function API.isDoorTypeSupported(doorType)

@@ -8,6 +8,11 @@ local extensions = {}
 local defaultIds = {}
 local definitionIds = {}
 local extensionIds = {}
+local revision = 0
+
+local function advanceRevision()
+    revision = revision + 1
+end
 
 function Registry.registerDefault(definitionDefault)
     local defaultId = definitionDefault.defaultId
@@ -18,6 +23,7 @@ function Registry.registerDefault(definitionDefault)
 
     defaultsById[defaultId] = TableUtils.deepCopy(definitionDefault)
     defaultIds[#defaultIds + 1] = defaultId
+    advanceRevision()
 
     return defaultId
 end
@@ -31,6 +37,7 @@ function Registry.registerDefinition(definition)
 
     definitionsById[definitionId] = TableUtils.deepCopy(definition)
     definitionIds[#definitionIds + 1] = definitionId
+    advanceRevision()
 
     return definitionId
 end
@@ -44,6 +51,7 @@ function Registry.registerExtension(extension)
 
     extensionIds[extensionId] = true
     extensions[#extensions + 1] = TableUtils.deepCopy(extension)
+    advanceRevision()
 
     return extensionId
 end
@@ -66,6 +74,10 @@ end
 
 function Registry.getDefinitionIds()
     return TableUtils.deepCopy(definitionIds)
+end
+
+function Registry.getRevision()
+    return revision
 end
 
 function Registry.getRegistrationStats()
