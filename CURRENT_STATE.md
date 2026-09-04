@@ -75,8 +75,6 @@ During unstable V3 development, prefer useful targeted logs over silent behavior
 - Diagnostic logs may be removed or reduced before release once the behavior is validated.
 - When a bug crosses a vanilla hook boundary, log the narrow control point before adding speculative patches.
 
-The user explicitly prefers extra development logs now rather than having to reproduce opaque failures later.
-
 ## Public addon API
 
 External addons target:
@@ -98,8 +96,6 @@ LargeGate
 Garage
 ```
 
-Future hypothetical types such as `LargeSliding` / `PairedSliding` must not drive current abstractions.
-
 `doorType` is the semantic fact. Frame requirements are internal consequences owned by `Domain/DoorTypes.lua`:
 
 ```text
@@ -113,7 +109,7 @@ Garage    -> none
 
 Do not restore the old public `frame` field merely to duplicate this information.
 
-## Active V3 data/API foundation
+## Data/API foundation
 
 Foundation commit:
 
@@ -121,58 +117,18 @@ Foundation commit:
 5e7c117245f88f13b0e03d76f5cbb574982d230b
 ```
 
-Important files under `Contents/mods/LMION_DEV/42/media/lua/shared/`:
+The data/API foundation remains responsibility-oriented:
 
-```text
-LMION/
-├─ API.lua
-├─ Bootstrap/Definitions.lua
-├─ Definitions/
-│  ├─ Registry.lua
-│  ├─ Resolver.lua
-│  ├─ Validation.lua
-│  ├─ BuiltinContent.lua
-│  ├─ EntityIndex.lua
-│  ├─ Defaults/
-│  └─ Catalog/
-├─ Domain/DoorTypes.lua
-├─ PZ/WorldObjectIdentity.lua
-├─ Services/DefinitionLookup.lua
-└─ Support/TableUtils.lua
-
-LMION_DEV.lua
-```
-
-Responsibilities:
-
-- `Registry` stores raw registered data and owns a registration revision counter;
-- `Validation` validates public data shape only;
-- `Resolver` resolves defaults/definitions/extensions only;
-- `EntityIndex` derives `GameEntity full name -> definitionId` from effective definitions and rebuilds lazily when Registry revision changes;
+- Registry stores raw registered data and owns a registration revision counter;
+- Validation validates public data shape only;
+- Resolver resolves defaults/definitions/extensions only;
+- EntityIndex derives `GameEntity full name -> definitionId` lazily from effective definitions;
 - `PZ/WorldObjectIdentity` only reads `object:getEntityScript():getFullName()`;
-- `Services/DefinitionLookup` combines object/entity identity with definition resolution;
-- `DoorTypes` owns semantic type vocabulary and type-derived frame requirement;
-- `BuiltinContent.lua` explicitly lists built-in registrations; no directory scanning;
-- `Bootstrap/Definitions.lua` registers built-ins once through the same public API used by third parties;
-- `LMION_DEV.lua` stays a tiny bootstrap/diagnostic entry point.
+- `Services/DefinitionLookup` combines identity and definition resolution;
+- DoorTypes owns semantic type vocabulary and type-derived frame requirement;
+- BuiltinContent explicitly lists registrations; no directory scanning.
 
 See `Docs/Architecture/FoundationFiles.md`, `Docs/Architecture/CatalogData.md` and `Docs/Architecture/EntityLookup.md`.
-
-## In-game foundation validation
-
-**VALIDÉ EN JEU** on 2026-09-04:
-
-```text
-LOG  : Lua          f:0> [LMION:DEV] definitions ready: 1 defaults, 1 definitions, 0 extensions
-```
-
-Then the first larger catalog slice was also **VALIDÉ EN JEU**:
-
-```text
-LOG  : Lua          f:0> [LMION:DEV] definitions ready: 5 defaults, 5 definitions, 0 extensions
-```
-
-These checkpoints validate the Workshop package path and the shared Lua `API -> Bootstrap -> Validation -> Registry` loading chain.
 
 ## Complete built-in catalog migration
 
@@ -181,8 +137,6 @@ Main migration commit:
 ```text
 94d935485ca5baaa4731615bef39b7846f13ba6f
 ```
-
-The entire reviewed V2 `DefinitionDefaults` + `Catalog` dataset listed by Legacy `Core/BuiltinContent.lua` has now been migrated into the V3 responsibility-based layout.
 
 Current built-in data count:
 
@@ -206,28 +160,31 @@ SlidingDoors          2
 Total                 72
 ```
 
-Schema cleanup applied during migration:
+Schema cleanup preserved the intended V3 rules: no redundant public `frame`, Paired uses explicit left/right geometry, Garage uses explicit START/MIDDLE/END geometry, LargeGate uses stable A/B identity.
 
-- old redundant `frame = "standard"`, `"paired"` or `"none"` fields were removed where `doorType` already expresses the semantic type;
-- standalone definitions that cannot inherit `doorType` now state it explicitly;
-- Paired definitions keep `doorType = "Paired"`, `entities.left/right` and explicit left/right geometry;
-- Garage definitions keep explicit `START/MIDDLE/END` geometry but the redundant V2 `topology = { type = "garage" }` field was removed;
-- LargeGate definitions keep explicit A/B geometry; A/B remains stable logical identity;
-- exact entity IDs, explicit sprite geometry and gameplay-data overrides were preserved from the reviewed V2 dataset.
-
-**VALIDÉ EN JEU** on 2026-09-04 after restoring the omitted `Doors.Wood.RoughWoodenDoor` catalog file:
+The omitted `RoughWoodenDoor.lua` migration defect was fixed by:
 
 ```text
-LOG  : Lua          f:0> [LMION:DEV] definitions ready: 23 defaults, 72 definitions, 0 extensions
+e55fcc0817892eedb7c8aa3c080bdf366f248b42
 ```
 
-This confirms that the complete built-in catalog now registers successfully as one block. The earlier failure `LMION: definition must be a table` was caused by `BuiltinContent.lua` referencing `RoughWoodenDoor` while that file had not been migrated. `API.registerContent` now reports the failing list/index more explicitly if a future content entry does not load a table.
+Registration diagnostics were improved by:
+
+```text
+3e39223af3d53e13a3337ecfc6ef48cbca109ba5
+```
+
+**VALIDÉ EN JEU** on 2026-09-04:
+
+```text
+[LMION:DEV] definitions ready: 23 defaults, 72 definitions, 0 extensions
+```
 
 The catalog/data migration is complete. Do not keep revisiting it unless a concrete defect, missing definition or API requirement is discovered.
 
 ## GameEntity lookup foundation
 
-Research migration commit:
+Research commit:
 
 ```text
 5b45221c1893ff876f79d2a9bbc9f94ce046da94
@@ -239,19 +196,7 @@ Implementation commit:
 4ef94ad72b5f72fb1aaff1b8ea9e34962af571ef
 ```
 
-Active research note:
-
-```text
-Docs/Research/Architecture/CoreEntityLookup.md
-```
-
-Architecture note:
-
-```text
-Docs/Architecture/EntityLookup.md
-```
-
-Public API now includes:
+Public API includes:
 
 ```lua
 LMION.getDefinitionIdByEntity(entityId)
@@ -261,7 +206,7 @@ LMION.getDefinitionIdForObject(object)
 LMION.getEffectiveDefinitionForObject(object)
 ```
 
-The identity chain is:
+Identity chain:
 
 ```text
 world object
@@ -271,31 +216,153 @@ world object
 -> effective definition
 ```
 
-Important boundaries:
+**VALIDÉ EN JEU** as part of the first integrated Simple checkpoint on 2026-09-04:
 
-- no sprite-based primary identity lookup;
-- no world scanning;
-- unknown valid entities return nil;
-- entity collisions between different definitions are errors;
-- index derives from effective definitions;
-- index freshness uses Registry revision, not API/Registry knowledge of derived caches;
-- no PZ event, hook or monkey-patch is installed by this layer.
+```text
+[LMION:DEV] entity index ready: 77 mappings; Base.WhitePanelDoor -> Doors.Wood.WhitePanelDoor
+```
 
-This lookup foundation is **NOT YET VALIDATED IN GAME**. No dedicated restart is requested; validation can be folded into the first meaningful Simple runtime checkpoint.
+No sprite-based primary identity lookup or world scanning is used.
 
-## What is intentionally NOT in V3 yet
+## First Simple 1x1 runtime foundation
 
-There is currently no:
+The first functional pilot is intentionally limited to:
 
-- Pickup runtime;
-- Build hook/runtime;
-- Moveables hook;
-- IsoDoor canonicalization runtime;
-- Garage runtime;
-- LargeGate mutation/runtime;
-- gameplay UI/cursor code.
+```text
+Doors.Wood.WhitePanelDoor
+Base.WhitePanelDoor
+Base.LMION_WhitePanelDoor
+```
 
-Do not bulk-copy V2 runtime files to add these.
+Current runtime responsibilities are split under `PZ/`, `Runtime/`, `Services/Build/`, `Services/Moveables/`, `Hooks/Moveables/` and server `Hooks/Build/`.
+
+Important files include:
+
+```text
+PZ/DoorObject.lua
+PZ/DoorSprite.lua
+PZ/StandardDoorFrame.lua
+PZ/PlacedDoor.lua
+PZ/BuiltDoor.lua
+Runtime/DoorDurability.lua
+Runtime/DoorState.lua
+Runtime/DoorPlacement.lua
+Runtime/CanonicalDoor.lua
+Runtime/Moveables/DoorTransportState.lua
+Runtime/Moveables/SimpleDoorSprites.lua
+Services/Moveables/SimpleDoorProfiles.lua
+Services/Moveables/SimpleDoorPlacementFinalizer.lua
+Services/Build/ConstructionDurability.lua
+Services/Build/SimpleDoorFinalizer.lua
+Hooks/Moveables/SimpleDoor.lua
+server/LMION/Hooks/Build/SimpleDoor.lua
+```
+
+Architecture and control-point notes:
+
+```text
+Docs/Architecture/DoorRuntimeFoundation.md
+Docs/Research/Moveables/SimpleMoveablesHook.md
+Docs/Research/Build/SimpleDoorBuildPilot.md
+```
+
+### Build pilot engine scripts
+
+The pilot currently has:
+
+```text
+media/scripts/WhitePanelDoor_Item.txt
+media/scripts/WhitePanelDoor_Build.txt
+media/scripts/WhitePanelDoor_Entity.txt
+```
+
+The Build recipe was visible before the Entity SpriteConfig existed, but clicking Build created no cursor because vanilla had no selected build object for `Base.WhitePanelDoor`.
+
+The missing SpriteConfig was restored in:
+
+```text
+75d637ed1d8c4332d8126db219f176ecb94eed58
+Restore White Panel Door SpriteConfig for Build pilot
+```
+
+The restored faces are:
+
+```text
+W      fixtures_doors_01_0
+N      fixtures_doors_01_1
+W_OPEN fixtures_doors_01_2
+N_OPEN fixtures_doors_01_3
+```
+
+This is engine support for vanilla Build; the LMION catalog remains the semantic/geometry source of truth.
+
+### VALIDÉ EN JEU — complete Simple loop
+
+2026-09-04.
+
+User successfully exercised:
+
+```text
+Build White Panel Door
+-> canonicalize built object
+-> Pickup
+-> inventory transport item
+-> replace through Moveables
+```
+
+User explicitly confirmed:
+
+- construction works;
+- pickup works;
+- replacement works;
+- the standard frame requirement is respected;
+- HP/max-HP persist through pickup/replacement.
+
+Successful runtime logs include:
+
+```text
+[LMION:DEV] Simple Moveables hooks installed
+[LMION:DEV] Simple Build hook installed: Doors.Wood.WhitePanelDoor
+[LMION:DEV] Simple Moveables sprites configured: 4
+[LMION:DEV] Simple Build finalizing: definition=Doors.Wood.WhitePanelDoor entity=Base.WhitePanelDoor representation=IsoThumpable
+[LMION:DEV] canonical door ready: IsoDoor facing=W
+[LMION:DEV] Simple Build finalized: definition=Doors.Wood.WhitePanelDoor representation=IsoDoor health=725 max=725
+[LMION:DEV] Simple pickup state captured: definition=Doors.Wood.WhitePanelDoor health=725 max=725
+[LMION:DEV] Simple transport item serialized: definition=Doors.Wood.WhitePanelDoor item=Base.LMION_WhitePanelDoor
+[LMION:DEV] Simple placement started: definition=Doors.Wood.WhitePanelDoor facing=W sprite=fixtures_doors_01_0
+[LMION:DEV] Simple placement finalized: definition=Doors.Wood.WhitePanelDoor sprite=fixtures_doors_01_0 health=725 max=725
+```
+
+This validates the first integrated path:
+
+```text
+GameEntity identity
+-> LMION definition/profile
+-> vanilla Build / Moveables
+-> LMION canonical IsoDoor finalization
+-> transported durability restore
+```
+
+The successful Build log proves the engine may initially create an `IsoThumpable`, and LMION correctly converges it to canonical `IsoDoor` before final ownership.
+
+### Historical first Simple runtime failure
+
+**ÉCHEC TESTÉ / NE PAS REFAIRE**: `SimpleDoorProfiles.getSingleSkillLevel()` initially used global `next()` and Kahlua reported `Object tried to call nil in getSingleSkillLevel` during `OnLoadedTileDefinitions`.
+
+The fix uses `pairs()` and explicit entry counting. This failure occurred before Pickup/placement and did not invalidate the catalog or entity index.
+
+## What is not yet validated/implemented broadly
+
+The validated checkpoint covers one Simple definition only. Do not generalize its validation status to:
+
+- every Simple door definition;
+- Paired;
+- FenceGate;
+- Sliding;
+- Garage;
+- LargeGate.
+
+The runtime abstractions are now proven by one complete Simple path, but catalog-wide activation and family-specific integration remain future work.
 
 ## Behavioral source of truth
 
@@ -320,30 +387,23 @@ Established contracts include:
 
 Before changing a PZ integration point already researched, read the relevant note first.
 
-High-value Legacy sources:
-
-```text
-Legacy/Research/Engine/B42LuaLoadOrder.md
-Legacy/Research/Engine/LoadLifecycle.md
-Legacy/Research/Moveables/VanillaMoveablesBehavior.md
-Legacy/Research/Architecture/CoreEntityLookup.md
-Legacy/Research/Architecture/DoorObjectAbstraction.md
-```
-
 Important lifecycle facts:
 
 - `media/scripts` parse before Lua and require cold restart after changes;
 - normal initial Lua execution is shared then client; server Lua comes later in SP;
-- dedicated server discovers but does not execute client Lua;
-- active Lua-tree files autoexecute in case-insensitive alphabetical path order;
 - shared/client code must not require server-only vanilla Lua before server phase;
 - `OnLoadedTileDefinitions` is authoritative for tile/sprite mutations tile loading may reset;
 - `OnGameBoot` is the validated point for selected GameEntity/SpriteConfig topology mutations;
-- `LoadGridsquare` / `OnObjectAdded` concern live instances, not script topology;
 - active cursors/actions/UI can retain stale closures after Lua reload;
 - after hook/load-order structure changes, cold restart before rejecting behavior.
 
 Any expensive new runtime discovery must be written into active `Docs/Research/` before the related work is considered done.
+
+## Testing strategy
+
+Do not request a PZ restart for every pure-data or pure-Lua slice.
+
+The first integrated Simple milestone is now validated. Group subsequent changes and request another **TEST EN JEU REQUIS** only at the next meaningful runtime milestone. New or changed `media/scripts` still require a cold restart, so accumulate those changes before asking for one.
 
 ## Known LargeGate V2 regression to avoid
 
@@ -353,15 +413,15 @@ Do not resume speculative patching on that stack. Recover validated Legacy behav
 
 ## Immediate next step
 
-The data catalog and pure GameEntity lookup foundation are established.
+The data catalog, GameEntity lookup and one complete Simple 1x1 runtime path are established and validated.
 
-Next:
+Before expanding Simple support, inspect the current transport-item and Build-script requirements versus the full Simple catalog and Legacy scripts. Separate these questions instead of assuming one mechanism solves both:
 
-1. re-read the active/Legacy research for door object abstraction and vanilla Moveables behavior relevant to Simple 1x1;
-2. map the known-good Legacy Simple 1x1 path to exact functions and vanilla boundaries;
-3. port the smallest Simple 1x1 runtime slice under responsibility-based modules;
-4. keep hooks narrow and preserve vanilla behavior where possible;
-5. add targeted development logs at meaningful runtime boundaries;
-6. request one meaningful in-game test once pickup/replacement of a Simple 1x1 door can actually be exercised.
+```text
+existing world Simple door -> pickup/replacement support
+Simple definition -> vanilla Build construction support
+```
 
-When resuming a future conversation, read this file first, then the architecture notes, then only the research relevant to the subsystem being changed.
+Determine which engine-side item/GameEntity/CraftRecipe scripts are genuinely required for each path, then extend the validated Simple architecture without introducing duplicated hand-written script data unnecessarily.
+
+Do not request another game launch until that expansion forms a meaningful integrated checkpoint.
