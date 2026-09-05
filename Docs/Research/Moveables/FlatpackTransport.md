@@ -1,32 +1,37 @@
 # Flatpack transport — V3
 
-Status: **HYPOTHÈSE / NON VALIDÉ** in game for the generic V3 pilot; implementation is present for White Panel Door.
+Status: **ARCHITECTURE UNDER REVIEW / DO NOT TEST YET**. The generic `Base.LMION_Flatpack` pilot is implemented for White Panel Door but is intentionally paused before runtime validation while transport identity is compared against multisprite families.
 
 ## Product rule
 
-A picked-up door is transported as a **flatpack**. The inventory representation is not a visual copy of the door and must not require one inventory item script/icon per door definition.
+A picked-up opening is transported visually as a **flatpack**. This does **not** imply that every transported opening must share one script item type.
 
-World/build identity and transport identity are separate:
+Two separate decisions must not be conflated:
 
 ```text
-world door
--> LMION definitionId
--> generic flatpack item + transport metadata
--> replacement
--> canonical IsoDoor
+visual representation -> flatpack icon/model
+transport identity     -> generic item + metadata OR typed flatpack item
 ```
 
-## OBSERVÉ DANS LEGACY
+The first is a product decision. The second is an engine/integration architecture decision.
 
-Legacy used one `ItemType = base:moveable` script item per Simple door. Example `Base.LMION_WhitePanelDoor` contained only moveable item metadata and a per-door weight. The Moveables hook then set `moveProps.customItem` to that per-door item type and let vanilla `instanceItem()` create the inventory object.
+## Simple baseline — OBSERVÉ DANS LEGACY
 
-Legacy transported door health/max-health in item modData. The source Java representation was deliberately not transported; placement converged to canonical `IsoDoor`.
+Legacy used one `ItemType = base:moveable` script item per Simple door. Example:
 
-This per-door item catalog is behavioral evidence that vanilla needs a valid moveable script item at the `customItem` boundary. It is **not** evidence that the item type itself must be unique per door.
+```text
+Base.LMION_WhitePanelDoor
+```
 
-## OBSERVÉ DANS VANILLA / SOURCE
+The item script contained only moveable-engine metadata and a per-door weight. The Moveables hook set `moveProps.customItem` to that item type and let vanilla `instanceItem()` create the inventory object.
 
-B42.20.3 script data contains the vanilla model:
+Door health/max-health were dynamic modData. Source Java representation was deliberately not transported; placement converged to canonical `IsoDoor`.
+
+Therefore, for Simple doors, the item full type can naturally carry definition identity while all such items still share one flatpack visual.
+
+## Vanilla flatpack visual — OBSERVÉ DANS VANILLA / SOURCE
+
+B42.20.3 contains the vanilla model:
 
 ```text
 model Flatpack
@@ -36,119 +41,185 @@ model Flatpack
 }
 ```
 
-Therefore LMION can use the vanilla `Flatpack` world model without shipping a duplicate door inventory texture/model.
+LMION can therefore reuse the vanilla `Flatpack` world model. Inventory icon choice is independent from transport identity and may also be shared by every LMION flatpack item.
 
-`InventoryItem` exposes `setName`, `setWeight`, `setActualWeight`, `setCustomWeight`, `getFullType` and modData access. V3 can therefore keep one engine item type while applying definition-specific weight/state at runtime.
+## Multisprite transport — OBSERVÉ DANS LEGACY
 
-## Implemented V3 pilot
+### LargeGate
 
-One engine item now exists:
+A LargeGate logical leaf contains **two physical members**. Legacy transports one parcel per member and gives every member an exact item type.
+
+Example for Large Wrought Iron Gate:
+
+```text
+A/Part1 -> Base.LMION_LargeWroughtIronGateA_Part1
+A/Part2 -> Base.LMION_LargeWroughtIronGateA_Part2
+B/Part1 -> Base.LMION_LargeWroughtIronGateB_Part1
+B/Part2 -> Base.LMION_LargeWroughtIronGateB_Part2
+```
+
+The LargeGate Moveables integration uses these exact full types as part identity. In particular, its narrow `findInInventoryMultiSprite()` hook resolves the requested `(1/2)` or `(2/2)` grid member and searches inventory/nearby floor for the exact corresponding item type.
+
+So item identity currently participates directly in the validated multisprite integration contract:
+
+```text
+family + leaf A/B + physical part 1/2
+-> exact item full type
+-> compatible parcel lookup
+```
+
+Compatible parcels are interchangeable by this **part identity**; there is no bundle ID tying two parcels to the same pickup operation.
+
+### Garage
+
+Garage transport uses three semantic parcel roles per family:
+
+```text
+Part1 = START
+Part2 = MIDDLE (repeatable)
+Part3 = END
+```
+
+Legacy defines exact item types such as:
+
+```text
+Base.LMION_GreenGarageDoor_Part1
+Base.LMION_GreenGarageDoor_Part2
+Base.LMION_GreenGarageDoor_Part3
+```
+
+`GarageDoorSpecs` builds a `ParcelsByItemType` reverse index, and vanilla-toolbar multisprite lookup searches the character inventory for the exact full type required by the requested SpriteGrid member.
+
+The type therefore naturally encodes:
+
+```text
+garage family + START/MIDDLE/END role
+```
+
+This is especially useful because MIDDLE is repeatable and parcels are intentionally interchangeable by role rather than pickup bundle.
+
+### Paired
+
+Paired doors are not a single vanilla multisprite object in the same sense as Garage/LargeGate. They are independent 1x1 leaves. Their transport identity can remain leaf-specific without needing a generic multipart bundle concept.
+
+## Consequence for the generic-item idea
+
+A single `Base.LMION_Flatpack` can technically carry all identity in modData:
+
+```text
+definitionId
+leaf
+part/member role
+```
+
+but doing so for multisprite families would force LMION to replace more of the existing exact-item-type matching at vanilla Moveables boundaries. The current Legacy behavior can often ask simply:
+
+```lua
+item:getFullType() == requiredPart.itemType
+```
+
+With one generic type, every such lookup must instead inspect and validate modData identity. That is possible, but it adds integration plumbing precisely at the multisprite paths that were hardest to stabilize historically, especially toolbar placement.
+
+**Current evidence therefore favors typed flatpacks over one universal flatpack item.**
+
+That would mean:
+
+```text
+Simple
+    one typed flatpack per definition
+
+Paired
+    one typed flatpack per leaf/entity
+
+LargeGate
+    one typed flatpack per family + leaf A/B + physical part 1/2
+
+Garage
+    one typed flatpack per family + START/MIDDLE/END role
+```
+
+All of those item types may still use the **same flatpack icon and the same vanilla `Flatpack` world model**. The type expresses transport identity; it does not express appearance.
+
+This also keeps the dynamic data small. For a Simple door, modData can remain essentially durability/state only. Multipart families need only dynamic gameplay state that cannot be encoded by the stable typed parcel identity.
+
+## Current V3 generic pilot — IMPLEMENTED BUT PAUSED
+
+One generic engine item currently exists:
 
 ```text
 Base.LMION_Flatpack
 ```
 
-`media/scripts/Flatpack.txt` owns only generic engine facts:
-
-```text
-ItemType = base:moveable
-Icon = default
-fallback Weight = 1.0
-WorldStaticModel = Flatpack
-Tags = base:usedisplayname
-```
-
-The fallback weight is not gameplay data. `SimpleDoorFlatpack.prepare()` replaces it with the effective definition package weight on the created inventory item.
-
-`WhitePanelDoor.txt` no longer declares `item LMION_WhitePanelDoor`; it now contains only the Build-facing XUI/CraftRecipe/SpriteConfig data PZ needs before Lua.
-
-Definition-specific transport facts remain outside the script:
-
-```text
-definitionId
-pickup package weight
-health / logical max-health
-Moveables sprite/facing metadata created by vanilla
-```
-
-### Transport identity
-
-`Runtime/Moveables/DoorTransportIdentity.lua` owns one modData fact:
+and White Panel Door currently routes through it using:
 
 ```text
 lmionDoorDefinitionId
 ```
 
-It can write, read and compare that definition identity only.
+This code has **not been validated in game** and must not be treated as the chosen architecture.
 
-`Services/Moveables/SimpleDoorFlatpack.lua` owns the Simple flatpack use case:
+Do not request a cold restart for it yet. First decide transport identity with the multisprite evidence above. If typed flatpacks are selected, revert the generic identity plumbing before the next game checkpoint and restore a typed White Panel transport item using the common flatpack visual.
 
-```text
-prepare generic item
--> write definition identity
--> delegate durability-state serialization
--> restore generic Flatpack display name
--> apply definition package weight
-```
+## Likely typed-flatpack script shape
 
-Placement accepts the generic item only when its stored definition ID matches the Simple profile resolved from the current Moveables sprite metadata. The per-frame validity path rejects mismatches silently; the actual placement boundary logs a stable `flatpack-identity` rejection if it is somehow reached with the wrong parcel.
-
-### Hook ownership
-
-`Hooks/Moveables/SimpleDoor.lua` still owns the same narrow vanilla boundaries. It now delegates item preparation and identity matching to `SimpleDoorFlatpack` rather than treating a per-door script item type as identity.
-
-The world Moveables name is no longer overwritten from the generic flatpack script item, so a world door does not become named `Flatpack` merely because that is its transport representation.
-
-## Pilot scope
-
-The generic-flatpack implementation remains explicitly restricted to:
+For a Simple door, one consolidated door script can still contain the transport item and Build engine components together:
 
 ```text
-Doors.Wood.WhitePanelDoor
-```
-
-Do not activate every Simple definition merely because the generic item exists. The previous pilot was implicitly gated by the existence of `Base.LMION_WhitePanelDoor`; V3 replaces that accidental gate with an explicit temporary pilot gate until the generic-flatpack path is validated in game.
-
-After validation, remove the pilot gate and expand Simple support deliberately.
-
-## Current script shape
-
-```text
-media/scripts/Flatpack.txt
-    -> one generic transport item
-
 media/scripts/WhitePanelDoor.txt
-    -> Build XUI + CraftRecipe + SpriteConfig only
+    item LMION_WhitePanelDoor        -- typed flatpack transport identity
+    xuiSkin                          -- Build UI
+    entity WhitePanelDoor
+        UiConfig
+        CraftRecipe
+        SpriteConfig
 ```
 
-No `item LMION_WhitePanelDoor` block remains.
+The item block can remain strict engine minimum. Definition-derived behavior remains in Lua.
 
-## Validation target
-
-Next meaningful cold-start checkpoint:
+For multipart families, one file per opening/family can contain all of its typed parcels rather than one file per physical parcel. For example:
 
 ```text
-Build White Panel Door
--> damage it
--> Pickup
--> inventory item full type = Base.LMION_Flatpack
--> inventory name = Flatpack
--> replacement still rotates N/W
--> standard frame still required
--> definition identity matches
--> HP/max-HP still persist
--> final world object is IsoDoor
+LargeWroughtIronGate.txt
+    item ...A_Part1
+    item ...A_Part2
+    item ...B_Part1
+    item ...B_Part2
+    ...Build engine components...
 ```
 
-Expected serialization log:
+and:
 
 ```text
-[LMION:DEV] Simple flatpack serialized: definition=Doors.Wood.WhitePanelDoor item=Base.LMION_Flatpack prepared=true
+GreenGarageDoor.txt
+    item ..._Part1   -- START
+    item ..._Part2   -- MIDDLE
+    item ..._Part3   -- END
+    ...Build engine components...
 ```
 
-If this succeeds, one generic flatpack can replace the per-door technical item scripts for the Simple family. Multipart families may still need part/member metadata, but should reuse the same transport concept where their vanilla integration allows it.
+So choosing typed items does **not** require returning to Legacy's proliferation of `_Item.txt` / `_ParcelItems.txt` files.
 
-## Implementation commits
+## Decision checkpoint before code changes
+
+Compare these two architectures:
+
+```text
+A. universal flatpack
+   identity = modData
+   visual = shared flatpack
+   fewer script item declarations
+   more custom identity matching at multisprite vanilla boundaries
+
+B. typed flatpacks
+   identity = item full type
+   visual = shared flatpack
+   more small item declarations
+   simpler/existing exact matching for Simple + Garage + LargeGate
+```
+
+Based on recovered Legacy behavior, **B currently has the stronger evidence and lower integration risk**, but no implementation should be changed until this review is accepted.
+
+## Existing generic-pilot commits
 
 ```text
 634477b60912d4afb3d0a5c3c0f3901be4ea3d78  Add flatpack definition identity transport
@@ -161,3 +232,5 @@ b6e225af4bb4bf62c5772072841ef78ef4a558bb  Translate generic LMION flatpack
 69dd3195fa95c633c994be225c6098332a50bc31  Keep generic flatpack inventory identity
 826193b142120f2492df41c9de7dd62d8206630f  Preserve world door Moveables naming
 ```
+
+Sources: Legacy `WhitePanelDoor_Item.txt`, `LargeWroughtIronGate_ParcelItems.txt`, `GreenGarageDoor_ParcelItems.txt`, `LargeGateSpecs.lua`, `LargeGateMoveables.lua`, `GarageDoorSpecs.lua`, `GarageDoorMoveables.lua`, plus active V3 Simple transport code.
