@@ -1,10 +1,10 @@
 local PairedDoorProfiles = require "LMION/Services/Moveables/PairedDoorProfiles"
-local SimpleDoorProfiles = require "LMION/Services/Moveables/SimpleDoorProfiles"
+local SingleEntityDoorProfiles = require "LMION/Services/Moveables/SingleEntityDoorProfiles"
 
 local SingleTileDoorProfiles = {}
 
 local providers = {
-    SimpleDoorProfiles,
+    SingleEntityDoorProfiles,
     PairedDoorProfiles,
 }
 
