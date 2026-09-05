@@ -4,7 +4,6 @@ local DoorObject = require "LMION/PZ/DoorObject"
 local DoorPlacement = require "LMION/Runtime/DoorPlacement"
 local DoorSprite = require "LMION/PZ/DoorSprite"
 local DoorTransportState = require "LMION/Runtime/Moveables/DoorTransportState"
-local SimpleDoorFlatpack = require "LMION/Services/Moveables/SimpleDoorFlatpack"
 local SimpleDoorPlacementFinalizer = require "LMION/Services/Moveables/SimpleDoorPlacementFinalizer"
 local SimpleDoorProfiles = require "LMION/Services/Moveables/SimpleDoorProfiles"
 
@@ -61,6 +60,11 @@ local function applyProfile(moveProps, sprite)
     local profile = SimpleDoorProfiles.getBySprite(sprite)
     if moveProps == nil or profile == nil then
         return nil
+    end
+
+    local scriptItem = ScriptManager.instance:FindItem(profile.itemType)
+    if scriptItem ~= nil then
+        moveProps.name = scriptItem:getDisplayName()
     end
 
     moveProps.customItem = profile.itemType
@@ -157,13 +161,12 @@ function SimpleDoorHook.install()
 
         local item = originalInstanceItem(self, spriteName)
 
-        if profile ~= nil and item ~= nil then
-            local prepared = SimpleDoorFlatpack.prepare(item, profile, self.lmionPendingDoorState)
+        if profile ~= nil and item ~= nil and self.lmionPendingDoorState ~= nil then
+            DoorTransportState.writeToItem(item, self.lmionPendingDoorState)
             print(string.format(
-                "[LMION:DEV] Simple flatpack serialized: definition=%s item=%s prepared=%s",
+                "[LMION:DEV] Simple transport item serialized: definition=%s item=%s",
                 tostring(profile.definitionId),
-                tostring(item:getFullType()),
-                tostring(prepared)
+                tostring(profile.itemType)
             ))
         end
 
@@ -174,10 +177,6 @@ function SimpleDoorHook.install()
         local profile = getProfile(self)
         if profile == nil then
             return originalCanPlace(self, character, square, item, forceTypeObject)
-        end
-
-        if not SimpleDoorFlatpack.matchesProfile(item, profile) then
-            return false
         end
 
         local facing = getFacing(self, profile)
@@ -203,14 +202,6 @@ function SimpleDoorHook.install()
         local profile = getProfile(self)
         if profile == nil then
             return originalPlace(self, square, item, spriteName)
-        end
-
-        if not SimpleDoorFlatpack.matchesProfile(item, profile) then
-            print(string.format(
-                "[LMION:DEV] Simple placement rejected: definition=%s reason=flatpack-identity",
-                tostring(profile.definitionId)
-            ))
-            return nil
         end
 
         local targetSprite = getClosedSpriteName(self, profile, spriteName)
