@@ -63,11 +63,6 @@ local function applyProfile(moveProps, sprite)
         return nil
     end
 
-    local scriptItem = ScriptManager.instance:FindItem(profile.itemType)
-    if scriptItem ~= nil then
-        moveProps.name = scriptItem:getDisplayName()
-    end
-
     moveProps.customItem = profile.itemType
     moveProps.type = "Object"
     moveProps.pickUpTool = profile.pickUpTool
