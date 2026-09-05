@@ -1,12 +1,12 @@
-local SimpleDoorHook = require "LMION/Hooks/Moveables/SimpleDoor"
-local SimpleDoorSprites = require "LMION/Runtime/Moveables/SimpleDoorSprites"
+local SingleTileDoorHook = require "LMION/Hooks/Moveables/SingleTileDoor"
+local SingleTileDoorSprites = require "LMION/Runtime/Moveables/SingleTileDoorSprites"
 
 local MoveablesBootstrap = {}
 
 local hasRun = false
 
 local function configureSprites()
-    SimpleDoorSprites.configure()
+    SingleTileDoorSprites.configure()
 end
 
 function MoveablesBootstrap.run()
@@ -15,7 +15,7 @@ function MoveablesBootstrap.run()
     end
 
     hasRun = true
-    SimpleDoorHook.install()
+    SingleTileDoorHook.install()
 
     if Events ~= nil and Events.OnLoadedTileDefinitions ~= nil then
         Events.OnLoadedTileDefinitions.Add(configureSprites)
