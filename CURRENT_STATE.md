@@ -25,11 +25,12 @@ The user's local Workshop checkout pulls this repository directly. Avoid unneces
 
 - one gameplay mod; Pickup, Build and future official systems are internal responsibilities;
 - every final LMION-managed opening is an `IsoDoor`;
-- `IsoThumpable(isDoor)` is accepted only as a source/vanilla/external compatibility representation;
+- `IsoThumpable(isDoor)` is accepted only as source/vanilla/external input at a narrow compatibility boundary;
 - HP/max HP survive pickup/replacement;
-- Simple standard framed doors require the matching standard frame;
+- Simple standard framed doors require a matching standard frame;
+- Paired uses explicit independent `left` / `right` 1x1 leaves and matching paired frame sides;
+- FenceGate and Sliding require no frame;
 - LargeGate uses stable leaf identity A/B, never left/right;
-- Paired uses explicit left/right members;
 - Garage uses explicit START/MIDDLE/END geometry;
 - one function = one identifiable responsibility;
 - one file = one identifiable responsibility;
@@ -37,11 +38,11 @@ The user's local Workshop checkout pulls this repository directly. Avoid unneces
 - no catch-all routers/managers/bridges;
 - no speculative abstractions before proven duplicate behavior exists.
 
-Canonical decision doc: `Docs/Decisions/CanonicalDoorsAndLargeGates.md`.
+Canonical LargeGate/door decision: `Docs/Decisions/CanonicalDoorsAndLargeGates.md`.
 
 ## Development diagnostics
 
-Targeted DEV logs are welcome during unstable development. Prefer stable context such as definitionId, entityId, type, facing/member/leaf and failure reason. Avoid per-frame/per-tick spam unless diagnosing that exact loop.
+Targeted DEV logs are welcome. Prefer stable context such as definitionId, entityId, type, facing/member/leaf and failure reason. Avoid per-frame/per-tick spam unless diagnosing that exact loop.
 
 ## Data/API foundation
 
@@ -81,18 +82,6 @@ Garage    -> none
 
 Do not restore redundant public `frame` fields.
 
-Important foundation files:
-
-```text
-Definitions/Registry.lua
-Definitions/Validation.lua
-Definitions/Resolver.lua
-Definitions/EntityIndex.lua
-PZ/WorldObjectIdentity.lua
-Services/DefinitionLookup.lua
-Domain/DoorTypes.lua
-```
-
 ## Built-in catalog
 
 Main migration:
@@ -101,7 +90,7 @@ Main migration:
 94d935485ca5baaa4731615bef39b7846f13ba6f
 ```
 
-Current counts:
+Current built-in count:
 
 ```text
 23 defaults
@@ -127,15 +116,7 @@ SlidingDoors          2
 [LMION:DEV] definitions ready: 23 defaults, 72 definitions, 0 extensions
 ```
 
-Do not revisit catalog migration without a concrete defect/API need.
-
 ## GameEntity reverse lookup
-
-Research:
-
-```text
-5b45221c1893ff876f79d2a9bbc9f94ce046da94
-```
 
 Implementation:
 
@@ -153,7 +134,7 @@ world object
 -> effective definition
 ```
 
-**VALIDÉ EN JEU** as part of the Simple pilot:
+**VALIDÉ EN JEU**:
 
 ```text
 [LMION:DEV] entity index ready: 77 mappings; Base.WhitePanelDoor -> Doors.Wood.WhitePanelDoor
@@ -161,43 +142,7 @@ world object
 
 Sprite name is not primary world-object identity.
 
-## Shared Simple 1x1 runtime foundation
-
-Important files:
-
-```text
-PZ/DoorObject.lua
-PZ/DoorSprite.lua
-PZ/StandardDoorFrame.lua
-PZ/PlacedDoor.lua
-PZ/BuiltDoor.lua
-Runtime/DoorDurability.lua
-Runtime/DoorState.lua
-Runtime/DoorPlacement.lua
-Runtime/CanonicalDoor.lua
-Runtime/Moveables/DoorTransportState.lua
-Runtime/Moveables/SimpleDoorSprites.lua
-Services/Moveables/SimpleDoorProfiles.lua
-Services/Moveables/SimpleDoorPlacementFinalizer.lua
-Services/Build/ConstructionDurability.lua
-Services/Build/SimpleDoorFinalizer.lua
-Hooks/Moveables/SimpleDoor.lua
-server/LMION/Hooks/Build/SimpleDoor.lua
-```
-
-Important Lua pitfall already encountered: preserve `false` explicitly; do not use `a and b or nil` for `getNorth()` because W/facing false is meaningful.
-
-Research/control-point docs:
-
-```text
-Docs/Architecture/DoorRuntimeFoundation.md
-Docs/Research/Architecture/DoorObjectAbstraction.md
-Docs/Research/Moveables/VanillaMoveablesBehavior.md
-Docs/Research/Moveables/SimpleMoveablesHook.md
-Docs/Research/Build/SimpleDoorBuildPilot.md
-```
-
-## White Panel Door pilot — VALIDÉ EN JEU
+## White Panel baseline — VALIDÉ EN JEU
 
 Pilot:
 
@@ -207,193 +152,362 @@ Base.WhitePanelDoor
 Base.LMION_WhitePanelDoor
 ```
 
-Validated loop:
+Validated loop on 2026-09-04:
 
 ```text
-Build White Panel Door
--> vanilla initially creates IsoThumpable
--> LMION canonicalizes to IsoDoor
--> damage door
--> Pickup through vanilla Moveables
--> Base.LMION_WhitePanelDoor transport item
--> replace through Moveables
+Build
+-> vanilla IsoThumpable source
+-> LMION canonical IsoDoor
+-> damage
+-> Pickup
+-> transport item
+-> replace
 -> standard frame enforced
 -> HP/max HP restored
 -> final IsoDoor
 ```
 
-User explicitly confirmed:
+User explicitly confirmed construction, pickup, replacement, N/W behavior, frame enforcement and HP persistence.
 
-- construction works;
-- pickup works;
-- replacement works;
-- N/W behavior works;
-- standard-frame requirement is respected;
-- HP/max HP persist.
+Material consumption was not validated because BuildCheat was active in that test.
 
-Representative logs:
+Historical successful logs used the former Simple-specific hook names. The runtime code has since been structurally generalized; White Panel must be regression-tested once at the next cold-start checkpoint.
+
+## Current single-tile runtime architecture
+
+The already-proven 1x1 mechanism has now been generalized only where actual duplicate behavior exists.
+
+### PZ/runtime responsibilities
 
 ```text
-[LMION:DEV] Simple Build finalizing: definition=Doors.Wood.WhitePanelDoor entity=Base.WhitePanelDoor representation=IsoThumpable
-[LMION:DEV] canonical door ready: IsoDoor facing=W
-[LMION:DEV] Simple Build finalized: definition=Doors.Wood.WhitePanelDoor representation=IsoDoor health=725 max=725
-[LMION:DEV] Simple pickup state captured: definition=Doors.Wood.WhitePanelDoor health=725 max=725
-[LMION:DEV] Simple transport item serialized: definition=Doors.Wood.WhitePanelDoor item=Base.LMION_WhitePanelDoor
-[LMION:DEV] Simple placement finalized: definition=Doors.Wood.WhitePanelDoor sprite=fixtures_doors_01_0 health=725 max=725
+PZ/DoorObject.lua
+PZ/DoorSprite.lua
+PZ/DoorFrame.lua
+PZ/StandardDoorFrame.lua
+PZ/PairedDoorFrame.lua
+PZ/PlacedDoor.lua
+PZ/BuiltDoor.lua
+Runtime/DoorDurability.lua
+Runtime/DoorState.lua
+Runtime/DoorPlacement.lua
+Runtime/CanonicalDoor.lua
+Runtime/Moveables/DoorTransportState.lua
+Runtime/Moveables/SingleTileDoorSprites.lua
+Runtime/Moveables/ToolDefinitions.lua
 ```
 
-This validates the shared Simple runtime architecture, not every Simple definition.
-
-## White Panel engine script convention
-
-The pilot uses one consolidated file:
+`PZ/DoorFrame.lua` classifies/query frame structure only:
 
 ```text
+standard
+paired-left  -> DoubleDoor1
+paired-right -> DoubleDoor2
+```
+
+Semantic Paired definitions still expose only `left` / `right`; no public frame-side implementation field was added.
+
+Placement rules:
+
+```text
+Simple    -> common safety checks + standard frame
+Paired    -> common safety checks + matching paired frame side
+FenceGate -> common safety checks, no frame
+Sliding   -> common safety checks, no frame
+```
+
+### Moveables profile responsibilities
+
+```text
+Services/Moveables/SingleTileProfileFields.lua
+Services/Moveables/SingleEntityDoorProfiles.lua
+Services/Moveables/PairedDoorProfiles.lua
+Services/Moveables/SingleTileDoorProfiles.lua
+Services/Moveables/SingleTileDoorMoveProps.lua
+Services/Moveables/SingleTileDoorPlacement.lua
+Services/Moveables/SingleTileDoorPlacementFinalizer.lua
+```
+
+`SingleEntityDoorProfiles.lua` covers the genuinely identical one-entity N/W shape:
+
+```text
+Simple
+FenceGate
+Sliding
+```
+
+A definition is activated by that provider only if its matching transport script item exists. This currently activates only the explicit pilots, not the entire catalog.
+
+`PairedDoorProfiles.lua` remains separate because its geometry has two entities/members. Its first pilot is explicitly gated to:
+
+```text
+Doors.Wood.BlueChurchDoubleDoor
+```
+
+### One Moveables hook owner
+
+There is exactly one owner for the shared vanilla methods:
+
+```text
+Hooks/Moveables/SingleTileDoor.lua
+```
+
+It owns:
+
+```text
+ISMoveableSpriteProps.new
+hasFaces / getFaces
+pickUpMoveableInternal
+instanceItem
+canPlaceMoveableInternal
+placeMoveableInternal
+```
+
+Unknown/non-LMION objects return to the previous vanilla implementation.
+
+The former `Hooks/Moveables/SimpleDoor.lua`, `Runtime/Moveables/SimpleDoorSprites.lua` and `Services/Moveables/SimpleDoorPlacementFinalizer.lua` were removed after their responsibilities were replaced by the single-tile equivalents.
+
+### Metal Moveables tools
+
+`Runtime/Moveables/ToolDefinitions.lua` restores the narrow Legacy tool definitions:
+
+```text
+LMIONMetalScrewdriver -> physical screwdriver, Perks.MetalWelding
+LMIONMetalCrowbar     -> physical crowbar, Perks.MetalWelding
+LMIONMetalHammer      -> physical hammer, Perks.MetalWelding
+```
+
+`SingleTileProfileFields` uses normal vanilla Screwdriver/Crowbar/Hammer for Woodwork profiles and these LMION variants when `MetalWelding` is the governing pickup skill.
+
+This restored bridge is **HYPOTHÈSE / NON VALIDÉ** in V3 until the Brown Sliding pilot is exercised.
+
+## Current single-tile Build architecture
+
+Build now also has one owner:
+
+```text
+server/LMION/Hooks/Build/SingleTileDoor.lua
+```
+
+It owns only:
+
+```text
+ISBuildIsoEntity.isValid
+ISBuildIsoEntity.isValidPerSquare
+ISBuildIsoEntity.setInfo
+```
+
+Supporting services:
+
+```text
+Services/Build/SingleTileDoorBuildProfile.lua
+Services/Build/SingleTileDoorFinalizer.lua
+Services/Build/ConstructionDurability.lua
+```
+
+Unknown/non-LMION builds preserve vanilla behavior. Supported builds use GameEntity -> EntityIndex -> effective definition, add the LMION placement rule, let vanilla create the source, then canonicalize to `IsoDoor` and apply definition-owned durability.
+
+The former Simple-specific Build hook/finalizer were removed so the vanilla methods still have one owner.
+
+## Current implemented pilots
+
+### Simple baseline
+
+```text
+Doors.Wood.WhitePanelDoor
 media/scripts/WhitePanelDoor.txt
 ```
 
-It currently contains:
+Status: baseline **VALIDÉ EN JEU** before hook generalization; regression pending.
+
+### Paired pilot
 
 ```text
-item LMION_WhitePanelDoor
-xuiSkin
-entity WhitePanelDoor
-    UiConfig
-    CraftRecipe
-    SpriteConfig
+Doors.Wood.BlueChurchDoubleDoor
+├─ Base.BlueChurchDoubleDoorLeft
+└─ Base.BlueChurchDoubleDoorRight
+media/scripts/BlueChurchDoubleDoor.txt
 ```
 
-This is intentionally one file per opening rather than separate `_Item`, `_Build`, `_Entity` files.
+Behavior source:
 
-The script should contain only data PZ needs before Lua. The catalog remains the semantic source of truth for LMION behavior.
+- independent 1x1 leaves;
+- left requires `DoubleDoor1` frame class;
+- right requires `DoubleDoor2` frame class;
+- separate transport items;
+- separate Build recipes;
+- canonical final `IsoDoor`.
 
-Build still requires `CraftRecipe` and `SpriteConfig` in `media/scripts`. The first Build pilot proved that a recipe can appear in the menu without SpriteConfig while clicking Build silently creates no cursor. Restoring SpriteConfig fixed that path.
+Status: **HYPOTHÈSE / NON VALIDÉ**.
 
-## Build icon / texture convention
+Research: `Docs/Research/Moveables/PairedDoorPilot.md`.
 
-Build/XUI door icons live under:
+### FenceGate pilot
 
 ```text
-Contents/mods/LMION_DEV/42/media/textures/LMION/doors/
+FenceGates.Wood.SmallWhiteWoodenGate
+media/scripts/SmallWhiteWoodenGate.txt
 ```
 
-PNG filenames do not use an `LMION_` prefix because `LMION/` is already the namespace.
-
-Example:
+Behavior:
 
 ```text
-media/textures/LMION/doors/WhitePanelDoor.png
-Icon = LMION/doors/WhitePanelDoor,
+no frame
+pickup Woodwork 1 + crowbar
+replacement hammer
+package weight 7
 ```
 
-These assets are Build/XUI visuals. Transport-item appearance is deliberately deferred.
+`SpriteConfig.dontNeedFrame = true` is retained only as the PZ engine-time Build bridge.
 
-## B42 translations / ZedScripts
+Status: **HYPOTHÈSE / NON VALIDÉ**.
 
-Current EN translation files include:
+### Sliding pilot
 
 ```text
-media/lua/shared/Translate/EN/ItemName.json
-media/lua/shared/Translate/EN/IG_UI.json
+SlidingDoors.BrownSlidingGlassDoor
+media/scripts/BrownSlidingGlassDoor.txt
 ```
 
-Current relevant keys:
+Behavior:
 
 ```text
-Base.LMION_WhitePanelDoor -> White Panel Door
-IGUI_CraftingCategories_LMION -> LMION
+no frame
+pickup MetalWelding 1 + crowbar
+replacement hammer
+package weight 20
+Build MetalWelding 3
 ```
 
-If ZedScripts reports an existing translation key as missing after pull/edit:
+The V3 Build script follows the catalog material alternative:
+
+```text
+2 x [Base.MetalBar;Base.IronBar]
+```
+
+Status: **HYPOTHÈSE / NON VALIDÉ**.
+
+FenceGate/Sliding research: `Docs/Research/Moveables/UnframedSingleTilePilots.md`.
+
+## Script convention
+
+One engine script file per opening/family, not separate `_Item`, `_Build`, `_Entity` files.
+
+Current examples:
+
+```text
+WhitePanelDoor.txt
+BlueChurchDoubleDoor.txt
+SmallWhiteWoodenGate.txt
+BrownSlidingGlassDoor.txt
+```
+
+A Paired family file contains both leaf item/entity declarations because they belong to one opening family.
+
+Scripts keep only parse-time data PZ genuinely needs: transport item declaration, XUI, CraftRecipe, SpriteConfig. LMION definition data remains authoritative for semantic type, durability, geometry and gameplay facts.
+
+Build/XUI icons live under:
+
+```text
+media/textures/LMION/doors/
+```
+
+with no redundant `LMION_` filename prefix.
+
+## Translation / ZedScripts
+
+EN item keys currently include the four pilot openings and both Blue Church leaves.
+
+If ZedScripts shows stale `INVALID_TRANSLATION_KEY` diagnostics after pull:
 
 ```text
 Ctrl+Shift+P -> ZedScripts: Reset Scripts Cache
 ```
 
-This already resolved the user's false `INVALID_TRANSLATION_KEY` diagnostics.
+This already resolved the issue once.
 
 ## Transport appearance / flatpack — DEFERRED
 
 Do **not** work on package/flatpack appearance now.
 
-The user decided on 2026-09-05 that this is premature. The correct time to decide transport visuals/identity is **after functional V3 runtime exists for LargeGate and Garage**.
+The user decided on 2026-09-05 that this must wait until functional V3 Garage and LargeGate runtime exists and their real parcel constraints are known.
 
-Current rule:
+A short-lived generic `Base.LMION_Flatpack` experiment was never tested and was removed. Current technical transport items remain intentionally plain (`Icon = default`).
 
-```text
-function first
--> multipart runtime first
--> package appearance later
-```
+Research note: `Docs/Research/Moveables/FlatpackTransport.md`.
 
-A short-lived generic-flatpack experiment introduced:
+## Historical failures / do not repeat
 
-```text
-Base.LMION_Flatpack
-Runtime/Moveables/DoorTransportIdentity.lua
-Services/Moveables/SimpleDoorFlatpack.lua
-```
+**ÉCHEC TESTÉ / NE PAS REFAIRE**:
 
-and stored definition identity in modData. It was **never tested in game** and has now been removed.
+- Kahlua global `next()` was nil in the Moveables profile path. Use `pairs()` + explicit counting.
+- Build CraftRecipe without a GameEntity SpriteConfig could appear in the menu but clicking Build produced no cursor. SpriteConfig is required for this vanilla Build path.
+- LargeGate V2 toolbar ghost could appear complete while click placement failed; the exact cancellation boundary was never instrumented. Do not resume speculative patches there.
 
-The code has been restored to the previously validated White Panel transport path:
-
-```text
-Base.LMION_WhitePanelDoor
-```
-
-Do not resume the generic-flatpack experiment by default.
-
-Research note:
-
-```text
-Docs/Research/Moveables/FlatpackTransport.md
-```
-
-The note now records the decision as deferred.
-
-## Current validation status
+## Validation status
 
 **VALIDÉ EN JEU**:
 
 - catalog 23/72/0;
 - GameEntity reverse lookup;
-- White Panel Build;
-- canonical IsoDoor Build finalization;
-- White Panel pickup/replacement with `Base.LMION_WhitePanelDoor`;
-- N/W replacement behavior;
+- White Panel Build/canonicalization;
+- White Panel pickup/replacement on the pre-generalization Simple hook;
+- N/W replacement;
 - standard frame requirement;
 - HP/max-HP persistence.
 
-**NOT YET BROADLY IMPLEMENTED/VALIDATED**:
+**IMPLEMENTED / TEST EN JEU REQUIS**:
 
-- all Simple definitions;
-- Paired;
-- FenceGate;
-- Sliding;
-- Garage;
-- LargeGate.
+- generalized single-tile Moveables hook owner;
+- generalized single-tile Build hook owner;
+- White Panel regression through the new owners;
+- Blue Church Paired pilot;
+- Small White Wooden FenceGate pilot;
+- Brown Sliding Glass Door pilot;
+- restored MetalWelding Moveables tool definitions.
 
-## Historical failures / do not repeat
+**NOT YET IMPLEMENTED/VALIDATED BROADLY**:
 
-`SimpleDoorProfiles.getSingleSkillLevel()` initially used global `next()` and Kahlua reported `Object tried to call nil in getSingleSkillLevel` during `OnLoadedTileDefinitions`.
+- full Simple catalog activation;
+- all Paired definitions;
+- all FenceGate definitions;
+- all Sliding definitions;
+- Garage V3 runtime;
+- LargeGate V3 runtime.
 
-Fix: use `pairs()` and explicit entry counting.
+## Next runtime checkpoint
 
-LargeGate V2 toolbar placement had a complete ghost but clicking did not place the gate. The exact cancellation boundary was never instrumented. Do not resume speculative patching there; recover Legacy behavior and instrument the narrow vanilla boundary when V3 reaches LargeGate.
+Because this expansion changes hook topology and adds three new `media/scripts` files, use **one cold restart** for the complete checkpoint.
 
-## Testing strategy
+Test together:
 
-Do not ask for a PZ restart after each pure Lua/data slice.
+```text
+1. White Panel regression
+   Build -> Pickup -> replace
+   standard frame
+   N/W
+   HP/max HP
 
-The restored White Panel path is the already validated path, so **no new runtime test is required solely for undoing the untested generic-flatpack experiment**.
+2. Blue Church Paired
+   left accepted only on DoubleDoor1 frame
+   right accepted only on DoubleDoor2 frame
+   each leaf Build/Pickup/replace independently
+   N/W
+   HP/max HP
 
-New `media/scripts` topology still requires a cold restart at the next meaningful integrated checkpoint; group several related changes first.
+3. Small White Wooden FenceGate
+   Build without frame
+   Pickup with crowbar
+   replace with hammer without frame
+   N/W
+   HP/max HP
 
-## Immediate next step
+4. Brown Sliding Glass Door
+   Build without frame
+   Pickup/replace through MetalWelding tool definitions
+   N/W
+   HP/max HP
+```
 
-Continue functional runtime work rather than package appearance.
+Capture relevant `[LMION:DEV]` lines if any branch fails. Do not add further families before resolving failures from this checkpoint.
 
-The next work should expand opening behavior in a controlled order. For Simple expansion, avoid assuming every definition is automatically Build-ready: distinguish existing-world pickup/replacement support from vanilla Build engine-script requirements.
-
-Do not revisit flatpack/package visuals until functional LargeGate and Garage V3 behavior exists and their real parcel constraints are known.
+After this checkpoint passes, record exactly which pilot mechanics are `VALIDÉ EN JEU`, then decide whether to expand the remaining 1x1 catalog or move to Garage/LargeGate. Package appearance remains deferred regardless.
