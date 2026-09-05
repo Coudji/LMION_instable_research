@@ -157,7 +157,7 @@ function SimpleDoorHook.install()
 
         local item = originalInstanceItem(self, spriteName)
 
-        if profile ~= nil and item ~= nil and self.lmionPendingDoorState ~= nil then
+        if profile ~= nil and item ~= nil then
             local prepared = SimpleDoorFlatpack.prepare(item, profile, self.lmionPendingDoorState)
             print(string.format(
                 "[LMION:DEV] Simple flatpack serialized: definition=%s item=%s prepared=%s",
