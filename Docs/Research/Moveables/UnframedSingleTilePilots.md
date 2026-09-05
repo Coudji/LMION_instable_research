@@ -1,6 +1,6 @@
 # FenceGate + Sliding 1x1 pilots — V3
 
-Status: **HYPOTHÈSE / NON VALIDÉ** in V3 runtime. Legacy/source behavior recovered and one pilot of each family implemented.
+Status: **VALIDÉ EN JEU** for the two pilots on 2026-09-05. The user reports both paths are functional; small behavior/polish details may still need adjustment and are not considered final release validation.
 
 Pilots:
 
@@ -72,7 +72,7 @@ LMIONMetalHammer      -> Base.Hammer      -> Perks.MetalWelding
 
 This prevents a physical screwdriver/crowbar/hammer from accidentally selecting vanilla's Woodwork-governed Moveables tool definition for a metal opening.
 
-V3 now restores this narrow engine bridge in:
+V3 restores this narrow engine bridge in:
 
 ```text
 Runtime/Moveables/ToolDefinitions.lua
@@ -80,7 +80,7 @@ Runtime/Moveables/ToolDefinitions.lua
 
 `SingleTileProfileFields` chooses the normal vanilla tool definition for Woodwork profiles and the LMION metal definition when the governing pickup skill is `MetalWelding`.
 
-The first runtime exercise of this restored bridge is the Brown Sliding Glass Door pilot.
+The Brown Sliding Glass Door pilot exercised this bridge successfully in the 2026-09-05 integrated checkpoint.
 
 ## Hook ownership
 
@@ -108,7 +108,7 @@ Paired remains a separate profile provider because its left/right entity geometr
 
 ## Placement ownership
 
-`DoorPlacement.canPlaceUnframedAt()` still performs the common physical safety checks:
+`DoorPlacement.canPlaceUnframedAt()` performs the common physical safety checks:
 
 ```text
 square exists
@@ -139,30 +139,28 @@ one SpriteConfig
 
 No per-door inventory appearance work is being done here. Package/flatpack appearance remains explicitly deferred until Garage and LargeGate behavior is implemented.
 
-## Next validation checkpoint
+## VALIDÉ EN JEU — 2026-09-05
 
-Use the same cold start as the Paired pilot and White Panel regression.
+The user exercised the two pilots in the same cold-start checkpoint as White Panel and Blue Church Paired and reported all four functional.
 
-FenceGate:
-
-```text
-Build without frame
-Pickup with crowbar
-replace with hammer
-N/W rotation
-HP/max HP persistence
-final IsoDoor
-```
-
-Sliding:
+Validated pilot mechanics:
 
 ```text
-Build without frame
-Pickup governed by MetalWelding + crowbar
-replace governed by MetalWelding + hammer
-N/W rotation
-HP/max HP persistence
-final IsoDoor
+Small White Wooden Gate
+-> Build without frame
+-> Pickup
+-> replace without frame
+-> N/W path functional
+-> HP/max-HP transport functional
+-> final LMION path functional
+
+Brown Sliding Glass Door
+-> Build without frame
+-> MetalWelding Moveables tool bridge functional
+-> Pickup / replacement functional
+-> N/W path functional
+-> HP/max-HP transport functional
+-> final LMION path functional
 ```
 
-The test should also confirm that no standard frame is accidentally required for either family.
+This validates these two pilot definitions and the shared unframed 1x1 architecture. It does **not** automatically validate every FenceGate or Sliding definition, nor does it freeze the remaining polish/details for release.
