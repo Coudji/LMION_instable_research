@@ -142,40 +142,9 @@ world object
 
 Sprite name is not primary world-object identity.
 
-## White Panel baseline — VALIDÉ EN JEU
-
-Pilot:
-
-```text
-Doors.Wood.WhitePanelDoor
-Base.WhitePanelDoor
-Base.LMION_WhitePanelDoor
-```
-
-Validated loop on 2026-09-04:
-
-```text
-Build
--> vanilla IsoThumpable source
--> LMION canonical IsoDoor
--> damage
--> Pickup
--> transport item
--> replace
--> standard frame enforced
--> HP/max HP restored
--> final IsoDoor
-```
-
-User explicitly confirmed construction, pickup, replacement, N/W behavior, frame enforcement and HP persistence.
-
-Material consumption was not validated because BuildCheat was active in that test.
-
-Historical successful logs used the former Simple-specific hook names. The runtime code has since been structurally generalized; White Panel must be regression-tested once at the next cold-start checkpoint.
-
 ## Current single-tile runtime architecture
 
-The already-proven 1x1 mechanism has now been generalized only where actual duplicate behavior exists.
+The proven 1x1 mechanism is shared only where behavior is genuinely identical.
 
 ### PZ/runtime responsibilities
 
@@ -237,11 +206,7 @@ Sliding
 
 A definition is activated by that provider only if its matching transport script item exists. This currently activates only the explicit pilots, not the entire catalog.
 
-`PairedDoorProfiles.lua` remains separate because its geometry has two entities/members. Its first pilot is explicitly gated to:
-
-```text
-Doors.Wood.BlueChurchDoubleDoor
-```
+`PairedDoorProfiles.lua` remains separate because its geometry has two entities/members.
 
 ### One Moveables hook owner
 
@@ -264,8 +229,6 @@ placeMoveableInternal
 
 Unknown/non-LMION objects return to the previous vanilla implementation.
 
-The former `Hooks/Moveables/SimpleDoor.lua`, `Runtime/Moveables/SimpleDoorSprites.lua` and `Services/Moveables/SimpleDoorPlacementFinalizer.lua` were removed after their responsibilities were replaced by the single-tile equivalents.
-
 ### Metal Moveables tools
 
 `Runtime/Moveables/ToolDefinitions.lua` restores the narrow Legacy tool definitions:
@@ -276,13 +239,11 @@ LMIONMetalCrowbar     -> physical crowbar, Perks.MetalWelding
 LMIONMetalHammer      -> physical hammer, Perks.MetalWelding
 ```
 
-`SingleTileProfileFields` uses normal vanilla Screwdriver/Crowbar/Hammer for Woodwork profiles and these LMION variants when `MetalWelding` is the governing pickup skill.
-
-This restored bridge is **HYPOTHÈSE / NON VALIDÉ** in V3 until the Brown Sliding pilot is exercised.
+The Brown Sliding pilot exercised this bridge successfully on 2026-09-05.
 
 ## Current single-tile Build architecture
 
-Build now also has one owner:
+Build has one owner:
 
 ```text
 server/LMION/Hooks/Build/SingleTileDoor.lua
@@ -306,18 +267,27 @@ Services/Build/ConstructionDurability.lua
 
 Unknown/non-LMION builds preserve vanilla behavior. Supported builds use GameEntity -> EntityIndex -> effective definition, add the LMION placement rule, let vanilla create the source, then canonicalize to `IsoDoor` and apply definition-owned durability.
 
-The former Simple-specific Build hook/finalizer were removed so the vanilla methods still have one owner.
+## Single-tile integrated checkpoint — VALIDÉ EN JEU
 
-## Current implemented pilots
+On 2026-09-05 the user cold-start tested all four current pilots and reported all four functional. There are still minor details/polish to revisit later, but no blocking runtime defect was observed.
 
-### Simple baseline
+### Simple regression
 
 ```text
 Doors.Wood.WhitePanelDoor
 media/scripts/WhitePanelDoor.txt
 ```
 
-Status: baseline **VALIDÉ EN JEU** before hook generalization; regression pending.
+Validated again through the generalized single-tile hook owners:
+
+```text
+Build
+Pickup
+replacement
+standard-frame enforcement
+N/W path functional
+HP/max-HP persistence
+```
 
 ### Paired pilot
 
@@ -328,16 +298,17 @@ Doors.Wood.BlueChurchDoubleDoor
 media/scripts/BlueChurchDoubleDoor.txt
 ```
 
-Behavior source:
+Validated functional:
 
-- independent 1x1 leaves;
-- left requires `DoubleDoor1` frame class;
-- right requires `DoubleDoor2` frame class;
-- separate transport items;
-- separate Build recipes;
-- canonical final `IsoDoor`.
+```text
+independent left/right leaves
+matching paired frame behavior
+Build/Pickup/replacement path
+N/W path functional
+HP/max-HP persistence
+```
 
-Status: **HYPOTHÈSE / NON VALIDÉ**.
+This validates the Blue Church pilot and Paired 1x1 architecture, not every Paired definition.
 
 Research: `Docs/Research/Moveables/PairedDoorPilot.md`.
 
@@ -348,18 +319,14 @@ FenceGates.Wood.SmallWhiteWoodenGate
 media/scripts/SmallWhiteWoodenGate.txt
 ```
 
-Behavior:
+Validated functional:
 
 ```text
-no frame
-pickup Woodwork 1 + crowbar
-replacement hammer
-package weight 7
+Build without frame
+Pickup/replacement without frame
+N/W path functional
+HP/max-HP persistence
 ```
-
-`SpriteConfig.dontNeedFrame = true` is retained only as the PZ engine-time Build bridge.
-
-Status: **HYPOTHÈSE / NON VALIDÉ**.
 
 ### Sliding pilot
 
@@ -368,23 +335,15 @@ SlidingDoors.BrownSlidingGlassDoor
 media/scripts/BrownSlidingGlassDoor.txt
 ```
 
-Behavior:
+Validated functional:
 
 ```text
-no frame
-pickup MetalWelding 1 + crowbar
-replacement hammer
-package weight 20
-Build MetalWelding 3
+Build without frame
+MetalWelding Moveables tool bridge
+Pickup/replacement
+N/W path functional
+HP/max-HP persistence
 ```
-
-The V3 Build script follows the catalog material alternative:
-
-```text
-2 x [Base.MetalBar;Base.IronBar]
-```
-
-Status: **HYPOTHÈSE / NON VALIDÉ**.
 
 FenceGate/Sliding research: `Docs/Research/Moveables/UnframedSingleTilePilots.md`.
 
@@ -413,18 +372,6 @@ media/textures/LMION/doors/
 
 with no redundant `LMION_` filename prefix.
 
-## Translation / ZedScripts
-
-EN item keys currently include the four pilot openings and both Blue Church leaves.
-
-If ZedScripts shows stale `INVALID_TRANSLATION_KEY` diagnostics after pull:
-
-```text
-Ctrl+Shift+P -> ZedScripts: Reset Scripts Cache
-```
-
-This already resolved the issue once.
-
 ## Transport appearance / flatpack — DEFERRED
 
 Do **not** work on package/flatpack appearance now.
@@ -449,21 +396,20 @@ Research note: `Docs/Research/Moveables/FlatpackTransport.md`.
 
 - catalog 23/72/0;
 - GameEntity reverse lookup;
-- White Panel Build/canonicalization;
-- White Panel pickup/replacement on the pre-generalization Simple hook;
-- N/W replacement;
-- standard frame requirement;
-- HP/max-HP persistence.
-
-**IMPLEMENTED / TEST EN JEU REQUIS**:
-
 - generalized single-tile Moveables hook owner;
 - generalized single-tile Build hook owner;
-- White Panel regression through the new owners;
+- White Panel regression through generalized owners;
 - Blue Church Paired pilot;
 - Small White Wooden FenceGate pilot;
 - Brown Sliding Glass Door pilot;
-- restored MetalWelding Moveables tool definitions.
+- restored MetalWelding Moveables tool definitions through Sliding pilot;
+- N/W behavior for current pilots;
+- frame/no-frame contracts for current pilots;
+- HP/max-HP persistence for current pilots.
+
+**FUNCTIONAL BUT DETAILS/POLISH STILL OPEN**:
+
+- all four current pilots may have minor behavior/UI/detail adjustments before release-quality freeze.
 
 **NOT YET IMPLEMENTED/VALIDATED BROADLY**:
 
@@ -474,40 +420,15 @@ Research note: `Docs/Research/Moveables/FlatpackTransport.md`.
 - Garage V3 runtime;
 - LargeGate V3 runtime.
 
-## Next runtime checkpoint
+## Immediate next direction
 
-Because this expansion changes hook topology and adds three new `media/scripts` files, use **one cold restart** for the complete checkpoint.
+The single-tile architecture is now runtime-proven across all four semantic 1x1 families represented by current pilots.
 
-Test together:
+Next development can proceed without another immediate restart. Prefer one of these controlled expansions:
 
 ```text
-1. White Panel regression
-   Build -> Pickup -> replace
-   standard frame
-   N/W
-   HP/max HP
-
-2. Blue Church Paired
-   left accepted only on DoubleDoor1 frame
-   right accepted only on DoubleDoor2 frame
-   each leaf Build/Pickup/replace independently
-   N/W
-   HP/max HP
-
-3. Small White Wooden FenceGate
-   Build without frame
-   Pickup with crowbar
-   replace with hammer without frame
-   N/W
-   HP/max HP
-
-4. Brown Sliding Glass Door
-   Build without frame
-   Pickup/replace through MetalWelding tool definitions
-   N/W
-   HP/max HP
+A. activate remaining 1x1 catalog definitions in batches using the validated architecture
+B. move to the first multipart family (Garage or LargeGate)
 ```
 
-Capture relevant `[LMION:DEV]` lines if any branch fails. Do not add further families before resolving failures from this checkpoint.
-
-After this checkpoint passes, record exactly which pilot mechanics are `VALIDÉ EN JEU`, then decide whether to expand the remaining 1x1 catalog or move to Garage/LargeGate. Package appearance remains deferred regardless.
+Do not revisit package appearance yet. Preserve one-hook ownership and keep family-specific topology/rules outside the shared vanilla boundary owners.
