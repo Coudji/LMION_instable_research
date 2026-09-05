@@ -1,10 +1,7 @@
 local Registry = require "LMION/Definitions/Registry"
 local Resolver = require "LMION/Definitions/Resolver"
-local SimpleDoorFlatpack = require "LMION/Services/Moveables/SimpleDoorFlatpack"
 
 local SimpleDoorProfiles = {}
-
-local PILOT_DEFINITION_ID = "Doors.Wood.WhitePanelDoor"
 
 local profilesBySpriteName = nil
 
@@ -49,10 +46,29 @@ local function getSingleToolName(tools)
     return nil
 end
 
-local function hasFlatpackScriptItem()
-    return ScriptManager ~= nil
+local function getEntityShortName(entityId)
+    if type(entityId) ~= "string" then
+        return nil
+    end
+
+    local shortName = string.match(entityId, "^[^.]+%.(.+)$")
+    return shortName or entityId
+end
+
+local function getItemType(definition)
+    local shortName = getEntityShortName(definition.entity)
+    if shortName == nil then
+        return nil
+    end
+
+    return "Base.LMION_" .. shortName
+end
+
+local function hasScriptItem(itemType)
+    return itemType ~= nil
+        and ScriptManager ~= nil
         and ScriptManager.instance ~= nil
-        and ScriptManager.instance:FindItem(SimpleDoorFlatpack.getItemType()) ~= nil
+        and ScriptManager.instance:FindItem(itemType) ~= nil
 end
 
 local function getClosedFaces(definition)
@@ -77,11 +93,12 @@ local function getClosedFaces(definition)
 end
 
 local function buildProfile(definition)
-    if definition.definitionId ~= PILOT_DEFINITION_ID or definition.doorType ~= "Simple" then
+    if definition.doorType ~= "Simple" then
         return nil
     end
 
-    if not hasFlatpackScriptItem() then
+    local itemType = getItemType(definition)
+    if not hasScriptItem(itemType) then
         return nil
     end
 
@@ -111,7 +128,7 @@ local function buildProfile(definition)
 
     return {
         definitionId = definition.definitionId,
-        itemType = SimpleDoorFlatpack.getItemType(),
+        itemType = itemType,
         faces = faces,
         pickUpTool = pickUpTool,
         placeTool = placeTool,
