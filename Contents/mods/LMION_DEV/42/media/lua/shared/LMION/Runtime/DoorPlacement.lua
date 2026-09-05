@@ -68,4 +68,13 @@ function DoorPlacement.canPlacePairedAt(square, facing, member)
     return true, "ok"
 end
 
+function DoorPlacement.canPlaceUnframedAt(square, facing)
+    local north, reason = validateTarget(square, facing)
+    if north == nil then
+        return false, reason
+    end
+
+    return true, "ok"
+end
+
 return DoorPlacement
