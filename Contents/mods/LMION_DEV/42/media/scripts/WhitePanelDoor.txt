@@ -14,7 +14,7 @@ module Base
         {
             LuaWindowClass = ISEntityWindow,
             DisplayName = White Panel Door,
-            Icon = Build_DoorWood,
+            Icon = LMION/doors/WhitePanelDoor,
         }
     }
 
