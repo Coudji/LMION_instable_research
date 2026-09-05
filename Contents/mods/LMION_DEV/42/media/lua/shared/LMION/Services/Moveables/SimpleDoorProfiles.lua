@@ -1,75 +1,10 @@
 local Registry = require "LMION/Definitions/Registry"
 local Resolver = require "LMION/Definitions/Resolver"
+local SingleTileProfileFields = require "LMION/Services/Moveables/SingleTileProfileFields"
 
 local SimpleDoorProfiles = {}
 
 local profilesBySpriteName = nil
-
-local function getSingleSkillLevel(skill)
-    if type(skill) ~= "table" then
-        return 0
-    end
-
-    local entryCount = 0
-    local singleLevel = nil
-
-    for _, level in pairs(skill) do
-        entryCount = entryCount + 1
-        if entryCount > 1 then
-            return nil
-        end
-
-        singleLevel = level
-    end
-
-    if entryCount == 0 then
-        return 0
-    end
-
-    return tonumber(singleLevel) or 0
-end
-
-local function getSingleToolName(tools)
-    if type(tools) ~= "table" or #tools ~= 1 then
-        return nil
-    end
-
-    local tool = tools[1]
-    if type(tool) ~= "table" then
-        return nil
-    end
-
-    if tool.tag == "base:screwdriver" then
-        return "Screwdriver"
-    end
-
-    return nil
-end
-
-local function getEntityShortName(entityId)
-    if type(entityId) ~= "string" then
-        return nil
-    end
-
-    local shortName = string.match(entityId, "^[^.]+%.(.+)$")
-    return shortName or entityId
-end
-
-local function getItemType(definition)
-    local shortName = getEntityShortName(definition.entity)
-    if shortName == nil then
-        return nil
-    end
-
-    return "Base.LMION_" .. shortName
-end
-
-local function hasScriptItem(itemType)
-    return itemType ~= nil
-        and ScriptManager ~= nil
-        and ScriptManager.instance ~= nil
-        and ScriptManager.instance:FindItem(itemType) ~= nil
-end
 
 local function getClosedFaces(definition)
     local geometry = definition.geometry
@@ -97,8 +32,8 @@ local function buildProfile(definition)
         return nil
     end
 
-    local itemType = getItemType(definition)
-    if not hasScriptItem(itemType) then
+    local itemType = SingleTileProfileFields.getItemType(definition.entity)
+    if not SingleTileProfileFields.hasScriptItem(itemType) then
         return nil
     end
 
@@ -113,11 +48,10 @@ local function buildProfile(definition)
         return nil
     end
 
-    local pickUpTool = getSingleToolName(pickup.tools)
-    local placeTool = getSingleToolName(replacement.tools)
-    local pickUpLevel = getSingleSkillLevel(pickup.skill)
-    local packages = pickup.packages
-    local weight = type(packages) == "table" and tonumber(packages.weight) or nil
+    local pickUpTool = SingleTileProfileFields.getSingleToolName(pickup.tools)
+    local placeTool = SingleTileProfileFields.getSingleToolName(replacement.tools)
+    local pickUpLevel = SingleTileProfileFields.getSingleSkillLevel(pickup.skill)
+    local weight = SingleTileProfileFields.getPackageWeight(pickup)
 
     if pickUpTool == nil
         or placeTool == nil
@@ -128,6 +62,8 @@ local function buildProfile(definition)
 
     return {
         definitionId = definition.definitionId,
+        doorType = definition.doorType,
+        entityId = definition.entity,
         itemType = itemType,
         faces = faces,
         pickUpTool = pickUpTool,
