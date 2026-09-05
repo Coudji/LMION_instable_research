@@ -6,6 +6,14 @@ local SingleTileDoorBuildProfile = {}
 local SUPPORTED_DEFINITIONS = {
     ["Doors.Wood.WhitePanelDoor"] = true,
     ["Doors.Wood.BlueChurchDoubleDoor"] = true,
+    ["FenceGates.Wood.SmallWhiteWoodenGate"] = true,
+    ["SlidingDoors.BrownSlidingGlassDoor"] = true,
+}
+
+local SINGLE_ENTITY_TYPES = {
+    Simple = true,
+    FenceGate = true,
+    Sliding = true,
 }
 
 local function getEntityId(gameScript)
@@ -58,11 +66,11 @@ function SingleTileDoorBuildProfile.getByGameScript(gameScript)
     end
 
     local definition = Resolver.resolveDefinition(definitionId)
-    if definition.doorType == "Simple" and definition.entity == entityId then
+    if SINGLE_ENTITY_TYPES[definition.doorType] and definition.entity == entityId then
         return {
             definition = definition,
             definitionId = definitionId,
-            doorType = "Simple",
+            doorType = definition.doorType,
             entityId = entityId,
         }
     end
