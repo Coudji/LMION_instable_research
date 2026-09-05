@@ -1,19 +1,19 @@
 local DoorSprite = require "LMION/PZ/DoorSprite"
-local SimpleDoorProfiles = require "LMION/Services/Moveables/SimpleDoorProfiles"
+local SingleTileDoorProfiles = require "LMION/Services/Moveables/SingleTileDoorProfiles"
 
 local SingleTileDoorMoveProps = {}
 
 function SingleTileDoorMoveProps.getProfile(moveProps, sprite)
-    if moveProps ~= nil and moveProps.lmionSimpleDoorProfile ~= nil then
-        return moveProps.lmionSimpleDoorProfile
+    if moveProps ~= nil and moveProps.lmionSingleTileDoorProfile ~= nil then
+        return moveProps.lmionSingleTileDoorProfile
     end
 
-    return SimpleDoorProfiles.getBySprite(sprite or (moveProps and moveProps.sprite or nil))
+    return SingleTileDoorProfiles.getBySprite(sprite or (moveProps and moveProps.sprite or nil))
 end
 
 function SingleTileDoorMoveProps.getFacing(moveProps, profile, sprite)
-    if moveProps ~= nil and moveProps.lmionSimpleDoorFacing ~= nil then
-        return moveProps.lmionSimpleDoorFacing
+    if moveProps ~= nil and moveProps.lmionSingleTileDoorFacing ~= nil then
+        return moveProps.lmionSingleTileDoorFacing
     end
 
     if moveProps ~= nil and (moveProps.facing == "N" or moveProps.facing == "W") then
@@ -51,7 +51,7 @@ function SingleTileDoorMoveProps.getClosedSpriteName(moveProps, profile, fallbac
 end
 
 function SingleTileDoorMoveProps.applyProfile(moveProps, sprite)
-    local profile = SimpleDoorProfiles.getBySprite(sprite)
+    local profile = SingleTileDoorProfiles.getBySprite(sprite)
     if moveProps == nil or profile == nil then
         return nil
     end
@@ -69,11 +69,11 @@ function SingleTileDoorMoveProps.applyProfile(moveProps, sprite)
     moveProps.rawWeight = profile.rawWeight
     moveProps.weight = profile.weight
     moveProps.canBreak = false
-    moveProps.lmionSimpleDoorProfile = profile
-    moveProps.lmionSimpleDoorFacing = SingleTileDoorMoveProps.getFacing(moveProps, profile, sprite)
+    moveProps.lmionSingleTileDoorProfile = profile
+    moveProps.lmionSingleTileDoorFacing = SingleTileDoorMoveProps.getFacing(moveProps, profile, sprite)
 
-    if moveProps.lmionSimpleDoorFacing ~= nil then
-        moveProps.facing = moveProps.lmionSimpleDoorFacing
+    if moveProps.lmionSingleTileDoorFacing ~= nil then
+        moveProps.facing = moveProps.lmionSingleTileDoorFacing
     end
 
     return profile
