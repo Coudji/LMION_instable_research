@@ -1,5 +1,9 @@
 local SingleTileProfileFields = {}
 
+local function hasSkill(skill, skillName)
+    return type(skill) == "table" and skill[skillName] ~= nil
+end
+
 function SingleTileProfileFields.getSingleSkillLevel(skill)
     if type(skill) ~= "table" then
         return 0
@@ -23,7 +27,7 @@ function SingleTileProfileFields.getSingleSkillLevel(skill)
     return tonumber(level) or 0
 end
 
-function SingleTileProfileFields.getSingleToolName(tools)
+function SingleTileProfileFields.getSingleToolName(tools, governingSkill)
     if type(tools) ~= "table" or #tools ~= 1 then
         return nil
     end
@@ -33,8 +37,16 @@ function SingleTileProfileFields.getSingleToolName(tools)
         return nil
     end
 
+    local metal = hasSkill(governingSkill, "MetalWelding")
+
     if tool.tag == "base:screwdriver" then
-        return "Screwdriver"
+        return metal and "LMIONMetalScrewdriver" or "Screwdriver"
+    end
+    if tool.tag == "base:crowbar" then
+        return metal and "LMIONMetalCrowbar" or "Crowbar"
+    end
+    if tool.tag == "base:hammer" then
+        return metal and "LMIONMetalHammer" or "Hammer"
     end
 
     return nil
