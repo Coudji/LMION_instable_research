@@ -61,8 +61,8 @@ local function buildMemberProfile(definition, member, frameSide)
         return nil
     end
 
-    local pickUpTool = SingleTileProfileFields.getSingleToolName(pickup.tools)
-    local placeTool = SingleTileProfileFields.getSingleToolName(replacement.tools)
+    local pickUpTool = SingleTileProfileFields.getSingleToolName(pickup.tools, pickup.skill)
+    local placeTool = SingleTileProfileFields.getSingleToolName(replacement.tools, pickup.skill)
     local pickUpLevel = SingleTileProfileFields.getSingleSkillLevel(pickup.skill)
     local weight = SingleTileProfileFields.getPackageWeight(pickup)
 
