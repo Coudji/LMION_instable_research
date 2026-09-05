@@ -1,0 +1,84 @@
+module Base
+{
+    item LMION_SmallWhiteWoodenGate
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 7.0,
+        Tags = base:usedisplayname,
+    }
+
+    xuiSkin default
+    {
+        entity ES_LMION_SmallWhiteWoodenGate
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Small White Wooden Gate,
+            Icon = LMION/doors/SmallWhiteWoodenGate,
+        }
+    }
+
+    entity SmallWhiteWoodenGate
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_SmallWhiteWoodenGate,
+            uiEnabled = false,
+        }
+
+        component CraftRecipe
+        {
+            timedAction = BuildWallHammer,
+            time = 60,
+            category = LMION,
+            SkillRequired = Woodwork:2,
+            xpAward = Woodwork:10,
+
+            inputs
+            {
+                item 1 tags[base:hammer] mode:keep flags[Prop1;MayDegradeVeryLight],
+                item 2 [Base.Plank],
+                item 2 [Base.Nails],
+                item 2 [Base.Hinge],
+            }
+        }
+
+        component SpriteConfig
+        {
+            dontNeedFrame = true,
+
+            face W
+            {
+                layer
+                {
+                    row = fixtures_doors_fences_01_8,
+                }
+            }
+
+            face N
+            {
+                layer
+                {
+                    row = fixtures_doors_fences_01_9,
+                }
+            }
+
+            face W_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_fences_01_10,
+                }
+            }
+
+            face N_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_fences_01_11,
+                }
+            }
+        }
+    }
+}
