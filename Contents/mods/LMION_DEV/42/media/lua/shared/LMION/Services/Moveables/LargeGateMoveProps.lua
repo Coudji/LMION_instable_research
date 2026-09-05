@@ -12,6 +12,16 @@ local function getSpriteName(sprite)
     return sprite:getName()
 end
 
+local function isGridAnchor(moveProps)
+    if moveProps == nil or not moveProps.isMultiSprite then
+        return false
+    end
+
+    local sprite = moveProps.sprite
+    local grid = sprite and sprite:getSpriteGrid() or nil
+    return grid ~= nil and grid:getAnchorSprite() == sprite
+end
+
 function LargeGateMoveProps.getSegment(moveProps, sprite)
     if moveProps ~= nil and moveProps.lmionLargeGateSegment ~= nil then
         return moveProps.lmionLargeGateSegment
@@ -32,10 +42,11 @@ function LargeGateMoveProps.getFaces(moveProps)
         return nil
     end
 
+    local partIndex = isGridAnchor(moveProps) and 1 or segment.partIndex
     local northParts = profile.geometry.N[segment.leaf]
     local westParts = profile.geometry.W[segment.leaf]
-    local north = northParts and northParts[segment.partIndex] or nil
-    local west = westParts and westParts[segment.partIndex] or nil
+    local north = northParts and northParts[partIndex] or nil
+    local west = westParts and westParts[partIndex] or nil
     if north == nil or west == nil then
         return nil
     end
