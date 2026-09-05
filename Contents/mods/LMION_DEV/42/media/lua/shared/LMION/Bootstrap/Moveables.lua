@@ -1,4 +1,5 @@
 local SingleTileDoorHook = require "LMION/Hooks/Moveables/SingleTileDoor"
+local LargeGatePickupHook = require "LMION/Hooks/Moveables/LargeGatePickup"
 local SingleTileDoorSprites = require "LMION/Runtime/Moveables/SingleTileDoorSprites"
 local LargeGateSprites = require "LMION/Runtime/Moveables/LargeGateSprites"
 local LargeGateSpriteGrids = require "LMION/Runtime/Moveables/LargeGateSpriteGrids"
@@ -22,6 +23,7 @@ function MoveablesBootstrap.run()
     hasRun = true
     ToolDefinitions.install()
     SingleTileDoorHook.install()
+    LargeGatePickupHook.install()
 
     if Events ~= nil and Events.OnLoadedTileDefinitions ~= nil then
         Events.OnLoadedTileDefinitions.Add(configureSprites)
