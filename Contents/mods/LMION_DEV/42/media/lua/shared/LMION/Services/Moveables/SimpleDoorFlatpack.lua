@@ -5,6 +5,13 @@ local SimpleDoorFlatpack = {}
 
 local FLATPACK_ITEM_TYPE = "Base.LMION_Flatpack"
 
+local function applyDisplayName(item)
+    local scriptItem = ScriptManager.instance:FindItem(FLATPACK_ITEM_TYPE)
+    if scriptItem ~= nil then
+        item:setName(scriptItem:getDisplayName())
+    end
+end
+
 local function applyWeight(item, weight)
     if item == nil or weight == nil then
         return
@@ -36,6 +43,7 @@ function SimpleDoorFlatpack.prepare(item, profile, state)
         DoorTransportState.writeToItem(item, state)
     end
 
+    applyDisplayName(item)
     applyWeight(item, profile.weight)
     return true
 end
