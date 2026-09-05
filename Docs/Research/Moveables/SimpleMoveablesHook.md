@@ -1,8 +1,8 @@
 # Simple 1x1 Moveables integration — V3 control points
 
-Status: **VALIDÉ EN JEU** for the White Panel Door pilot on 2026-09-04.
+Status: core White Panel Door loop **VALIDÉ EN JEU** on 2026-09-04; generic-flatpack transport change implemented on 2026-09-05 and **NON VALIDÉ EN JEU**.
 
-This note is the required control-point map for V3's first vanilla Moveables hooks.
+This note is the required control-point map for V3's Simple vanilla Moveables hooks.
 
 ## Vanilla path
 
@@ -39,6 +39,8 @@ After vanilla creates `moveProps`, LMION attaches a Simple-door Moveables profil
 
 Vanilla creation remains authoritative and is always called first.
 
+The profile sets the vanilla `customItem` boundary to the generic transport item `Base.LMION_Flatpack`. It does not overwrite the world object's Moveables name from the flatpack script, because world identity and transport identity are separate.
+
 ### `hasFaces()` / `getFaces()`
 
 For an LMION Simple door only, LMION exposes the definition's explicit closed N/W faces so vanilla keeps its normal rotation/cursor behavior.
@@ -53,11 +55,22 @@ Vanilla still removes the world object and decides when `instanceItem()` is call
 
 ### `instanceItem(...)`
 
-LMION supplies the canonical closed sprite for the current N/W facing, then calls vanilla item creation. After vanilla returns the item, LMION writes transported durability to item modData.
+LMION supplies the canonical closed sprite for the current N/W facing, then calls vanilla item creation.
+
+After vanilla returns the generic `Base.LMION_Flatpack`, `Services/Moveables/SimpleDoorFlatpack` prepares it by:
+
+```text
+writing lmionDoorDefinitionId
+writing transported durability state
+restoring the generic Flatpack display name
+applying the definition package weight
+```
+
+The generic item type is therefore an engine transport container; the door definition is carried explicitly in modData.
 
 ### `canPlaceMoveableInternal(...)`
 
-For an LMION Simple door, LMION replaces vanilla's spatial placement decision because vanilla does not express the required standard-frame contract. LMION checks its separated `Runtime/DoorPlacement` service, then preserves the same vanilla Moveables skill/tool checks.
+For an LMION Simple door, LMION first requires the flatpack's stored definition identity to match the current Simple profile. It then replaces vanilla's spatial placement decision because vanilla does not express the required standard-frame contract. LMION checks its separated `Runtime/DoorPlacement` service, then preserves the same vanilla Moveables skill/tool checks.
 
 This matched-LMION branch intentionally does not call the previous spatial validator. Unknown/non-LMION moveables always call the previous implementation.
 
@@ -65,7 +78,9 @@ This method can run repeatedly while the cursor moves, so V3 must not emit per-c
 
 ### `placeMoveableInternal(...)`
 
-LMION selects the explicit closed sprite for the current facing and calls vanilla placement first. After vanilla creates the object, LMION finalizes the result through the canonical-door/durability services.
+LMION verifies flatpack identity again at the actual placement boundary. A mismatch is rejected before vanilla placement and logs `reason=flatpack-identity`.
+
+For a valid parcel, LMION selects the explicit closed sprite for the current facing and calls vanilla placement first. After vanilla creates the object, LMION finalizes the result through the canonical-door/durability services.
 
 ## Owner
 
@@ -75,7 +90,16 @@ One file owns these wrappers:
 Hooks/Moveables/SimpleDoor.lua
 ```
 
-It must stay a thin adapter. Frame scanning, durability, canonicalization, profile derivation and placed-door lookup live elsewhere.
+It must stay a thin adapter. Frame scanning, durability, transport identity, flatpack preparation, canonicalization, profile derivation and placed-door lookup live elsewhere.
+
+Relevant delegated modules now include:
+
+```text
+Runtime/Moveables/DoorTransportState.lua
+Runtime/Moveables/DoorTransportIdentity.lua
+Services/Moveables/SimpleDoorFlatpack.lua
+Services/Moveables/SimpleDoorPlacementFinalizer.lua
+```
 
 ## Load timing
 
@@ -105,11 +129,11 @@ The failure happened before any world Pickup/placement path was exercised. Fix: 
 
 This failure did **not** invalidate the catalog or entity reverse index; both completed before the event error.
 
-## VALIDÉ EN JEU — complete White Panel Door loop
+## VALIDÉ EN JEU — original complete White Panel Door loop
 
-2026-09-04, after the profile fix and Build pilot completion.
+2026-09-04, before the generic-flatpack refactor.
 
-The successful cold-start console contains:
+The successful cold-start console contained:
 
 ```text
 [LMION:DEV] Simple Moveables hooks installed
@@ -127,20 +151,38 @@ The user then constructed a White Panel Door, picked it up and replaced it succe
 [LMION:DEV] Simple placement finalized: definition=Doors.Wood.WhitePanelDoor sprite=fixtures_doors_01_0 health=725 max=725
 ```
 
-User validation additionally confirmed:
+User validation confirmed:
 
 - pickup works;
 - replacement works;
 - the standard frame requirement is enforced correctly;
 - HP/max-HP persist through pickup and replacement.
 
-This validates the first integrated `GameEntity -> definition -> Simple profile -> vanilla Moveables -> LMION finalization` path. It does not yet prove every Simple definition, Paired, FenceGate, Sliding, Garage or LargeGate.
+This validated the integrated `GameEntity -> definition -> Simple profile -> vanilla Moveables -> LMION finalization` path. It did not validate the later generic-flatpack item representation.
+
+## NON VALIDÉ — generic flatpack checkpoint
+
+2026-09-05 implementation changes transport identity from one technical item per door to:
+
+```text
+Base.LMION_Flatpack
++ lmionDoorDefinitionId
++ durability modData
+```
+
+The Simple profile remains explicitly gated to `Doors.Wood.WhitePanelDoor` until this path is validated. Do not claim catalog-wide Simple support yet.
+
+Expected serialization log:
+
+```text
+[LMION:DEV] Simple flatpack serialized: definition=Doors.Wood.WhitePanelDoor item=Base.LMION_Flatpack prepared=true
+```
+
+See `Docs/Research/Moveables/FlatpackTransport.md`.
 
 ## Restart requirement
 
-The pilot contains a `media/scripts` inventory item definition. A cold PZ restart was required for this validation and has now been performed successfully.
-
-Further pure-Lua/data expansion should be grouped before requesting another restart. A new restart is required only when the next meaningful integrated milestone or new `media/scripts` topology needs it.
+The generic-flatpack pilot adds/changes `media/scripts`, so its first validation requires a cold PZ restart. Group that validation with the complete Build -> damage -> pickup -> replace cycle rather than requesting additional launches for individual Lua modules.
 
 ## Runtime logs
 
@@ -150,11 +192,12 @@ Keep meaningful boundaries during unstable development:
 Simple Moveables hooks installed
 Simple Moveables sprites configured
 Simple pickup state captured
-Simple transport item serialized
+Simple flatpack serialized
+Simple placement rejected (identity mismatch only)
 Simple placement started
 Simple placement finalized
 ```
 
 No per-frame placement-validation spam.
 
-Sources: active `Docs/Research/Architecture/DoorObjectAbstraction.md`, active `Docs/Research/Moveables/VanillaMoveablesBehavior.md`, Legacy `LMION/Pickup/Doors/Hooks.lua`, Legacy `LMION/Pickup/Doors/Registry.lua`, and the 2026-09-04 runtime consoles.
+Sources: active `Docs/Research/Architecture/DoorObjectAbstraction.md`, active `Docs/Research/Moveables/VanillaMoveablesBehavior.md`, active `Docs/Research/Moveables/FlatpackTransport.md`, Legacy `LMION/Pickup/Doors/Hooks.lua`, Legacy `LMION/Pickup/Doors/Registry.lua`, B42.20.3 engine/script inspection, and the 2026-09-04 runtime consoles.
