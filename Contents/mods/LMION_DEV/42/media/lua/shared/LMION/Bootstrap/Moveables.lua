@@ -1,5 +1,6 @@
 local SingleTileDoorHook = require "LMION/Hooks/Moveables/SingleTileDoor"
 local SingleTileDoorSprites = require "LMION/Runtime/Moveables/SingleTileDoorSprites"
+local LargeGateSpriteGrids = require "LMION/Runtime/Moveables/LargeGateSpriteGrids"
 local ToolDefinitions = require "LMION/Runtime/Moveables/ToolDefinitions"
 
 local MoveablesBootstrap = {}
@@ -8,6 +9,7 @@ local hasRun = false
 
 local function configureSprites()
     SingleTileDoorSprites.configure()
+    LargeGateSpriteGrids.configure()
 end
 
 function MoveablesBootstrap.run()
