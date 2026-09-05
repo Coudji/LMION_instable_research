@@ -1,6 +1,6 @@
 local Registry = require "LMION/Definitions/Registry"
 local Resolver = require "LMION/Definitions/Resolver"
-local SingleTileProfileFields = require "LMION/Services/Moveables/SingleTileProfileFields"
+local MoveableProfileFields = require "LMION/Services/Moveables/MoveableProfileFields"
 
 local PairedDoorProfiles = {}
 
@@ -46,12 +46,12 @@ end
 
 local function buildMemberProfile(definition, member, frameSide)
     local entityId = getMemberEntity(definition, member)
-    local itemType = SingleTileProfileFields.getItemType(entityId)
+    local itemType = MoveableProfileFields.getItemType(entityId)
     local faces = getMemberFaces(definition, member)
 
     if entityId == nil
         or faces == nil
-        or not SingleTileProfileFields.hasScriptItem(itemType) then
+        or not MoveableProfileFields.hasScriptItem(itemType) then
         return nil
     end
 
@@ -61,10 +61,10 @@ local function buildMemberProfile(definition, member, frameSide)
         return nil
     end
 
-    local pickUpTool = SingleTileProfileFields.getSingleToolName(pickup.tools, pickup.skill)
-    local placeTool = SingleTileProfileFields.getSingleToolName(replacement.tools, pickup.skill)
-    local pickUpLevel = SingleTileProfileFields.getSingleSkillLevel(pickup.skill)
-    local weight = SingleTileProfileFields.getPackageWeight(pickup)
+    local pickUpTool = MoveableProfileFields.getSingleToolName(pickup.tools, pickup.skill)
+    local placeTool = MoveableProfileFields.getSingleToolName(replacement.tools, pickup.skill)
+    local pickUpLevel = MoveableProfileFields.getSingleSkillLevel(pickup.skill)
+    local weight = MoveableProfileFields.getPackageWeight(pickup)
 
     if pickUpTool == nil
         or placeTool == nil
