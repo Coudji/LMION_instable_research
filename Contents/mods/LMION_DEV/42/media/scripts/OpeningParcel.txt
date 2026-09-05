@@ -1,0 +1,9 @@
+module Base
+{
+    item LMION_OpeningParcel
+    {
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 1.0,
+    }
+}
