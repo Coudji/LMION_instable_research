@@ -1,9 +1,11 @@
 local Registry = require "LMION/Definitions/Registry"
 local Resolver = require "LMION/Definitions/Resolver"
 local LargeGateTopology = require "LMION/Domain/LargeGateTopology"
+local MoveableProfileFields = require "LMION/Services/Moveables/MoveableProfileFields"
 
 local LargeGateProfiles = {}
 
+local PARCEL_ITEM_TYPE = "Base.LMION_OpeningParcel"
 local FACINGS = { "N", "W" }
 local LEAVES = { "A", "B" }
 
@@ -45,8 +47,7 @@ local function hasValidGeometry(definition)
     return true
 end
 
-local function getPackageWeight(definition)
-    local pickup = definition.pickup
+local function getPackageWeight(pickup)
     local packages = type(pickup) == "table" and pickup.packages or nil
     if type(packages) ~= "table" or tonumber(packages.count) ~= 2 then
         return nil
@@ -60,17 +61,42 @@ local function getPackageWeight(definition)
     return weight
 end
 
+local function getTransportRequirements(definition)
+    local pickup = definition.pickup
+    local replacement = definition.replacement
+    if type(pickup) ~= "table" or type(replacement) ~= "table" then
+        return nil
+    end
+
+    local weight = getPackageWeight(pickup)
+    local pickUpTool = MoveableProfileFields.getSingleToolName(pickup.tools, pickup.skill)
+    local placeTool = MoveableProfileFields.getSingleToolName(replacement.tools, pickup.skill)
+    local pickUpLevel = MoveableProfileFields.getSingleSkillLevel(pickup.skill)
+
+    if weight == nil or pickUpTool == nil or placeTool == nil or pickUpLevel == nil then
+        return nil
+    end
+
+    return {
+        weight = weight,
+        pickUpTool = pickUpTool,
+        placeTool = placeTool,
+        pickUpLevel = pickUpLevel,
+    }
+end
+
 local function buildProfile(definition)
     if type(definition) ~= "table"
         or definition.doorType ~= "LargeGate"
         or type(definition.definitionId) ~= "string"
         or definition.definitionId == ""
-        or not hasValidGeometry(definition) then
+        or not hasValidGeometry(definition)
+        or not MoveableProfileFields.hasScriptItem(PARCEL_ITEM_TYPE) then
         return nil
     end
 
-    local weight = getPackageWeight(definition)
-    if weight == nil then
+    local requirements = getTransportRequirements(definition)
+    if requirements == nil then
         return nil
     end
 
@@ -79,8 +105,14 @@ local function buildProfile(definition)
         displayName = definition.displayName,
         entityId = definition.entity,
         doorType = definition.doorType,
+        definition = definition,
         geometry = definition.geometry,
-        packageWeight = weight,
+        itemType = PARCEL_ITEM_TYPE,
+        pickUpTool = requirements.pickUpTool,
+        placeTool = requirements.placeTool,
+        pickUpLevel = requirements.pickUpLevel,
+        rawWeight = requirements.weight * 10,
+        weight = requirements.weight,
     }
 end
 
