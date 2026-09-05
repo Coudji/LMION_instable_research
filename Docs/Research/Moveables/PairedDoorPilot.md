@@ -1,6 +1,6 @@
 # Paired 1x1 door pilot — V3 control points
 
-Status: **HYPOTHÈSE / NON VALIDÉ** in V3 runtime. Source behavior recovered and first Blue Church pilot implemented.
+Status: **VALIDÉ EN JEU** for the Blue Church pilot on 2026-09-05. The user reports the complete pilot is functional; small behavior/polish details may still need adjustment and are not considered final release validation.
 
 Pilot:
 
@@ -37,7 +37,7 @@ By contrast, B42.20.3 vanilla `entity_wood_doubledoor.txt` defines `Base.DoubleD
 
 ## V3 frame ownership
 
-`PZ/DoorFrame.lua` now owns only the PZ-level classification/query of door frames:
+`PZ/DoorFrame.lua` owns only the PZ-level classification/query of door frames:
 
 ```text
 standard
@@ -87,12 +87,12 @@ It delegates profile derivation, placement rules, durability transport and final
 Profile responsibilities:
 
 ```text
-SimpleDoorProfiles.lua      -> Simple definitions
-PairedDoorProfiles.lua      -> Paired member profiles
-SingleTileDoorProfiles.lua  -> resolve supported 1x1 profile by sprite
+SingleEntityDoorProfiles.lua -> Simple/FenceGate/Sliding
+PairedDoorProfiles.lua       -> Paired member profiles
+SingleTileDoorProfiles.lua   -> resolve supported 1x1 profile by sprite
 ```
 
-The Paired pilot is intentionally restricted to `Doors.Wood.BlueChurchDoubleDoor`. This avoids mixing the first Paired validation with the separate MetalWelding Moveables tool-definition work needed by metal doors.
+The Paired pilot remains intentionally restricted to `Doors.Wood.BlueChurchDoubleDoor`; validation of this pilot does not automatically validate every Paired definition.
 
 Expected Moveables diagnostics include `type=Paired` and `member=left/right`.
 
@@ -160,34 +160,25 @@ Vanilla still owns:
 
 LMION intervenes only for definition identity, explicit N/W faces, Paired frame-side validity, durability transport and canonical final `IsoDoor` representation.
 
-## Load/restart requirement
+## VALIDÉ EN JEU — 2026-09-05
 
-The pilot adds a new `media/scripts/BlueChurchDoubleDoor.txt` and changes hook topology from the Simple-specific owner to the single-tile owner.
+The integrated cold-start checkpoint was exercised together with the White Panel regression, FenceGate pilot and Sliding pilot.
 
-Therefore the first validation requires a **cold restart**. Do not attempt to validate it with Lua reload only.
+The user reports the Blue Church Paired path is functional, including the intended independent-leaf Build/Pickup/replacement flow and paired-frame behavior. No blocking regression was observed.
 
-## Next validation checkpoint
-
-One cold-start test should cover both the existing baseline and the new family:
+This validation means:
 
 ```text
-White Panel regression
--> Build
--> Pickup
--> replace
--> standard frame
--> HP persistence
-
-Blue Church Paired
--> Build left only in DoubleDoor1 frame
--> reject left in DoubleDoor2 frame
--> Build right only in DoubleDoor2 frame
--> reject right in DoubleDoor1 frame
--> Pickup each leaf independently
--> replace each leaf independently
--> N/W rotation
--> HP/max-HP persistence
--> final representation IsoDoor
+Blue Church Paired pilot -> functional V3 runtime checkpoint
 ```
 
-If this passes, mark Paired wooden 1x1 mechanics `VALIDÉ EN JEU` for the pilot only. Do not generalize to metal Paired until the MetalWelding Moveables tool definitions are implemented and tested.
+It does **not** mean:
+
+```text
+all Paired definitions validated
+all metal Paired definitions validated
+all polish/details finalized
+release behavior frozen
+```
+
+The next expansion may reuse the validated Paired architecture, while remaining definitions should still be activated in controlled batches.
