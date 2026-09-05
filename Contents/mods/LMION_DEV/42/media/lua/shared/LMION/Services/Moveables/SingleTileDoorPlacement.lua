@@ -15,6 +15,10 @@ function SingleTileDoorPlacement.canPlace(profile, square, facing)
         return DoorPlacement.canPlacePairedAt(square, facing, profile.member)
     end
 
+    if profile.doorType == "FenceGate" or profile.doorType == "Sliding" then
+        return DoorPlacement.canPlaceUnframedAt(square, facing)
+    end
+
     return false, "unsupported-door-type"
 end
 
