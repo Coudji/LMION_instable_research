@@ -1,13 +1,5 @@
 module Base
 {
-    item LMION_WhitePanelDoor
-    {
-        ItemType = base:moveable,
-        Icon = default,
-        Weight = 17.0,
-        Tags = base:usedisplayname,
-    }
-
     xuiSkin default
     {
         entity ES_LMION_WhitePanelDoor
