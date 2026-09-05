@@ -2,9 +2,11 @@ local LMION = require "LMION/API"
 local DefinitionBootstrap = require "LMION/Bootstrap/Definitions"
 local MoveablesBootstrap = require "LMION/Bootstrap/Moveables"
 local DefinitionIndexDiagnostics = require "LMION/Diagnostics/DefinitionIndex"
+local VanillaLargeGateLeafPreparation = require "LMION/Runtime/Build/VanillaLargeGateLeafPreparation"
 
 DefinitionBootstrap.run(LMION)
 MoveablesBootstrap.run()
+VanillaLargeGateLeafPreparation.install()
 
 local stats = LMION.getRegistrationStats()
 print(string.format(

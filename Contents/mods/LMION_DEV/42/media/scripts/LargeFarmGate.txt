@@ -1,0 +1,108 @@
+module Base
+{
+    xuiSkin default
+    {
+        entity ES_LargeFarmGateA
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Large Farm Gate A,
+            Icon = LMION/doors/LargeFarmGate,
+        }
+        entity ES_LargeFarmGateB
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = Large Farm Gate B,
+            Icon = LMION/doors/LargeFarmGate,
+        }
+    }
+
+    entity LargeFarmGateA
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LargeFarmGateA,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            dontNeedFrame = true,
+            face W
+            {
+                layer
+                {
+                    row = fixtures_doors_fences_01_113,
+                    row = fixtures_doors_fences_01_112,
+                }
+            }
+            face N
+            {
+                layer
+                {
+                    row = fixtures_doors_fences_01_114 fixtures_doors_fences_01_115,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWireFence,
+            time = 80,
+            category = LMION,
+            SkillRequired = MetalWelding:4,
+            xpAward = MetalWelding:15,
+            inputs
+            {
+                item 1 [Base.WeldingMask] mode:keep,
+                item 3 [Base.BlowTorch] flags[DontRecordInput],
+                item 4 [Base.MetalPipe],
+                item 2 [Base.Hinge],
+                item 2 [Base.WeldingRods] flags[DontRecordInput],
+            }
+        }
+    }
+
+    entity LargeFarmGateB
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LargeFarmGateB,
+            uiEnabled = false,
+        }
+        component SpriteConfig
+        {
+            dontNeedFrame = true,
+            face W
+            {
+                layer
+                {
+                    row = fixtures_doors_fences_01_121,
+                    row = fixtures_doors_fences_01_120,
+                }
+            }
+            face N
+            {
+                layer
+                {
+                    row = fixtures_doors_fences_01_122 fixtures_doors_fences_01_123,
+                }
+            }
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWireFence,
+            time = 80,
+            category = LMION,
+            SkillRequired = MetalWelding:4,
+            xpAward = MetalWelding:15,
+            inputs
+            {
+                item 1 [Base.WeldingMask] mode:keep,
+                item 3 [Base.BlowTorch] flags[DontRecordInput],
+                item 4 [Base.MetalPipe],
+                item 2 [Base.Hinge],
+                item 2 [Base.WeldingRods] flags[DontRecordInput],
+            }
+        }
+    }
+}
