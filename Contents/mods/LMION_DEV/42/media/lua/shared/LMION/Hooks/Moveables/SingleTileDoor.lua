@@ -2,6 +2,7 @@ require "Moveables/ISMoveableSpriteProps"
 
 local DoorObject = require "LMION/PZ/DoorObject"
 local DoorTransportState = require "LMION/Runtime/Moveables/DoorTransportState"
+local LargeGateMoveProps = require "LMION/Services/Moveables/LargeGateMoveProps"
 local SingleTileDoorMoveProps = require "LMION/Services/Moveables/SingleTileDoorMoveProps"
 local SingleTileDoorPlacement = require "LMION/Services/Moveables/SingleTileDoorPlacement"
 local SingleTileDoorPlacementFinalizer = require "LMION/Services/Moveables/SingleTileDoorPlacementFinalizer"
@@ -44,10 +45,16 @@ function SingleTileDoorHook.install()
     ISMoveableSpriteProps.new = function(sprite)
         local moveProps = originalNew(sprite)
         SingleTileDoorMoveProps.applyProfile(moveProps, sprite)
+        LargeGateMoveProps.applyProfile(moveProps, sprite)
         return moveProps
     end
 
     ISMoveableSpriteProps.hasFaces = function(self)
+        local largeGateFaces = LargeGateMoveProps.getFaces(self)
+        if largeGateFaces ~= nil then
+            return largeGateFaces.N ~= largeGateFaces.W
+        end
+
         local profile = SingleTileDoorMoveProps.getProfile(self)
         if profile ~= nil then
             return profile.faces.N ~= profile.faces.W
@@ -57,6 +64,11 @@ function SingleTileDoorHook.install()
     end
 
     ISMoveableSpriteProps.getFaces = function(self)
+        local largeGateFaces = LargeGateMoveProps.getFaces(self)
+        if largeGateFaces ~= nil then
+            return largeGateFaces
+        end
+
         local profile = SingleTileDoorMoveProps.getProfile(self)
         if profile ~= nil then
             return {
@@ -157,7 +169,7 @@ function SingleTileDoorHook.install()
         return finalized or result
     end
 
-    print("[LMION:DEV] Single-tile Moveables hooks installed")
+    print("[LMION:DEV] door Moveables SpriteProps hooks installed")
     return true
 end
 
