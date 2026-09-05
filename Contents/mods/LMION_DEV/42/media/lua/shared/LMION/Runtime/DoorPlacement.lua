@@ -1,4 +1,5 @@
 local DoorObject = require "LMION/PZ/DoorObject"
+local PairedDoorFrame = require "LMION/PZ/PairedDoorFrame"
 local StandardDoorFrame = require "LMION/PZ/StandardDoorFrame"
 
 local DoorPlacement = {}
@@ -16,27 +17,52 @@ local function hasDoorAt(square, north)
     return false
 end
 
-function DoorPlacement.canPlaceSimpleAt(square, facing)
+local function validateTarget(square, facing)
     if square == nil then
-        return false, "missing-square"
+        return nil, "missing-square"
     end
 
     if facing ~= "N" and facing ~= "W" then
-        return false, "invalid-facing"
+        return nil, "invalid-facing"
     end
 
     if square.isVehicleIntersecting ~= nil and square:isVehicleIntersecting() then
-        return false, "vehicle-intersection"
+        return nil, "vehicle-intersection"
     end
 
     local north = facing == "N"
-
     if hasDoorAt(square, north) then
-        return false, "door-already-present"
+        return nil, "door-already-present"
+    end
+
+    return north, "ok"
+end
+
+function DoorPlacement.canPlaceSimpleAt(square, facing)
+    local north, reason = validateTarget(square, facing)
+    if north == nil then
+        return false, reason
     end
 
     if not StandardDoorFrame.existsAt(square, north) then
         return false, "missing-standard-frame"
+    end
+
+    return true, "ok"
+end
+
+function DoorPlacement.canPlacePairedAt(square, facing, member)
+    local north, reason = validateTarget(square, facing)
+    if north == nil then
+        return false, reason
+    end
+
+    if member ~= "left" and member ~= "right" then
+        return false, "invalid-paired-member"
+    end
+
+    if not PairedDoorFrame.existsAt(square, north, member) then
+        return false, "missing-paired-frame"
     end
 
     return true, "ok"
