@@ -1,80 +1,22 @@
 # Door runtime foundation
 
-This is the first runtime-facing layer after the data catalog and GameEntity lookup foundation. Shared door rules stay outside Pickup/Build-specific integration.
+This layer sits between LMION definitions and the narrow Project Zomboid integration hooks. Shared door rules stay outside Pickup/Build-specific wrappers.
 
-## `PZ/DoorObject.lua`
+## Canonical world representation
 
-Responsibility: read the engine representation of one door object.
+Every LMION-managed final opening is an `IsoDoor`.
 
-It can recognize `IsoDoor`, recognize `IsoThumpable(isDoor)`, report the source representation, read `getNorth()` without losing a valid `false`, and expose `N` / `W` facing.
+`PZ/DoorObject.lua` reads one source door representation (`IsoDoor` or external/vanilla `IsoThumpable(isDoor)`) and preserves a meaningful `getNorth() == false` value.
 
-It does not capture state, change health, mutate the world or resolve LMION definitions.
+`Runtime/CanonicalDoor.lua` converges an LMION-owned source to `IsoDoor`. Build may supply `preserveLockState = false`; pickup/reinstallation preserves transported state by default.
 
-## `PZ/DoorSprite.lua`
+## Durability/state
 
-Responsibility: derive N/W facing from one door sprite's engine flags.
+`Runtime/DoorDurability.lua` owns logical health/max-health access and the `lmionDoorMaxHealth` compatibility key.
 
-It does not resolve definitions or mutate sprites.
+`Runtime/DoorState.lua` captures/restores normalized door state.
 
-## `PZ/StandardDoorFrame.lua`
-
-Responsibility: answer one question only: does the target square contain a standard frame for the requested N/W orientation?
-
-It accepts both construction-style `IsoThumpable` door frames and static/map frame objects. It rejects paired-frame classes carrying `DoubleDoor1` / `DoubleDoor2` flags.
-
-It does not decide whether a complete placement is valid and does not inspect LMION definitions.
-
-## `PZ/PlacedDoor.lua`
-
-Responsibility: find the just-placed door on one square by exact sprite name.
-
-It exists only as a fallback when vanilla `placeMoveableInternal()` does not directly return the placed door object.
-
-## `Runtime/DoorDurability.lua`
-
-Responsibility: read/write logical door durability.
-
-It owns the `lmionDoorMaxHealth` compatibility key used when canonical `IsoDoor` cannot express LMION's logical maximum natively.
-
-It does not decide construction durability and does not serialize inventory items.
-
-## `Runtime/DoorState.lua`
-
-Responsibility: capture and restore a normalized door-state snapshot.
-
-It delegates engine classification/orientation to `PZ/DoorObject` and durability to `Runtime/DoorDurability`.
-
-It preserves boolean lock state explicitly; `false` is a real value and must not be converted to `nil`.
-
-## `Runtime/DoorPlacement.lua`
-
-Responsibility: decide whether one Simple 1x1 door can occupy one target square/facing.
-
-Current decision order:
-
-```text
-square exists
--> facing is N or W
--> no vehicle intersection
--> no door already occupies that orientation
--> matching standard frame exists
-```
-
-It returns both a boolean and a stable diagnostic reason such as `missing-standard-frame` or `door-already-present`.
-
-It does not check inventory tools/skills; the Moveables integration preserves vanilla checks for those requirements.
-
-## `Runtime/CanonicalDoor.lua`
-
-Responsibility: converge one LMION-owned source door to canonical `IsoDoor` representation.
-
-An existing `IsoDoor` is returned unchanged. A source `IsoThumpable(isDoor)` has its state captured, is recreated as `IsoDoor` on the same square/sprite/orientation, has its state restored, requests GameEntity reconstruction when relevant, and only then replaces the temporary source object.
-
-Fresh Build callers can later pass `preserveLockState = false`; Pickup/reinstallation preserves transported state by default.
-
-## `Runtime/Moveables/DoorTransportState.lua`
-
-Responsibility: serialize only the durability state currently transported through a Moveables item:
+`Runtime/Moveables/DoorTransportState.lua` serializes only the durability state currently transported through one Moveables item:
 
 ```text
 lmionDoorHealth
@@ -82,33 +24,98 @@ lmionDoorMaxHealth
 lmionDoorMaxWasLogical
 ```
 
-It does not know about vanilla hooks or placement.
+Transport-package appearance is deliberately deferred until Garage and LargeGate runtime behavior exists.
 
-## `Services/Moveables/SimpleDoorProfiles.lua`
+## Frame adapters
 
-Responsibility: derive the Moveables-facing profile for a Simple definition whose transport item exists.
+`PZ/DoorFrame.lua` has one engine-facing responsibility: classify/query a frame on one square/orientation.
 
-The first runtime slice intentionally creates only `Base.LMION_WhitePanelDoor`, so only that definition becomes active through this service. The service already derives identity and exact N/W faces from effective definition data rather than duplicating sprite numbers in the hook.
+Internal classes:
 
-Definitions without a corresponding transport item or unsupported tool shape are skipped instead of receiving a broken partial profile.
+```text
+standard
+paired-left   -> DoubleDoor1
+paired-right  -> DoubleDoor2
+```
 
-## `Runtime/Moveables/SimpleDoorSprites.lua`
+`PZ/StandardDoorFrame.lua` asks only for `standard`.
 
-Responsibility: mark the sprites of active Simple profiles with `IsMoveAble` at `OnLoadedTileDefinitions`.
+`PZ/PairedDoorFrame.lua` maps semantic Paired members to the corresponding structural frame class:
 
-It owns no vanilla method wrapper.
+```text
+left  -> paired-left
+right -> paired-right
+```
 
-## `Services/Moveables/SimpleDoorPlacementFinalizer.lua`
+The public definition schema does not expose those frame implementation details.
 
-Responsibility: finalize the result of one Simple Moveables placement.
+## Placement rules
 
-It finds the placed door when necessary, canonicalizes it to `IsoDoor`, restores transported durability, and emits one final success/failure diagnostic.
+`Runtime/DoorPlacement.lua` owns world-space validity shared by current 1x1 families:
 
-## `Hooks/Moveables/SimpleDoor.lua`
+```text
+square exists
+-> facing N/W
+-> no vehicle intersection
+-> no door already occupies that orientation
+```
 
-Responsibility: own the first narrow `ISMoveableSpriteProps` wrappers.
+Family-specific final condition:
 
-It calls vanilla first wherever vanilla remains authoritative and delegates LMION work to the modules above. It owns the control points documented in `Docs/Research/Moveables/SimpleMoveablesHook.md`:
+```text
+Simple    -> matching standard frame
+Paired    -> matching paired frame member
+FenceGate -> no frame
+Sliding   -> no frame
+```
+
+It exposes separate rule functions and stable failure reasons. It does not check inventory skills/tools.
+
+`Services/Moveables/SingleTileDoorPlacement.lua` selects the appropriate rule from one internal runtime profile. It does not scan the world itself.
+
+## Single-tile Moveables profiles
+
+Current common profile fields are derived from effective definitions rather than hard-coded in hooks.
+
+`Services/Moveables/SingleTileProfileFields.lua` owns reusable field conversion:
+
+- one governing skill level;
+- one Moveables tool name;
+- transport item type from GameEntity identity;
+- package weight;
+- script-item existence.
+
+It maps MetalWelding transport tools to LMION-specific Moveables tool definitions so metal objects do not accidentally inherit a Woodwork tool perk.
+
+`Services/Moveables/SingleEntityDoorProfiles.lua` owns the shared single-entity geometry shape used by:
+
+```text
+Simple
+FenceGate
+Sliding
+```
+
+A definition becomes runtime-active through this provider only when its corresponding transport script item exists.
+
+`Services/Moveables/PairedDoorProfiles.lua` owns Paired-specific multi-entity/left-right geometry. The first Paired pilot is explicitly limited to `Doors.Wood.BlueChurchDoubleDoor`.
+
+`Services/Moveables/SingleTileDoorProfiles.lua` resolves one supported 1x1 profile by sprite across those specialized providers.
+
+`Services/Moveables/SingleTileDoorMoveProps.lua` applies one resolved profile to vanilla `ISMoveableSpriteProps` and resolves its N/W face.
+
+## Moveables engine lifecycle
+
+`Runtime/Moveables/SingleTileDoorSprites.lua` marks only currently active profile sprites with `IsMoveAble` at `OnLoadedTileDefinitions`.
+
+`Runtime/Moveables/ToolDefinitions.lua` registers the LMION MetalWelding Moveables tool definitions recovered from Legacy:
+
+```text
+LMIONMetalScrewdriver
+LMIONMetalCrowbar
+LMIONMetalHammer
+```
+
+`Hooks/Moveables/SingleTileDoor.lua` is the **single owner** of the shared `ISMoveableSpriteProps` wrappers:
 
 ```text
 new
@@ -119,54 +126,70 @@ canPlaceMoveableInternal
 placeMoveableInternal
 ```
 
-The `canPlaceMoveableInternal` hook intentionally replaces only the spatial-validity branch for matched LMION Simple doors, then preserves vanilla skill/tool checks. Unknown/non-LMION moveables always return to the previous implementation.
+Unknown/non-LMION objects always return to the previous vanilla implementation. The hook delegates profile derivation, placement rules, durability transport and finalization.
 
-No per-frame logs are emitted from placement validation.
+`Services/Moveables/SingleTileDoorPlacementFinalizer.lua` finds the placed object when necessary, canonicalizes it to `IsoDoor`, restores transported durability and logs one stable success/failure boundary.
 
-## `Bootstrap/Moveables.lua`
+`Bootstrap/Moveables.lua` installs the tool definitions and the single hook owner, then registers the tile-definition sprite configuration callback.
 
-Responsibility: install the Simple hook once and register the sprite-configuration lifecycle callback.
+## Single-tile Build lifecycle
 
-It contains no pickup/placement business rule.
+`Services/Build/SingleTileDoorBuildProfile.lua` resolves the currently supported Build pilot from one GameEntity through `EntityIndex`.
 
-## `Diagnostics/DefinitionIndex.lua`
-
-Responsibility: exercise the pure entity reverse index during DEV bootstrap.
-
-It verifies:
-
-```text
-Base.WhitePanelDoor -> Doors.Wood.WhitePanelDoor
-```
-
-## First runtime checkpoint
-
-The first functional pilot is intentionally one door:
+Current Build pilots:
 
 ```text
 Doors.Wood.WhitePanelDoor
-Base.WhitePanelDoor
-Base.LMION_WhitePanelDoor
+Doors.Wood.BlueChurchDoubleDoor
+FenceGates.Wood.SmallWhiteWoodenGate
+SlidingDoors.BrownSlidingGlassDoor
 ```
 
-This checkpoint is expected to exercise:
+`server/LMION/Hooks/Build/SingleTileDoor.lua` is the **single owner** of the intercepted Build boundaries:
 
 ```text
-world IsoDoor
--> vanilla Moveables pickup
--> one inventory Moveable item
--> transported HP/max HP
--> vanilla rotation/cursor behavior
--> LMION standard-frame placement check
--> vanilla placement
--> LMION canonical IsoDoor finalization
--> restored HP/max HP
+ISBuildIsoEntity.isValid
+ISBuildIsoEntity.isValidPerSquare
+ISBuildIsoEntity.setInfo
 ```
 
-Because this slice adds a new `media/scripts` item definition and a new hook installation path, its first validation requires a cold PZ restart.
+Vanilla still owns menu/cursor/timed action/material/tool execution and initial object creation. LMION adds its family placement contract and final canonicalization.
 
-## Still intentionally absent
+`Services/Build/SingleTileDoorFinalizer.lua` finds the exact built GameEntity, converges it to `IsoDoor`, computes definition-owned construction durability and clears fresh lock state.
 
-This first hook does not yet activate every Simple definition, Paired, FenceGate, Sliding, Garage, LargeGate, Build finalization, custom pickup animations, or final release logging policy.
+## Engine scripts
 
-Those are extended only after the one-door Simple loop is runtime-validated.
+One file per pilot opening/family contains the strict PZ script-time bridge:
+
+```text
+WhitePanelDoor.txt
+BlueChurchDoubleDoor.txt
+SmallWhiteWoodenGate.txt
+BrownSlidingGlassDoor.txt
+```
+
+A file may contain several item/entity declarations when the opening itself has several independent members (Paired). This avoids Legacy's separate `_Item`, `_Build` and entity files while keeping parse-time engine declarations together.
+
+Definition data remains authoritative for semantic type, durability, geometry, construction/pickup/replacement facts. Script-time values are duplicated only where PZ requires them before Lua (CraftRecipe, SpriteConfig, XUI and transport item declaration).
+
+## Validation status
+
+**VALIDÉ EN JEU**:
+
+```text
+White Panel Simple
+Build -> canonical IsoDoor -> Pickup -> replacement
+standard frame enforced
+HP/max HP preserved
+```
+
+**HYPOTHÈSE / NON VALIDÉ** after the current single-tile expansion:
+
+```text
+White Panel regression through the renamed shared hook owner
+Blue Church Paired left/right frame behavior
+Small White Wooden FenceGate no-frame behavior
+Brown Sliding Glass Door no-frame + MetalWelding Moveables tools
+```
+
+The current expansion changes hook topology and adds `media/scripts`, so the next meaningful checkpoint requires one cold restart rather than Lua reload.
