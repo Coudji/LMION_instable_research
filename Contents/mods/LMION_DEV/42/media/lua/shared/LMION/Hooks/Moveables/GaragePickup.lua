@@ -1,0 +1,58 @@
+require "Moveables/ISMoveableSpriteProps"
+local GarageMembers = require "LMION/Services/Moveables/GarageMembers"
+local GarageMoveProps = require "LMION/Services/Moveables/GarageMoveProps"
+
+local GaragePickup = {}
+
+local function selected(self,square,object)
+    if object then return object end
+    return square and self:findOnSquare(square,self.spriteName) or nil
+end
+
+local function canPickChain(character,members)
+    for _,member in ipairs(members) do
+        local props=ISMoveableSpriteProps.new(member.closedSpriteName)
+        if not props or not member.object:isObjectNoContainerOrEmpty() then return false end
+        local was=props.isMultiSprite; props.isMultiSprite=false
+        local ok=props:canPickUpMoveableInternal(character,member.square,member.object,true)
+        props.isMultiSprite=was
+        if not ok then return false end
+    end
+    return true
+end
+
+function GaragePickup.install()
+    if ISMoveableSpriteProps._lmionV3GaragePickupInstalled then return false end
+    ISMoveableSpriteProps._lmionV3GaragePickupInstalled=true
+    local previousCan=ISMoveableSpriteProps.canPickUpMoveable
+    local previousPick=ISMoveableSpriteProps.pickUpMoveable
+
+    ISMoveableSpriteProps.canPickUpMoveable=function(self,character,square,object)
+        local segment=GarageMoveProps.getSegment(self)
+        if not segment then return previousCan(self,character,square,object) end
+        local object0=selected(self,square,object)
+        local members=GarageMembers.getMembers(object0,segment.definitionId)
+        return members ~= nil and canPickChain(character,members)
+    end
+
+    ISMoveableSpriteProps.pickUpMoveable=function(self,character,square,createItem,forceAllow)
+        local segment=GarageMoveProps.getSegment(self)
+        if not segment then return previousPick(self,character,square,createItem,forceAllow) end
+        local object=selected(self,square,nil); if not object then return false end
+        if not forceAllow and not character:isMovablesCheat() and not ISMoveableDefinitions.cheat and not self:canPickUpMoveable(character,square,object) then return false end
+        local members=GarageMembers.getMembers(object,segment.definitionId); if not members then return false end
+        local items={}
+        for i,member in ipairs(members) do
+            local props=ISMoveableSpriteProps.new(member.closedSpriteName); if not props then return false end
+            props.isMultiSprite=true
+            items[i]=props:pickUpMoveableInternal(character,member.square,member.object,nil,member.closedSpriteName,createItem,forceAllow)
+            if items[i] == nil then return false end
+        end
+        if ISMoveableCursor and ISMoveableCursor.clearCacheForAllPlayers then ISMoveableCursor.clearCacheForAllPlayers() end
+        print(string.format("[LMION:DEV] Garage pickup completed: definition=%s parcels=%d",tostring(segment.definitionId),#members))
+        return items
+    end
+    print("[LMION:DEV] Garage pickup hooks installed")
+    return true
+end
+return GaragePickup
