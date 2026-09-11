@@ -1,8 +1,23 @@
 local LargeGateParcel = require "LMION/Runtime/Moveables/LargeGateParcel"
+local LargeGateProfiles = require "LMION/Services/Moveables/LargeGateProfiles"
 
 local LargeGateParcelLookup = {}
 
+local function getExpectedItemType(definitionId, leaf, partIndex)
+    local profile = LargeGateProfiles.getByDefinitionId(definitionId)
+    local leafItems = profile and profile.itemTypes and profile.itemTypes[leaf] or nil
+    return leafItems and leafItems[partIndex] or nil
+end
+
 local function matches(item, definitionId, leaf, partIndex)
+    local expectedItemType = getExpectedItemType(definitionId, leaf, partIndex)
+    if item == nil
+        or expectedItemType == nil
+        or item.getFullType == nil
+        or item:getFullType() ~= expectedItemType then
+        return false
+    end
+
     local identity = LargeGateParcel.readIdentity(item)
     return identity ~= nil
         and identity.definitionId == definitionId
