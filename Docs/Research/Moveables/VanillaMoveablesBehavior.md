@@ -1,6 +1,6 @@
 # Vanilla Moveables behavior relevant to LMION V3
 
-Status: **engine behavior researched; single-tile path validated; LargeGate placement frontends partially validated on 2026-09-11; floor consumption re-test pending after pickup lifecycle correction.**
+Status: **engine behavior researched; single-tile path validated; LargeGate mixed inventory/floor replacement and floor-parcel consumption validated on 2026-09-11.**
 
 ## Principle
 
@@ -82,13 +82,13 @@ part 1 -> nearby floor
 part 2 -> inventory
 ```
 
-Both members were created/finalized and the resulting leaf was functional. This proves mixed inventory/floor lookup and the frontend bootstrap now work.
+Both members were created/finalized and the resulting leaf was functional. This proved mixed inventory/floor lookup and frontend bootstrap.
 
 The remaining defect was that the part-1 floor parcel stayed in the world even though LMION logged placement completed.
 
 ## Floor consumption behavior
 
-Vanilla multisprite placement supports items coming from inventory or nearby floor. Its floor branch uses the same sequence as validated Legacy:
+Vanilla multisprite placement supports items coming from inventory or nearby floor. Its floor branch uses the same removal sequence as validated Legacy:
 
 ```text
 worldItem = item:getWorldItem()
@@ -97,9 +97,17 @@ worldItem:getSquare():removeWorldObject(worldItem)
 item:setWorldItem(nil)
 ```
 
-Therefore the calls themselves are not a justified target for speculative replacement.
+The defect was not evidence that these engine calls were wrong. The selected floor parcel itself was already proven correct because its durability reached the placed member.
 
-V3 now keeps that exact sequence but verifies that the `IsoWorldInventoryObject` is no longer present in `square:getWorldObjects()` before returning success. This prevents a false positive like the 2026-09-11 log.
+The validated V3 correction is to preserve **the exact `IsoWorldInventoryObject` selected during floor lookup** inside the placement plan and consume that exact reference after placement/finalization. Re-resolving the world object from the `InventoryItem` after placement is not reliable enough for this transaction.
+
+The previously failing arrangement, Part2 in inventory + Part1 on the floor, now consumes both parcels correctly in game. The inverse arrangement also works.
+
+## LargeGate stock-selection rule
+
+Part1 and Part2 are independent required stock entries. Placement does not bind them to the same pickup session and does not give the item that launched the cursor special priority.
+
+The V3 `preferred` path was removed. Each part is resolved independently from inventory first, then nearby floor, following the Legacy gameplay model. Per-parcel durability travels with the selected parcel.
 
 ## Critical Legacy / Workshop difference: LargeGate pickup lifecycle
 
@@ -122,11 +130,11 @@ source-object removal
 
 Workshop changed this boundary. Its `MultiSquarePickupInternal` manually created the item, manually added the world item and manually removed the door segment. The original V3 LargeGate implementation independently recreated the same type of manual lifecycle with `LargeGateParcelFactory` + `MoveableDoorSegmentPickup`.
 
-The exact 2026-09-11 floor-consumption defect is not proven to come from one individual manual call, but the behavioral comparison is clear:
+The exact floor-consumption defect was ultimately corrected by preserving the selected floor world-object reference, not by changing vanilla removal semantics. Even so, the architectural comparison remains important:
 
-> Legacy delegates the physical Moveable lifecycle to vanilla; Workshop/V3 manually recreated it.
+> Legacy delegates the physical Moveable pickup lifecycle to vanilla; Workshop/V3 manually recreated it.
 
-With Legacy as the contract, V3 now returns to vanilla `pickUpMoveableInternal()` per LargeGate member. LMION only captures/writes its semantic identity and durability around the already-owned vanilla boundaries.
+V3 now follows the vanilla `pickUpMoveableInternal()` boundary per LargeGate member. LMION only captures/writes its semantic identity and durability around the already-owned vanilla boundaries.
 
 **DO NOT REINTRODUCE BY DEFAULT:** a custom generic helper that replaces vanilla multipart Moveable pickup when the Legacy path proves vanilla can own it.
 
