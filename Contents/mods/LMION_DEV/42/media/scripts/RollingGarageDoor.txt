@@ -1,0 +1,8 @@
+module Base
+{
+ item LMION_RollingGarageDoor_Part1 { DisplayCategory=Furniture, ItemType=base:moveable, Icon=Flatpack, Weight=20.0, Tags=base:usedisplayname, }
+ item LMION_RollingGarageDoor_Part2 { DisplayCategory=Furniture, ItemType=base:moveable, Icon=Flatpack, Weight=20.0, Tags=base:usedisplayname, }
+ item LMION_RollingGarageDoor_Part3 { DisplayCategory=Furniture, ItemType=base:moveable, Icon=Flatpack, Weight=20.0, Tags=base:usedisplayname, }
+ xuiSkin default { entity ES_LMION_RollingGarageDoor { LuaWindowClass=ISEntityWindow, DisplayName=Rolling Garage Door, Icon=LMION/doors/RollingGarageDoor, } }
+ entity RollingGarageDoor { component UiConfig { xuiSkin=default, entityStyle=ES_LMION_RollingGarageDoor, uiEnabled=false, } component SpriteConfig { dontNeedFrame=true, face W { layer { row=walls_garage_02_2, row=walls_garage_02_1, row=walls_garage_02_0, } } face N { layer { row=walls_garage_02_3 walls_garage_02_4 walls_garage_02_5, } } } component CraftRecipe { timedAction=BuildWallMetal, time=200, category=LMION, SkillRequired=MetalWelding:6, xpAward=MetalWelding:50, inputs { item 1 tags[base:weldingmask] mode:keep, item 1 [Base.BlowTorch] flags[DontRecordInput], item 6 [Base.SmallSheetMetal], item variable[2:2147483647] [Base.MetalBar;Base.IronBar], item 4 [Base.Hinge], item 2 [Base.WeldingRods] flags[DontRecordInput], } } }
+}

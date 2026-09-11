@@ -1,0 +1,8 @@
+module Base
+{
+ item LMION_GreyGarageDoor_Part1 { DisplayCategory=Furniture, ItemType=base:moveable, Icon=Flatpack, Weight=20.0, Tags=base:usedisplayname, }
+ item LMION_GreyGarageDoor_Part2 { DisplayCategory=Furniture, ItemType=base:moveable, Icon=Flatpack, Weight=20.0, Tags=base:usedisplayname, }
+ item LMION_GreyGarageDoor_Part3 { DisplayCategory=Furniture, ItemType=base:moveable, Icon=Flatpack, Weight=20.0, Tags=base:usedisplayname, }
+ xuiSkin default { entity ES_LMION_GreyGarageDoor { LuaWindowClass=ISEntityWindow, DisplayName=Grey Garage Door, Icon=LMION/doors/GreyGarageDoor, } }
+ entity GreyGarageDoor { component UiConfig { xuiSkin=default, entityStyle=ES_LMION_GreyGarageDoor, uiEnabled=false, } component SpriteConfig { dontNeedFrame=true, face W { layer { row=fixtures_doors_01_50, row=fixtures_doors_01_49, row=fixtures_doors_01_48, } } face N { layer { row=fixtures_doors_01_51 fixtures_doors_01_52 fixtures_doors_01_53, } } } component CraftRecipe { timedAction=BuildWallMetal, time=200, category=LMION, SkillRequired=MetalWelding:6, xpAward=MetalWelding:50, inputs { item 1 tags[base:weldingmask] mode:keep, item 1 [Base.BlowTorch] flags[DontRecordInput], item 6 [Base.SmallSheetMetal], item variable[2:2147483647] [Base.MetalBar;Base.IronBar], item 4 [Base.Hinge], item 2 [Base.WeldingRods] flags[DontRecordInput], } } }
+}
