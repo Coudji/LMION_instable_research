@@ -72,7 +72,7 @@ function LargeGatePlacementPlan.build(character, square, definitionId, facing, l
     }
 
     for partIndex = 1, 2 do
-        local parcel, source = LargeGateParcelLookup.find(
+        local parcel, source, worldItem = LargeGateParcelLookup.find(
             character,
             definitionId,
             leaf,
@@ -99,6 +99,7 @@ function LargeGatePlacementPlan.build(character, square, definitionId, facing, l
         plan[partIndex] = {
             item = parcel,
             source = source,
+            worldItem = worldItem,
             square = targetSquare,
             closedSprite = closedSprite,
             displaySprite = displaySprite,
