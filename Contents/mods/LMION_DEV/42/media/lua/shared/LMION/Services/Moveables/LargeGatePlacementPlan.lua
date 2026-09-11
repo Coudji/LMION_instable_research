@@ -36,7 +36,7 @@ local function isPartPlacementValid(character, square, item, closedSprite, facin
     return DoorPlacement.canPlaceUnframedAt(square, facing)
 end
 
-function LargeGatePlacementPlan.build(character, square, item, definitionId, facing, leaf, selectedPart)
+function LargeGatePlacementPlan.build(character, square, definitionId, facing, leaf, selectedPart)
     local profile = LargeGateProfiles.getByDefinitionId(definitionId)
     if profile == nil
         or square == nil
@@ -76,8 +76,7 @@ function LargeGatePlacementPlan.build(character, square, item, definitionId, fac
             character,
             definitionId,
             leaf,
-            partIndex,
-            partIndex == selectedPart and item or nil
+            partIndex
         )
         local targetSquare = LargeGateWorldState.getPartSquare(
             anchor,
