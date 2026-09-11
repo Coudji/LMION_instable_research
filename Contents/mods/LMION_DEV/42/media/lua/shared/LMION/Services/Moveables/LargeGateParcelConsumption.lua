@@ -15,24 +15,24 @@ local function containsWorldObject(square, worldItem)
     return false
 end
 
-local function consumeFloorItem(item)
-    local worldItem = item and item.getWorldItem and item:getWorldItem() or nil
-    local square = worldItem and worldItem:getSquare() or nil
-    if worldItem == nil or square == nil then
+local function consumeFloorItem(item, worldItem)
+    local selectedWorldItem = worldItem or (item and item.getWorldItem and item:getWorldItem() or nil)
+    local square = selectedWorldItem and selectedWorldItem:getSquare() or nil
+    if selectedWorldItem == nil or square == nil then
         return false
     end
 
-    -- Keep the same removal sequence used by vanilla Moveables and by the
-    -- validated Legacy LargeGate path. The explicit check prevents LMION from
-    -- reporting success while the world object is still present on the square.
-    square:transmitRemoveItemFromSquare(worldItem)
-    square:removeWorldObject(worldItem)
+    square:transmitRemoveItemFromSquare(selectedWorldItem)
+    square:removeWorldObject(selectedWorldItem)
 
-    if containsWorldObject(square, worldItem) then
+    if containsWorldObject(square, selectedWorldItem) then
         return false
     end
 
-    item:setWorldItem(nil)
+    if item ~= nil and item.setWorldItem ~= nil and item:getWorldItem() == selectedWorldItem then
+        item:setWorldItem(nil)
+    end
+
     return true
 end
 
@@ -46,9 +46,9 @@ local function consumeContainerItem(item, container)
     return true
 end
 
-function LargeGateParcelConsumption.consume(item, source)
+function LargeGateParcelConsumption.consume(item, source, worldItem)
     if source == "floor" then
-        return consumeFloorItem(item)
+        return consumeFloorItem(item, worldItem)
     end
 
     return consumeContainerItem(item, source)
