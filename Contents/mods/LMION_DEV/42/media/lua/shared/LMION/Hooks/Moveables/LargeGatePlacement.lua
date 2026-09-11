@@ -8,7 +8,7 @@ local LargeGatePlacementPlan = require "LMION/Services/Moveables/LargeGatePlacem
 
 local LargeGatePlacementHook = {}
 
-local function buildPlan(moveProps, character, square, item)
+local function buildPlan(moveProps, character, square)
     local segment = LargeGateMoveProps.getSegment(moveProps)
     if segment == nil then
         return nil
@@ -17,7 +17,6 @@ local function buildPlan(moveProps, character, square, item)
     return LargeGatePlacementPlan.build(
         character,
         square,
-        item,
         segment.definitionId,
         moveProps.lmionLargeGateFacing,
         moveProps.lmionLargeGateLeaf,
@@ -73,7 +72,7 @@ local function placePlan(plan)
 
     for partIndex = 1, 2 do
         local entry = plan[partIndex]
-        if not LargeGateParcelConsumption.consume(entry.item, entry.source) then
+        if not LargeGateParcelConsumption.consume(entry.item, entry.source, entry.worldItem) then
             print(string.format(
                 "[LMION:DEV] LargeGate parcel consumption failed: definition=%s leaf=%s part=%d source=%s",
                 tostring(plan.definitionId),
@@ -130,8 +129,7 @@ function LargeGatePlacementHook.install()
             character,
             segment.definitionId,
             self.lmionLargeGateLeaf,
-            partIndex,
-            nil
+            partIndex
         )
     end
 
@@ -140,7 +138,7 @@ function LargeGatePlacementHook.install()
             return previousCanPlace(self, character, square, item)
         end
 
-        local plan = buildPlan(self, character, square, item)
+        local plan = buildPlan(self, character, square)
         return plan ~= nil and plan.valid == true
     end
 
@@ -150,14 +148,7 @@ function LargeGatePlacementHook.install()
             return previousPlace(self, character, square, origSpriteName, forceAllow)
         end
 
-        local selectedItem = LargeGateParcelLookup.find(
-            character,
-            segment.definitionId,
-            self.lmionLargeGateLeaf,
-            self.lmionLargeGatePart,
-            nil
-        )
-        local plan = buildPlan(self, character, square, selectedItem)
+        local plan = buildPlan(self, character, square)
 
         print(string.format(
             "[LMION:DEV] LargeGate placement started: definition=%s leaf=%s facing=%s partner=%s",
