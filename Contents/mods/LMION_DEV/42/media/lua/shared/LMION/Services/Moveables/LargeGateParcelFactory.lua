@@ -12,13 +12,24 @@ local function getParcelName(profile, segment)
         .. "/2)"
 end
 
+local function getClosedSpriteName(profile, segment)
+    local face = profile.geometry[segment.facing]
+    local leaf = face and face[segment.leaf] or nil
+    local part = leaf and leaf[segment.partIndex] or nil
+    return part and part.closed or nil
+end
+
 function LargeGateParcelFactory.create(profile, segment, object)
     if profile == nil or segment == nil or object == nil then
         return nil
     end
 
-    local item = instanceItem(profile.itemType)
-    if item == nil then
+    local closedSpriteName = getClosedSpriteName(profile, segment)
+    local item = segment.itemType and instanceItem(segment.itemType) or nil
+    if item == nil
+        or not instanceof(item, "Moveable")
+        or closedSpriteName == nil
+        or not item:ReadFromWorldSprite(closedSpriteName) then
         return nil
     end
 

@@ -1,5 +1,41 @@
 module Base
 {
+    item LMION_DoubleFenceGateA_Part1
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 20.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_DoubleFenceGateA_Part2
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 20.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_DoubleFenceGateB_Part1
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 20.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_DoubleFenceGateB_Part2
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 20.0,
+        Tags = base:usedisplayname,
+    }
+
     xuiSkin default
     {
         entity ES_DoubleFenceGate

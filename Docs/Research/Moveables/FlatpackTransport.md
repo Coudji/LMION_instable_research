@@ -1,79 +1,151 @@
-# Transport appearance / flatpack — deferred
+# Transport items / flatpack
 
-Status: **DECISION DEFERRED** as of 2026-09-05.
+Status: **LargeGate decision implemented on 2026-09-11; in-game re-validation pending.**
 
-## Decision
+## Rule
 
-Do **not** design or generalize flatpack appearance/identity now.
+Transport identity and transport appearance are separate concerns.
 
-The current priority is functional opening behavior. Transport appearance will be revisited only after V3 has working runtime paths for the multipart families that constrain the design, especially:
+A transport item must keep the engine information required by vanilla Moveables. The flatpack is only the inventory presentation:
 
 ```text
-LargeGate
-Garage
+script item identity + WorldSprite + LMION state
+!=
+Icon = Flatpack
 ```
 
-Until then, keep the already validated transport mechanism for the White Panel Simple pilot.
+Do not replace opening-specific transport identity with one universal package item.
 
-## Current validated Simple transport
+## Validated reference behavior
 
-The White Panel pilot uses:
+Legacy is the gameplay oracle.
+
+For LargeGate, Legacy uses one technical `base:moveable` item per physical leaf segment:
+
+```text
+LMION_<Gate>A_Part1
+LMION_<Gate>A_Part2
+LMION_<Gate>B_Part1
+LMION_<Gate>B_Part2
+```
+
+Each leaf pickup therefore produces two physical parcels. The two parcels can be found in inventory or on nearby ground and are consumed when that leaf is replaced.
+
+V3 keeps that visible/physical model but does not copy the old Pickup-mod architecture. The four item declarations live in the script file of the corresponding opening family.
+
+## V3 LargeGate convention
+
+For a built-in definition whose semantic entity is for example:
+
+```text
+Base.LargeFarmGate
+```
+
+V3 derives the segment items:
+
+```text
+Base.LMION_LargeFarmGateA_Part1
+Base.LMION_LargeFarmGateA_Part2
+Base.LMION_LargeFarmGateB_Part1
+Base.LMION_LargeFarmGateB_Part2
+```
+
+The public Lua definition does not expose those technical item names. Leaf/part identity is already derivable from LargeGate geometry and stays an internal runtime consequence.
+
+Each segment item is declared as:
+
+```text
+ItemType = base:moveable
+Icon = Flatpack
+```
+
+The runtime keeps the authoritative transport weight from the effective LMION definition.
+
+## WorldSprite is required
+
+The first V3 integrated LargeGate placement test was performed from commit:
+
+```text
+5841a976ae8d2cf7f1928825fd266f76158c1b00
+```
+
+Observed result:
+
+```text
+Pickup produced the LargeGate parcels.
+Placement failed from inventory right-click.
+Placement failed from the vanilla Moveables toolbar.
+```
+
+The implementation at that commit created every segment as the generic:
+
+```text
+Base.LMION_OpeningParcel
+```
+
+and wrote LMION identity/durability into modData, but never called `Moveable:ReadFromWorldSprite(...)`.
+
+That loses information required by vanilla Moveables. In particular, the vanilla inventory placement path reconstructs move props from:
+
+```lua
+ISMoveableSpriteProps.new(item:getWorldSprite())
+```
+
+So a technical `base:moveable` package without the segment WorldSprite cannot participate correctly in either placement frontend.
+
+**FAILED APPROACH / DO NOT REINTRODUCE:** one generic `LMION_OpeningParcel` with only modData identity and no WorldSprite.
+
+## Canonical transported sprite
+
+LargeGate parcels use the corresponding **closed segment sprite** as their WorldSprite, even if the source gate was open.
+
+Reason:
+
+- V3 runtime SpriteGrids are attached to closed LargeGate sprites;
+- closed N/W sprites are the canonical transport faces;
+- logical durability remains in item modData;
+- open replacement is determined by the existing partner-state/topology logic, not by transporting an open sprite as inventory identity.
+
+The parcel factory therefore follows the vanilla mechanism:
+
+```text
+instanceItem(segment item type)
+-> Moveable:ReadFromWorldSprite(closed segment sprite)
+-> apply LMION weight/name/identity/durability
+```
+
+## Simple / Paired
+
+The already validated 1x1 path continues to use its opening-specific script items, for example:
 
 ```text
 Base.LMION_WhitePanelDoor
+Base.LMION_BlueChurchDoubleDoorLeft
+Base.LMION_BlueChurchDoubleDoorRight
 ```
 
-as its technical `base:moveable` inventory item. This path has already been validated in game for:
+LargeGate now follows the same principle: engine-visible transport items belong to the opening, not to a universal LMION parcel type.
 
-- pickup;
-- replacement;
-- N/W rotation;
-- standard-frame requirement;
-- HP/max-HP persistence;
-- canonical final `IsoDoor`.
+## Validation still required
 
-No attempt should be made now to make this item's visual representation a flatpack.
+The 2026-09-11 change is an implementation correction derived from Legacy and vanilla Moveables behavior. It is **not yet marked VALIDATED EN JEU**.
 
-## Why the appearance decision is postponed
-
-Legacy multipart behavior shows that Garage and LargeGate transport has additional parcel/member semantics. That evidence is useful, but choosing a universal item, typed parcels, shared icon/model, or modData identity **before those V3 runtime paths exist** would optimize an unproven design.
-
-The correct order is therefore:
+Next LargeGate test must confirm both frontends independently:
 
 ```text
-functional Simple runtime
--> functional Paired/FenceGate/Sliding as appropriate
--> functional LargeGate/Garage runtime
--> observe actual V3 parcel requirements
--> then decide transport appearance/flatpack representation
+inventory right-click -> Place
+Moveables toolbar -> Place
 ```
 
-## Premature generic-flatpack experiment
-
-A short-lived V3 experiment introduced:
+and then re-check:
 
 ```text
-Base.LMION_Flatpack
-Runtime/Moveables/DoorTransportIdentity.lua
-Services/Moveables/SimpleDoorFlatpack.lua
+N/W rotation
+A/B leaf identity
+2 parcels per leaf
+inventory + nearby-floor lookup
+partner open/closed coherence
+HP/max-HP persistence
 ```
 
-with definition identity stored in modData.
-
-This experiment was **never validated in game** and has been removed. Do not treat it as an architectural decision or resume it by default.
-
-The restored code is the previously validated per-door Simple transport path.
-
-## Rule for future work
-
-When LargeGate and Garage runtime are working, revisit appearance as a separate concern:
-
-```text
-transport behavior / identity
-!=
-transport visual appearance
-```
-
-At that point compare the real V3 requirements rather than extrapolating from Simple alone.
-
-Sources consulted during the deferred investigation: Legacy `WhitePanelDoor_Item.txt`, `LargeWroughtIronGate_ParcelItems.txt`, `GreenGarageDoor_ParcelItems.txt`, `LargeGateSpecs.lua`, `LargeGateMoveables.lua`, `GarageDoorSpecs.lua`, and `GarageDoorMoveables.lua`.
+Sources: validated Legacy LargeGate parcel scripts/specs and B42 Moveables Lua behavior.

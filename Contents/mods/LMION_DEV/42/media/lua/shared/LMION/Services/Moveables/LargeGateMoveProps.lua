@@ -69,7 +69,7 @@ function LargeGateMoveProps.applyProfile(moveProps, sprite)
     end
 
     moveProps.isMoveable = true
-    moveProps.customItem = profile.itemType
+    moveProps.customItem = segment.itemType
     moveProps.type = "Object"
     moveProps.pickUpTool = profile.pickUpTool
     moveProps.placeTool = profile.placeTool

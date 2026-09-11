@@ -1,5 +1,41 @@
 module Base
 {
+    item LMION_LargeHardenedWoodenGateA_Part1
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 22.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_LargeHardenedWoodenGateA_Part2
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 22.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_LargeHardenedWoodenGateB_Part1
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 22.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_LargeHardenedWoodenGateB_Part2
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 22.0,
+        Tags = base:usedisplayname,
+    }
+
     xuiSkin default
     {
         entity ES_LargeHardenedWoodenGateA

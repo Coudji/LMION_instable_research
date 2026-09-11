@@ -5,7 +5,6 @@ local MoveableProfileFields = require "LMION/Services/Moveables/MoveableProfileF
 
 local LargeGateProfiles = {}
 
-local PARCEL_ITEM_TYPE = "Base.LMION_OpeningParcel"
 local FACINGS = { "N", "W" }
 local LEAVES = { "A", "B" }
 
@@ -85,18 +84,46 @@ local function getTransportRequirements(definition)
     }
 end
 
+local function getSegmentItemType(entityId, leaf, partIndex)
+    local baseItemType = MoveableProfileFields.getItemType(entityId)
+    if baseItemType == nil then
+        return nil
+    end
+
+    return baseItemType .. leaf .. "_Part" .. tostring(partIndex)
+end
+
+local function getSegmentItemTypes(definition)
+    local itemTypes = {}
+
+    for leafIndex = 1, #LEAVES do
+        local leaf = LEAVES[leafIndex]
+        itemTypes[leaf] = {}
+
+        for partIndex = 1, 2 do
+            local itemType = getSegmentItemType(definition.entity, leaf, partIndex)
+            if not MoveableProfileFields.hasScriptItem(itemType) then
+                return nil
+            end
+            itemTypes[leaf][partIndex] = itemType
+        end
+    end
+
+    return itemTypes
+end
+
 local function buildProfile(definition)
     if type(definition) ~= "table"
         or definition.doorType ~= "LargeGate"
         or type(definition.definitionId) ~= "string"
         or definition.definitionId == ""
-        or not hasValidGeometry(definition)
-        or not MoveableProfileFields.hasScriptItem(PARCEL_ITEM_TYPE) then
+        or not hasValidGeometry(definition) then
         return nil
     end
 
     local requirements = getTransportRequirements(definition)
-    if requirements == nil then
+    local itemTypes = getSegmentItemTypes(definition)
+    if requirements == nil or itemTypes == nil then
         return nil
     end
 
@@ -107,7 +134,7 @@ local function buildProfile(definition)
         doorType = definition.doorType,
         definition = definition,
         geometry = definition.geometry,
-        itemType = PARCEL_ITEM_TYPE,
+        itemTypes = itemTypes,
         pickUpTool = requirements.pickUpTool,
         placeTool = requirements.placeTool,
         pickUpLevel = requirements.pickUpLevel,
@@ -131,6 +158,7 @@ local function addSegment(index, profile, facing, leaf, partIndex, isOpen, sprit
         logicalIndex = indices and indices[partIndex] or nil,
         isOpen = isOpen,
         spriteName = spriteName,
+        itemType = profile.itemTypes[leaf][partIndex],
     }
 end
 

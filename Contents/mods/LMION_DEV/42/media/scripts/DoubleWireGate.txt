@@ -1,5 +1,41 @@
 module Base
 {
+    item LMION_DoubleWireGateA_Part1
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 15.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_DoubleWireGateA_Part2
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 15.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_DoubleWireGateB_Part1
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 15.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_DoubleWireGateB_Part2
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 15.0,
+        Tags = base:usedisplayname,
+    }
+
     xuiSkin default
     {
         entity ES_DoubleWireGate

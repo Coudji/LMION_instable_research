@@ -1,49 +1,98 @@
-# Vanilla Moveables behavior relevant to V3 Simple 1x1
+# Vanilla Moveables behavior relevant to LMION V3
 
-Status: recovered from Legacy research and known-good Legacy implementation; V3 hooks not installed yet.
+Status: **engine behavior researched; single-tile path validated in game; LargeGate transport identity correction implemented 2026-09-11 and awaiting re-test.**
 
-## Vanilla behavior to preserve
+## Principle
 
-For an ordinary single-sprite Moveable, Pickup produces one inventory item. This matches LMION Simple 1x1 doors and individual Paired 1x1 leaves.
+Keep vanilla Moveables responsible for its normal cursor, facing, timed action, tool/skill checks and item mechanics. LMION should intervene only where its opening identity, topology, placement rules, canonical `IsoDoor` result or transported state requires it.
 
-The Moveables toolbar owns its normal cursor/ghost/facing interaction. V3 should preserve vanilla behavior and intervene only at the exact boundaries required for LMION door identity, durability, frame rules and canonical IsoDoor finalization.
+Legacy is the functional reference. V3 may use different, simpler code but must reproduce the tested gameplay result.
 
-## Known-good Legacy control points
+## Useful vanilla control points
 
-The validated Legacy Simple-door path wrapped these `ISMoveableSpriteProps` boundaries:
+The validated Legacy / V3 single-tile path uses narrow `ISMoveableSpriteProps` boundaries:
 
 ```text
 new(sprite)
--> attach LMION door profile / canonical N-W faces
+-> attach LMION profile and canonical faces
 
 pickUpMoveableInternal(...)
--> capture source door durability before vanilla removes it
+-> capture source durability before removal
 
 instanceItem(...)
--> serialize captured durability into the resulting inventory item
+-> serialize transport state
 
 canPlaceMoveableInternal(...)
--> apply LMION door/frame placement rules while preserving vanilla skill/tool checks
+-> preserve vanilla checks and add LMION placement rules
 
 placeMoveableInternal(...)
--> let vanilla place first
--> locate/finalize the resulting door
+-> let vanilla create the source object
+-> canonicalize/finalize to IsoDoor
 -> restore transported durability
 ```
 
-This is evidence for useful control points, not a requirement to copy the old V2 hook file wholesale.
+These are evidence-backed control points, not a reason to copy old monolithic hook files.
+
+## Moveable inventory identity
+
+For a vanilla `Moveable`, the world sprite is part of the inventory identity.
+
+Vanilla item creation performs the equivalent of:
+
+```text
+instanceItem(custom or generic moveable item)
+-> item:ReadFromWorldSprite(spriteName)
+```
+
+The placement toolbar enumerates inventory Moveables and reconstructs props from:
+
+```lua
+ISMoveableSpriteProps.new(item:getWorldSprite())
+```
+
+The transaction/right-click placement path also reads `item:getWorldSprite()` before selecting facing and calling the Moveables placement path.
+
+Therefore:
+
+> A custom `base:moveable` transport item that is intended to use vanilla placement must carry a valid WorldSprite.
+
+LMION modData is additional logical state. It does not replace this engine identity.
+
+## LargeGate failure discovered 2026-09-11
+
+Commit under test:
+
+```text
+5841a976ae8d2cf7f1928825fd266f76158c1b00
+```
+
+Observed in game:
+
+```text
+LargeGate pickup: parcels produced
+inventory right-click placement: failed
+Moveables toolbar placement: failed
+```
+
+The V3 LargeGate factory created `Base.LMION_OpeningParcel`, then stored definition/leaf/part/durability in modData, but did not call `ReadFromWorldSprite()`.
+
+Because both placement frontends depend on `item:getWorldSprite()`, this generic-parcel implementation broke their common upstream identity path.
+
+The correction is to restore the known-good Legacy model of segment-specific Moveable items and assign each parcel the canonical closed segment WorldSprite.
+
+Do not attempt to compensate for a missing WorldSprite with separate UI-specific placement hacks.
 
 ## Sprite lifecycle
 
-Legacy rebuilt its sprite-to-door mapping after tile definitions and marked known door sprites `IsMoveAble` at `Events.OnLoadedTileDefinitions`.
+LMION configures known opening sprites after tile definitions are loaded. Runtime LargeGate SpriteGrids are also installed at this lifecycle point.
 
-That lifecycle point is relevant because runtime sprite/SpriteConfig-derived state is not considered stable before tile definitions finish loading.
+Code that depends on sprite properties or SpriteGrid membership must not assume those runtime changes exist before `OnLoadedTileDefinitions`.
 
-V3 must re-evaluate the smallest necessary equivalent only when the first Moveables hook is introduced.
+## Transported state
 
-## Inventory serialization
+Source Java representation is not gameplay state and is not serialized.
 
-Legacy canonicalized an opening's inventory identity to the closed N/W SpriteConfig face while transporting logical durability in item modData:
+LMION transports logical durability through item modData:
 
 ```text
 lmionDoorHealth
@@ -51,17 +100,25 @@ lmionDoorMaxHealth
 lmionDoorMaxWasLogical
 ```
 
-Source Java representation was intentionally not transported as gameplay state.
+LargeGate additionally transports internal segment identity:
 
-## Development rule for the next hook
+```text
+lmionLargeGateDefinitionId
+lmionLargeGateLeaf
+lmionLargeGatePart
+```
 
-Before changing a Moveables function, record:
+Those fields complement the WorldSprite; they do not substitute for it.
 
-- which vanilla function is wrapped;
-- what vanilla still owns before/after the wrapper;
-- the exact LMION reason for intervening;
-- the previous/original function that remains authoritative;
-- any load lifecycle requirement;
-- targeted logs identifying the selected path and failure reason.
+## Development rule
 
-Source: Legacy `Research/Moveables/VanillaMoveablesBehavior.md` plus `Legacy/Contents/.../Pickup/Doors/Hooks.lua` and `Registry.lua`.
+Before changing a vanilla Moveables function, record:
+
+- which exact vanilla boundary is involved;
+- what vanilla already guarantees;
+- the smallest LMION responsibility needed there;
+- the Legacy behavior being reproduced;
+- the load lifecycle requirement, if any;
+- the concrete failure/reason when rejecting an action.
+
+When behavior is uncertain, inspect the B42 game Lua / supplied JAR before adding an abstraction.

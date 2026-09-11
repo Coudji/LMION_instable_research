@@ -1,5 +1,41 @@
 module Base
 {
+    item LMION_LargeWroughtIronGateA_Part1
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 30.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_LargeWroughtIronGateA_Part2
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 30.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_LargeWroughtIronGateB_Part1
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 30.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_LargeWroughtIronGateB_Part2
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 30.0,
+        Tags = base:usedisplayname,
+    }
+
     xuiSkin default
     {
         entity ES_LargeWroughtIronGateA

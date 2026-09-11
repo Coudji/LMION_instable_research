@@ -1,5 +1,41 @@
 module Base
 {
+    item LMION_LargeFarmGateA_Part1
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 20.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_LargeFarmGateA_Part2
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 20.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_LargeFarmGateB_Part1
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 20.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_LargeFarmGateB_Part2
+    {
+        DisplayCategory = Furniture,
+        ItemType = base:moveable,
+        Icon = Flatpack,
+        Weight = 20.0,
+        Tags = base:usedisplayname,
+    }
+
     xuiSkin default
     {
         entity ES_LargeFarmGateA
