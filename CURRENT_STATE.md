@@ -170,7 +170,7 @@ Use one PZ script file per opening/family rather than separate `_Item`, `_Build`
 
 Script files contain only parse-time facts PZ actually needs, such as transport items, XUI, CraftRecipe and SpriteConfig. LMION Lua definitions remain authoritative for semantic type, durability, geometry and gameplay data.
 
-## LargeGate runtime — PARTIALLY VALIDATED IN GAME
+## LargeGate runtime — MOVEABLES REPLACEMENT VALIDATED IN GAME
 
 LargeGate V3 has family-specific services for:
 
@@ -231,54 +231,37 @@ LMION_<Gate>B_Part2
 
 The four declarations live in each gate's normal script file. Item names are internal consequences of the opening entity and are not public definition fields. Parcels use their canonical closed segment WorldSprite and `Icon = Flatpack`; LMION modData carries definition/leaf/part and durability.
 
-### 2026-09-11 in-game result on b92705e
+### 2026-09-11 initial in-game result on b92705e
 
 Game log reports Project Zomboid **42.20.4**.
 
-Tested with `LargeGates.Metal.DoubleWireGate`, leaf B, facing N:
+Tested with `LargeGates.Metal.DoubleWireGate`, mixed inventory/floor parcels:
 
 ```text
 pickup succeeded -> 2 parcels
-part 2 in inventory
-part 1 on nearby floor
-toolbar placement succeeded
-right-click inventory placement also succeeded
+placement succeeded from toolbar and inventory right-click
 placed leaf was functional
 both physical members finalized as IsoDoor
 ```
 
-This validates that the segment-item + WorldSprite correction repaired both placement frontends and that mixed inventory/floor **lookup** works.
+This validated that segment-item + WorldSprite restored both placement frontends and that mixed inventory/floor lookup worked.
 
-Remaining defect from that test:
+A remaining defect was then isolated:
 
 ```text
-floor parcel was not consumed after successful placement
-inventory parcel was consumed
-same defect through toolbar and right-click placement
+Part1 inventory + Part2 floor -> both consumed
+Part2 inventory + Part1 floor -> placement succeeded but Part1 remained on floor
 ```
 
-The placement log reached `LargeGate placement completed`, so the old consumption helper incorrectly reported success even though the floor `IsoWorldInventoryObject` remained visible.
+The floor Part1 was definitely the parcel used by placement because its HP/maxHP reached the placed Part1. The defect was therefore after selection, not a missing/wrong lookup.
 
 ### Historical comparison: Legacy vs Workshop/V3 pickup lifecycle
 
-This is now a documented regression boundary.
+Known-good Legacy LargeGate pickup delegates each physical member to vanilla `pickUpMoveableInternal()` with `isMultiSprite = true`. Vanilla owns item creation, `ReadFromWorldSprite`, world-item delivery and source-object removal.
 
-Known-good Legacy LargeGate pickup does **not** manually construct/deliver/remove each parcel. For every physical member it creates `ISMoveableSpriteProps` and delegates to vanilla:
+The failed Workshop refactor used a manual multipart lifecycle. The first V3 implementation independently recreated the same class of manual lifecycle.
 
-```text
-moveProps.isMultiSprite = true
--> moveProps:pickUpMoveableInternal(...)
-```
-
-Vanilla therefore owns item creation, `ReadFromWorldSprite`, component transfer, world-item delivery and source-object removal.
-
-The failed Workshop refactor replaced that path with `MultiSquarePickupInternal`, which manually created the item, manually added it to the floor and manually removed the source. The first V3 LargeGate implementation independently recreated the same class of manual lifecycle using `LargeGateParcelFactory` + `MoveableDoorSegmentPickup`.
-
-**FAILED REFACTOR PATTERN / DO NOT REINTRODUCE BY DEFAULT:** manually recreating vanilla multipart Moveable pickup when Legacy proves the vanilla `pickUpMoveableInternal()` path works.
-
-### Current correction awaiting re-test
-
-LargeGate pickup has been returned to the validated Legacy boundary:
+V3 has returned pickup to the validated Legacy/vanilla boundary:
 
 ```text
 LargeGate high-level hook resolves the two members
@@ -286,11 +269,44 @@ LargeGate high-level hook resolves the two members
 -> the existing single owner of instanceItem/pickUpMoveableInternal adds LMION identity + durability
 ```
 
-No second hook owner was added.
+**FAILED REFACTOR PATTERN / DO NOT REINTRODUCE BY DEFAULT:** manually recreating vanilla multipart Moveable pickup when Legacy proves the vanilla path works.
 
-The custom LargeGate placement remains unchanged because it already successfully rebuilds/finalizes the leaf. Floor consumption keeps the same removal sequence used by vanilla and Legacy, but now verifies that the world object actually disappeared before reporting success.
+### Final floor-parcel correction — VALIDATED
 
-This correction is **NOT YET VALIDATED IN GAME**.
+The successful correction does **not** replace PZ's world-item removal calls. It preserves the identity of the exact floor object selected before placement:
+
+```text
+floor lookup
+-> return item + source + exact IsoWorldInventoryObject
+-> retain exact world object in placement plan
+-> place/finalize both members
+-> consume that retained world object
+```
+
+The former `preferred`/cursor-item privilege was also removed. Part1 and Part2 are now resolved independently from the available stock, matching Legacy behavior.
+
+Relevant commits:
+
+```text
+1d83215c209053830384e7d7bd330b110bc494ec  Align LargeGate placement lookup with Legacy
+a37ead498fc1f2ee26d5164e44ca30b5d8113cee  Capture exact LargeGate floor parcel object
+4b097bbf9a81a76bc4b9fbf29ff853c06c553179  Retain selected LargeGate floor world object
+5cb06b60129ab61d83f19cdf04535d942e5b20cb  Consume exact selected LargeGate floor parcel
+613b4ef14e716f71c7ccedc0a4ae4058cc6ca851  Use exact floor parcel during LargeGate placement
+```
+
+User re-tested the previously failing case after `613b4ef...` and confirmed: **it works**.
+
+Validated LargeGate replacement semantics now include:
+
+```text
+Part1 and Part2 are independent stock pieces
+inventory + nearby floor may be mixed in either arrangement
+pickup origin does not pair the pieces
+HP/maxHP follows the selected parcel
+both selected parcels are consumed
+functional canonical IsoDoor leaf is reconstructed
+```
 
 Research:
 
@@ -306,23 +322,36 @@ LargeGate Build code exists, including vanilla full-gate narrowing for supported
 
 It remains **NOT VALIDATED IN GAME** as an integrated LargeGate Build checkpoint. Keep Build validation separate from Moveables replacement tests.
 
-## Garage status
+## Garage status — NEXT ACTIVE WORKSTREAM
 
 Garage definitions/defaults are migrated, but Garage V3 runtime is not yet ported.
 
-Legacy Garage remains the contract, including:
+Legacy Garage is the behavioral oracle and is already known-good in game. Required contract:
 
 ```text
-inventory placement -> variable width
+pickup may collect the complete physical garage
+inventory placement -> variable width chosen from available stock
 toolbar placement -> intentionally fixed L3
 N/W
-START/MIDDLE*/END parcels
-inventory + nearby-floor parcel lookup
-transactional placement/rollback
-HP persistence
+START / MIDDLE* / END stock model
+inventory first + nearby-floor lookup
+for requested length L consume exactly 1 START + (L-2) MIDDLE + 1 END
+extra parcels remain untouched
+HP/maxHP persists per selected parcel/member
+placement is transactional: prevalidate all, create all, rollback on failure, consume parcels only after complete success
 ```
 
-Do not redesign Garage behavior from the V3 LargeGate implementation.
+Concrete Legacy behavior to preserve:
+
+```text
+pickup L6 -> place L3
+consumes 1 START + 1 MIDDLE + 1 END
+remaining 3 parcels stay available
+```
+
+Legacy parcel lookup is an availability pool across inventory + floor radius (`ISMoveableSpriteProps.multiSpriteFloorRadius or 3`). Selected parcels are the only ones consumed.
+
+Do **not** redesign Garage around LargeGate pairing or cursor-item semantics. LargeGate and Garage share useful low-level lessons about exact floor-world-object identity, but Garage's stock/length transaction remains its own domain behavior.
 
 ## Historical failures / do not repeat
 
@@ -333,7 +362,9 @@ Do not redesign Garage behavior from the V3 LargeGate implementation.
 - V2 LargeGate toolbar could show a complete ghost while click placement failed; do not resume speculative V2 patches.
 - V3 generic `Base.LMION_OpeningParcel` without a WorldSprite broke both LargeGate placement frontends on `5841a976...`.
 - Workshop/manual multipart pickup lifecycle is not the behavioral reference; Legacy delegates each LargeGate member to vanilla `pickUpMoveableInternal()`.
-- A successful placement log is not proof of parcel consumption; floor-world-object removal must be verified when debugging this path.
+- A successful placement log is not proof of parcel consumption.
+- Re-resolving a selected floor parcel from `item:getWorldItem()` after placement can lose the exact world object that must be removed; retain the selected `IsoWorldInventoryObject` through the transaction.
+- Do not add batch IDs/pickup-session pairing to LargeGate or Garage stock.
 
 General rule: inspect vanilla Lua/JAR before changing an engine boundary and record the result here or under `Docs/Research`.
 
@@ -351,17 +382,16 @@ General rule: inspect vanilla Lua/JAR before changing an engine boundary and rec
 - their frame/no-frame contracts;
 - HP/max-HP persistence for those pilots;
 - MetalWelding Moveables tool bridge through Sliding;
-- LargeGate segment item + WorldSprite is sufficient for both toolbar and right-click placement to create a functional leaf;
-- LargeGate mixed inventory/floor parcel lookup works.
+- LargeGate segment-specific item + WorldSprite transport;
+- LargeGate pickup through vanilla physical-member lifecycle;
+- LargeGate toolbar and inventory/right-click replacement;
+- LargeGate mixed inventory/floor parcel lookup in either Part1/Part2 arrangement;
+- LargeGate exact floor-parcel consumption after successful placement;
+- LargeGate per-parcel HP/maxHP restoration;
+- functional canonical `IsoDoor` LargeGate leaf after replacement.
 
-**KNOWN LARGEGATE DEFECT UNDER CORRECTION:**
+**IMPLEMENTED BUT TEST STILL REQUIRED:**
 
-- on `b92705e`, a nearby-floor parcel was left behind after otherwise successful placement.
-
-**IMPLEMENTED BUT RE-TEST REQUIRED:**
-
-- LargeGate pickup restored to vanilla `pickUpMoveableInternal()` per physical member;
-- verified floor-consumption result reporting;
 - LargeGate Build runtime.
 
 **NOT YET IMPLEMENTED/VALIDATED BROADLY:**
@@ -372,16 +402,6 @@ General rule: inspect vanilla Lua/JAR before changing an engine boundary and rec
 - remaining Sliding definitions;
 - Garage V3 runtime.
 
-## Immediate next test
+## Immediate next work
 
-Use a freshly picked-up LargeGate leaf after the latest pickup-lifecycle correction:
-
-```text
-1. Pickup one A or B leaf -> confirm 2 floor parcels.
-2. Put one parcel in inventory; leave the other on the floor.
-3. Place from toolbar.
-4. Confirm BOTH parcels disappear.
-5. Repeat from inventory right-click Place.
-```
-
-If the floor parcel still remains, use the new consumption failure log/result as the next boundary. Do not alter placement geometry/finalization while it remains functional.
+Begin the Garage V3 runtime port from the known-good Legacy implementation. Preserve the Legacy stock/length transaction exactly before considering simplifications.
