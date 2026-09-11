@@ -1,26 +1,24 @@
 # Transport items / flatpack
 
-Status: **LargeGate decision implemented on 2026-09-11; in-game re-validation pending.**
+Status: **LargeGate segment identity validated enough to restore placement; floor-parcel consumption re-test pending after returning pickup to vanilla lifecycle.**
 
 ## Rule
 
 Transport identity and transport appearance are separate concerns.
 
-A transport item must keep the engine information required by vanilla Moveables. The flatpack is only the inventory presentation:
+A transport item must keep the engine information required by vanilla Moveables:
 
 ```text
-script item identity + WorldSprite + LMION state
+script item identity + WorldSprite + LMION logical state
 !=
 Icon = Flatpack
 ```
 
 Do not replace opening-specific transport identity with one universal package item.
 
-## Validated reference behavior
+## Legacy LargeGate contract
 
-Legacy is the gameplay oracle.
-
-For LargeGate, Legacy uses one technical `base:moveable` item per physical leaf segment:
+Legacy uses one technical `base:moveable` item per physical leaf segment:
 
 ```text
 LMION_<Gate>A_Part1
@@ -29,19 +27,19 @@ LMION_<Gate>B_Part1
 LMION_<Gate>B_Part2
 ```
 
-Each leaf pickup therefore produces two physical parcels. The two parcels can be found in inventory or on nearby ground and are consumed when that leaf is replaced.
+Each leaf pickup therefore produces two physical parcels. Replacement can resolve those parcels from inventory or nearby ground.
 
-V3 keeps that visible/physical model but does not copy the old Pickup-mod architecture. The four item declarations live in the script file of the corresponding opening family.
+V3 keeps this physical model without restoring the old separate-mod architecture. The four item declarations live in the normal script file of the corresponding gate family.
 
-## V3 LargeGate convention
+## V3 convention
 
-For a built-in definition whose semantic entity is for example:
+For a semantic entity such as:
 
 ```text
 Base.LargeFarmGate
 ```
 
-V3 derives the segment items:
+V3 derives internally:
 
 ```text
 Base.LMION_LargeFarmGateA_Part1
@@ -50,73 +48,81 @@ Base.LMION_LargeFarmGateB_Part1
 Base.LMION_LargeFarmGateB_Part2
 ```
 
-The public Lua definition does not expose those technical item names. Leaf/part identity is already derivable from LargeGate geometry and stays an internal runtime consequence.
+These technical names are not public definition fields. A/B and part index are already consequences of LargeGate geometry.
 
-Each segment item is declared as:
+Each segment item is declared as a Moveable and uses `Icon = Flatpack` only for presentation.
 
-```text
-ItemType = base:moveable
-Icon = Flatpack
-```
+## WorldSprite correction
 
-The runtime keeps the authoritative transport weight from the effective LMION definition.
+The first V3 integrated LargeGate test on `5841a976...` produced parcels but neither toolbar nor inventory/right-click placement worked.
 
-## WorldSprite is required
+Cause: generic `Base.LMION_OpeningParcel` items had LMION identity only in modData and no Moveable WorldSprite.
 
-The first V3 integrated LargeGate placement test was performed from commit:
+Vanilla reconstructs Moveables from `item:getWorldSprite()`, so that package could not enter the normal placement path.
 
-```text
-5841a976ae8d2cf7f1928825fd266f76158c1b00
-```
+**FAILED APPROACH / DO NOT REINTRODUCE:** one generic LargeGate package with no segment WorldSprite.
 
-Observed result:
+LargeGate transport now uses the corresponding **closed segment sprite** as the canonical WorldSprite, even when the source gate was open. Partner-state logic decides whether the reconstructed leaf is open or closed; inventory identity stays canonical/stable.
 
-```text
-Pickup produced the LargeGate parcels.
-Placement failed from inventory right-click.
-Placement failed from the vanilla Moveables toolbar.
-```
+## 2026-09-11 validation after segment-item correction
 
-The implementation at that commit created every segment as the generic:
+On commit `b92705e...`, with Project Zomboid 42.20.4:
 
 ```text
-Base.LMION_OpeningParcel
+part 1 left on nearby floor
+part 2 moved to inventory
+toolbar Place -> functional leaf created
+inventory right-click Place -> same functional result
 ```
 
-and wrote LMION identity/durability into modData, but never called `Moveable:ReadFromWorldSprite(...)`.
-
-That loses information required by vanilla Moveables. In particular, the vanilla inventory placement path reconstructs move props from:
-
-```lua
-ISMoveableSpriteProps.new(item:getWorldSprite())
-```
-
-So a technical `base:moveable` package without the segment WorldSprite cannot participate correctly in either placement frontend.
-
-**FAILED APPROACH / DO NOT REINTRODUCE:** one generic `LMION_OpeningParcel` with only modData identity and no WorldSprite.
-
-## Canonical transported sprite
-
-LargeGate parcels use the corresponding **closed segment sprite** as their WorldSprite, even if the source gate was open.
-
-Reason:
-
-- V3 runtime SpriteGrids are attached to closed LargeGate sprites;
-- closed N/W sprites are the canonical transport faces;
-- logical durability remains in item modData;
-- open replacement is determined by the existing partner-state/topology logic, not by transporting an open sprite as inventory identity.
-
-The parcel factory therefore follows the vanilla mechanism:
+This validates:
 
 ```text
-instanceItem(segment item type)
--> Moveable:ReadFromWorldSprite(closed segment sprite)
--> apply LMION weight/name/identity/durability
+segment-specific Moveable identity
+WorldSprite bootstrap
+mixed inventory/floor lookup
+both placement frontends
 ```
+
+It did **not** validate the complete transaction because the floor parcel remained after placement.
+
+## Pickup lifecycle correction
+
+The floor-consumption investigation exposed a more important Legacy/Workshop difference.
+
+Known-good Legacy creates each LargeGate parcel by calling vanilla `pickUpMoveableInternal()` with `isMultiSprite = true`. Vanilla owns creation of the Moveable, `ReadFromWorldSprite`, world-item delivery and source removal.
+
+Workshop replaced this with a manual multisquare helper. The first V3 implementation also manually created/delivered parcels through `LargeGateParcelFactory` and `MoveableDoorSegmentPickup`.
+
+V3 now returns to the Legacy boundary:
+
+```text
+resolve physical member
+-> ISMoveableSpriteProps.new(closed segment sprite)
+-> isMultiSprite = true
+-> vanilla pickUpMoveableInternal(...)
+-> existing LMION hook owner writes identity + durability onto vanilla-created item
+```
+
+This preserves the public/addon-facing model while avoiding a second implementation of the PZ Moveable lifecycle.
+
+## Floor consumption
+
+Vanilla and Legacy both remove a floor parcel with:
+
+```text
+transmitRemoveItemFromSquare(worldItem)
+removeWorldObject(worldItem)
+item:setWorldItem(nil)
+```
+
+V3 keeps this sequence. After the 2026-09-11 false-success result, it additionally verifies that the world object actually disappeared before reporting success.
+
+Do not replace these engine calls speculatively unless an exact current-game source/JAR proves the contract changed.
 
 ## Simple / Paired
 
-The already validated 1x1 path continues to use its opening-specific script items, for example:
+The validated 1x1 path continues to use opening-specific technical items, for example:
 
 ```text
 Base.LMION_WhitePanelDoor
@@ -124,28 +130,18 @@ Base.LMION_BlueChurchDoubleDoorLeft
 Base.LMION_BlueChurchDoubleDoorRight
 ```
 
-LargeGate now follows the same principle: engine-visible transport items belong to the opening, not to a universal LMION parcel type.
+LargeGate follows the same principle: engine-visible transport identity belongs to the opening/member, not to a universal LMION package.
 
-## Validation still required
+## Next validation
 
-The 2026-09-11 change is an implementation correction derived from Legacy and vanilla Moveables behavior. It is **not yet marked VALIDATED EN JEU**.
-
-Next LargeGate test must confirm both frontends independently:
+Use freshly picked-up parcels after the vanilla-lifecycle correction:
 
 ```text
-inventory right-click -> Place
-Moveables toolbar -> Place
+pickup one leaf -> 2 floor parcels
+move one parcel to inventory
+leave one parcel on the floor
+place with toolbar -> both must be consumed
+repeat with right-click Place
 ```
 
-and then re-check:
-
-```text
-N/W rotation
-A/B leaf identity
-2 parcels per leaf
-inventory + nearby-floor lookup
-partner open/closed coherence
-HP/max-HP persistence
-```
-
-Sources: validated Legacy LargeGate parcel scripts/specs and B42 Moveables Lua behavior.
+Only after this passes should the LargeGate transport transaction be marked validated.

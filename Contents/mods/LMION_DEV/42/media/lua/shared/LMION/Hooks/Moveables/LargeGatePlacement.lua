@@ -75,10 +75,11 @@ local function placePlan(plan)
         local entry = plan[partIndex]
         if not LargeGateParcelConsumption.consume(entry.item, entry.source) then
             print(string.format(
-                "[LMION:DEV] LargeGate parcel consumption failed: definition=%s leaf=%s part=%d",
+                "[LMION:DEV] LargeGate parcel consumption failed: definition=%s leaf=%s part=%d source=%s",
                 tostring(plan.definitionId),
                 tostring(plan.leaf),
-                partIndex
+                partIndex,
+                tostring(entry.source)
             ))
             return false
         end

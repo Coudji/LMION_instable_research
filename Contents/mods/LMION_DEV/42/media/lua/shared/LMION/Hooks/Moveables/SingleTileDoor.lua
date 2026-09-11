@@ -2,6 +2,7 @@ require "Moveables/ISMoveableSpriteProps"
 
 local DoorObject = require "LMION/PZ/DoorObject"
 local DoorTransportState = require "LMION/Runtime/Moveables/DoorTransportState"
+local LargeGateParcel = require "LMION/Runtime/Moveables/LargeGateParcel"
 local LargeGateMoveProps = require "LMION/Services/Moveables/LargeGateMoveProps"
 local SingleTileDoorMoveProps = require "LMION/Services/Moveables/SingleTileDoorMoveProps"
 local SingleTileDoorPlacement = require "LMION/Services/Moveables/SingleTileDoorPlacement"
@@ -11,6 +12,45 @@ local SingleTileDoorHook = {}
 
 local function clearPendingState(moveProps)
     moveProps.lmionPendingDoorState = nil
+    moveProps.lmionPendingLargeGateSegment = nil
+    moveProps.lmionPendingLargeGateState = nil
+end
+
+local function getLargeGateClosedSprite(segment)
+    local profile = segment and segment.profile or nil
+    local face = profile and profile.geometry[segment.facing] or nil
+    local parts = face and face[segment.leaf] or nil
+    local part = parts and parts[segment.partIndex] or nil
+    return part and part.closed or nil
+end
+
+local function getLargeGateParcelName(segment)
+    local profile = segment and segment.profile or nil
+    return tostring(profile and profile.displayName or segment.definitionId)
+        .. " "
+        .. tostring(segment.leaf)
+        .. " ("
+        .. tostring(segment.partIndex)
+        .. "/2)"
+end
+
+local function configureLargeGateParcel(item, segment, state)
+    if item == nil or segment == nil then
+        return
+    end
+
+    local profile = segment.profile
+    if profile ~= nil then
+        item:setActualWeight(profile.weight)
+        item:setWeight(profile.weight)
+    end
+
+    item:setName(getLargeGateParcelName(segment))
+    item:setCustomName(true)
+    LargeGateParcel.writeIdentity(item, segment)
+    if state ~= nil then
+        LargeGateParcel.writeState(item, state)
+    end
 end
 
 local function hasPlacementRequirements(moveProps, character)
@@ -82,6 +122,7 @@ function SingleTileDoorHook.install()
 
     ISMoveableSpriteProps.pickUpMoveableInternal = function(self, character, square, object, sprInstance, spriteName, createItem, rotating)
         local profile = SingleTileDoorMoveProps.getProfile(self)
+        local largeGateSegment = LargeGateMoveProps.getSegment(self)
         clearPendingState(self)
 
         if profile ~= nil and DoorObject.isDoor(object) then
@@ -95,6 +136,9 @@ function SingleTileDoorHook.install()
                 tostring(state and state.health or nil),
                 tostring(state and state.maxHealth or nil)
             ))
+        elseif largeGateSegment ~= nil and DoorObject.isDoor(object) then
+            self.lmionPendingLargeGateSegment = largeGateSegment
+            self.lmionPendingLargeGateState = DoorTransportState.capture(object) or {}
         end
 
         local result = originalPickup(self, character, square, object, sprInstance, spriteName, createItem, rotating)
@@ -104,10 +148,13 @@ function SingleTileDoorHook.install()
 
     ISMoveableSpriteProps.instanceItem = function(self, spriteNameOverride)
         local profile = SingleTileDoorMoveProps.getProfile(self)
+        local largeGateSegment = LargeGateMoveProps.getSegment(self)
         local spriteName = spriteNameOverride
 
         if profile ~= nil then
             spriteName = SingleTileDoorMoveProps.getClosedSpriteName(self, profile, spriteNameOverride)
+        elseif largeGateSegment ~= nil then
+            spriteName = getLargeGateClosedSprite(largeGateSegment) or spriteNameOverride
         end
 
         local item = originalInstanceItem(self, spriteName)
@@ -121,6 +168,12 @@ function SingleTileDoorHook.install()
                 tostring(profile.member),
                 tostring(profile.itemType)
             ))
+        elseif largeGateSegment ~= nil and item ~= nil then
+            configureLargeGateParcel(
+                item,
+                self.lmionPendingLargeGateSegment or largeGateSegment,
+                self.lmionPendingLargeGateState
+            )
         end
 
         return item

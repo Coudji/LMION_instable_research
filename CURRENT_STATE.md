@@ -7,8 +7,8 @@ This file is the canonical handoff for active V3 development in `Coudji/LMION_in
 ## Repository roles
 
 - `Coudji/LMION_instable_research` — active V3 development repository.
-- `Coudji/LMION_Legacy` — **functional behavioral oracle**. When a gameplay behavior conflicts with a refactor-era idea, the validated Legacy behavior wins.
-- `LMION_Legacy/Workshop` — previous refactor attempt. It may contain useful research/code ideas, but it is not the gameplay oracle.
+- `Coudji/LMION_Legacy` — **functional behavioral oracle**. Validated Legacy gameplay wins over refactor-era ideas.
+- `LMION_Legacy/Workshop` — failed/abandoned refactor attempt. Useful for archaeology only; not a behavioral oracle.
 - do not modify Legacy unless explicitly requested.
 
 Current dev mod:
@@ -21,22 +21,22 @@ Mod folder:     Contents/mods/LMION_DEV
 
 ## Non-negotiable refactor rules
 
-V3 must reproduce the known-good in-game behavior with simpler and more maintainable code.
+V3 must reproduce known-good Legacy behavior with simpler, readable, maintainable code.
 
 - one gameplay mod; no old Core/Pickup/Build split into separate mods;
-- simple functions with clear names;
+- simple functions and clear names;
 - one function = one identifiable responsibility;
 - one file = one identifiable responsibility;
-- split files before they become difficult for a human to read;
-- hooks are thin adapters around a real vanilla boundary;
+- split files before they become difficult to read;
+- hooks are thin adapters around real vanilla boundaries;
 - one vanilla boundary should have one owner;
 - no catch-all routers/managers/bridges;
 - no speculative abstractions before duplicate behavior is proven;
 - public definitions contain semantic/data facts, not derivable runtime implementation details;
-- external addon modders must be able to understand the API and conventions without reading accidental internals;
+- addon authors must be able to understand the API without relying on internals;
 - keep research/handoff documents current;
-- record failed approaches so later conversations do not repeat them;
-- when engine behavior is uncertain, inspect B42 vanilla Lua and/or the supplied `projectzomboid.jar` instead of guessing.
+- record failed approaches so future conversations do not repeat them;
+- when engine behavior is uncertain, inspect B42 vanilla Lua and/or the supplied JAR instead of guessing.
 
 ## Canonical opening rules
 
@@ -103,7 +103,14 @@ LargeGates            6
 SlidingDoors          2
 ```
 
-GameEntity reverse lookup is validated for the existing indexed identities:
+Validated startup diagnostics include:
+
+```text
+[LMION:DEV] definitions ready: 23 defaults, 72 definitions, 0 extensions
+[LMION:DEV] entity index ready: 77 mappings; Base.WhitePanelDoor -> Doors.Wood.WhitePanelDoor
+```
+
+GameEntity reverse lookup uses:
 
 ```text
 world object
@@ -111,13 +118,6 @@ world object
 -> EntityIndex
 -> definitionId
 -> effective definition
-```
-
-Known validated startup diagnostics include:
-
-```text
-[LMION:DEV] definitions ready: 23 defaults, 72 definitions, 0 extensions
-[LMION:DEV] entity index ready: 77 mappings; Base.WhitePanelDoor -> Doors.Wood.WhitePanelDoor
 ```
 
 ## Definitions / addon-facing rules
@@ -132,11 +132,11 @@ extensionId
 
 `doorType` is the semantic discriminator. Runtime frame/topology/placement consequences are derived internally where possible.
 
-Paired definitions explicitly override inherited `doorType = "Simple"` with `doorType = "Paired"`. They do not expose a public frame side/topology field because their geometry already defines left/right.
+Paired definitions explicitly use `doorType = "Paired"`. They do not expose a public frame-side/topology field because geometry already defines left/right.
 
 LargeGate definitions expose exact N/W A/B geometry but not implementation-specific parcel or topology fields.
 
-Validation is intentionally still structural/minimal. Full strict schema validation is deferred until the public API shape is complete.
+Validation remains intentionally structural/minimal. Full strict schema validation is deferred until the public API shape is complete.
 
 ## Single-tile integrated checkpoint — VALIDATED IN GAME
 
@@ -164,26 +164,15 @@ canonical final IsoDoor
 
 This validates the architecture and those pilots, not every catalog definition.
 
-The one-entity Moveables profile provider covers identical Simple/FenceGate/Sliding shapes when the matching transport script item exists. Paired remains separate because it has two entities/members.
-
 ## Script convention
 
 Use one PZ script file per opening/family rather than separate `_Item`, `_Build`, `_Entity` files.
 
-The script file contains only parse-time facts PZ actually needs, such as:
+Script files contain only parse-time facts PZ actually needs, such as transport items, XUI, CraftRecipe and SpriteConfig. LMION Lua definitions remain authoritative for semantic type, durability, geometry and gameplay data.
 
-```text
-transport item declarations
-XUI
-CraftRecipe
-SpriteConfig
-```
+## LargeGate runtime — PARTIALLY VALIDATED IN GAME
 
-LMION Lua definitions remain authoritative for semantic type, durability, geometry and gameplay data.
-
-## LargeGate runtime — IMPLEMENTED, INTEGRATED RE-TEST PENDING
-
-LargeGate V3 now has family-specific services for:
+LargeGate V3 has family-specific services for:
 
 ```text
 profile/segment lookup
@@ -198,7 +187,7 @@ Moveables ghost rendering
 Build leaf GameEntities/finalization
 ```
 
-Legacy remains the functional contract:
+Legacy remains the contract:
 
 ```text
 pickup/replacement per A/B leaf
@@ -209,7 +198,7 @@ partner-state coherence
 HP/max-HP persistence
 ```
 
-### First integrated placement test — FAILED on 5841a976
+### Failure 1 — generic parcel had no WorldSprite
 
 Tested commit:
 
@@ -220,26 +209,18 @@ Tested commit:
 Observed:
 
 ```text
-LargeGate pickup produced parcels.
-Placement failed from inventory right-click.
-Placement failed from the vanilla Moveables toolbar.
+pickup produced parcels
+inventory right-click placement failed
+toolbar placement failed
 ```
 
-The common upstream defect was the transport identity introduced during the V3 implementation:
+Cause: all LargeGate segments used generic `Base.LMION_OpeningParcel` with LMION identity only in modData and no Moveable WorldSprite.
 
-```text
-all segments -> Base.LMION_OpeningParcel
-identity only in modData
-no Moveable WorldSprite assigned
-```
+**FAILED APPROACH / DO NOT REINTRODUCE:** a universal LargeGate package that replaces engine-visible segment identity.
 
-Vanilla Moveables reconstructs placement props from `item:getWorldSprite()`. The generic parcel therefore could not correctly enter either placement frontend.
+### Transport identity correction — commit b92705e
 
-**FAILED APPROACH / DO NOT REINTRODUCE:** a universal LargeGate `LMION_OpeningParcel` that replaces the engine-visible segment identity.
-
-### LargeGate transport correction — 2026-09-11
-
-V3 is returning to the known-good Legacy parcel model while keeping the new architecture simple:
+V3 restored the Legacy physical parcel model:
 
 ```text
 LMION_<Gate>A_Part1
@@ -248,16 +229,68 @@ LMION_<Gate>B_Part1
 LMION_<Gate>B_Part2
 ```
 
-Differences from old architecture:
+The four declarations live in each gate's normal script file. Item names are internal consequences of the opening entity and are not public definition fields. Parcels use their canonical closed segment WorldSprite and `Icon = Flatpack`; LMION modData carries definition/leaf/part and durability.
 
-- declarations live in the corresponding LargeGate script file;
-- item names are derived internally from the semantic entity instead of being duplicated in public definitions;
-- each item uses `Icon = Flatpack` only as presentation;
-- parcel factory calls `ReadFromWorldSprite(closedSegmentSprite)` so vanilla Moveables receives the identity it expects;
-- LMION modData still stores definition/leaf/part and durability state;
-- the generic `OpeningParcel` item is removed.
+### 2026-09-11 in-game result on b92705e
 
-This correction is **NOT YET VALIDATED IN GAME**. Do not mark LargeGate replacement functional until both placement frontends pass.
+Game log reports Project Zomboid **42.20.4**.
+
+Tested with `LargeGates.Metal.DoubleWireGate`, leaf B, facing N:
+
+```text
+pickup succeeded -> 2 parcels
+part 2 in inventory
+part 1 on nearby floor
+toolbar placement succeeded
+right-click inventory placement also succeeded
+placed leaf was functional
+both physical members finalized as IsoDoor
+```
+
+This validates that the segment-item + WorldSprite correction repaired both placement frontends and that mixed inventory/floor **lookup** works.
+
+Remaining defect from that test:
+
+```text
+floor parcel was not consumed after successful placement
+inventory parcel was consumed
+same defect through toolbar and right-click placement
+```
+
+The placement log reached `LargeGate placement completed`, so the old consumption helper incorrectly reported success even though the floor `IsoWorldInventoryObject` remained visible.
+
+### Historical comparison: Legacy vs Workshop/V3 pickup lifecycle
+
+This is now a documented regression boundary.
+
+Known-good Legacy LargeGate pickup does **not** manually construct/deliver/remove each parcel. For every physical member it creates `ISMoveableSpriteProps` and delegates to vanilla:
+
+```text
+moveProps.isMultiSprite = true
+-> moveProps:pickUpMoveableInternal(...)
+```
+
+Vanilla therefore owns item creation, `ReadFromWorldSprite`, component transfer, world-item delivery and source-object removal.
+
+The failed Workshop refactor replaced that path with `MultiSquarePickupInternal`, which manually created the item, manually added it to the floor and manually removed the source. The first V3 LargeGate implementation independently recreated the same class of manual lifecycle using `LargeGateParcelFactory` + `MoveableDoorSegmentPickup`.
+
+**FAILED REFACTOR PATTERN / DO NOT REINTRODUCE BY DEFAULT:** manually recreating vanilla multipart Moveable pickup when Legacy proves the vanilla `pickUpMoveableInternal()` path works.
+
+### Current correction awaiting re-test
+
+LargeGate pickup has been returned to the validated Legacy boundary:
+
+```text
+LargeGate high-level hook resolves the two members
+-> each member calls vanilla pickUpMoveableInternal()
+-> the existing single owner of instanceItem/pickUpMoveableInternal adds LMION identity + durability
+```
+
+No second hook owner was added.
+
+The custom LargeGate placement remains unchanged because it already successfully rebuilds/finalizes the leaf. Floor consumption keeps the same removal sequence used by vanilla and Legacy, but now verifies that the world object actually disappeared before reporting success.
+
+This correction is **NOT YET VALIDATED IN GAME**.
 
 Research:
 
@@ -271,7 +304,7 @@ Docs/Research/Moveables/LargeGateGhostRendering.md
 
 LargeGate Build code exists, including vanilla full-gate narrowing for supported vanilla entities, A/B GameEntity profiles and post-build canonicalization.
 
-It remains **NOT VALIDATED IN GAME** as an integrated LargeGate Build checkpoint. Keep Build validation separate from the Moveables replacement test.
+It remains **NOT VALIDATED IN GAME** as an integrated LargeGate Build checkpoint. Keep Build validation separate from Moveables replacement tests.
 
 ## Garage status
 
@@ -298,9 +331,11 @@ Do not redesign Garage behavior from the V3 LargeGate implementation.
 - Kahlua global `next()` was nil in a profile path. Use `pairs()` + explicit counting.
 - Build CraftRecipe without a GameEntity SpriteConfig can appear in the menu but clicking Build produces no cursor.
 - V2 LargeGate toolbar could show a complete ghost while click placement failed; do not resume speculative V2 patches.
-- V3 generic `Base.LMION_OpeningParcel` without `ReadFromWorldSprite()` broke both LargeGate placement frontends on commit `5841a976...`.
+- V3 generic `Base.LMION_OpeningParcel` without a WorldSprite broke both LargeGate placement frontends on `5841a976...`.
+- Workshop/manual multipart pickup lifecycle is not the behavioral reference; Legacy delegates each LargeGate member to vanilla `pickUpMoveableInternal()`.
+- A successful placement log is not proof of parcel consumption; floor-world-object removal must be verified when debugging this path.
 
-General rule: if the engine contract is uncertain, inspect vanilla Lua/JAR first and record the result here or in `Docs/Research`.
+General rule: inspect vanilla Lua/JAR before changing an engine boundary and record the result here or under `Docs/Research`.
 
 ## Validation summary
 
@@ -315,11 +350,18 @@ General rule: if the engine contract is uncertain, inspect vanilla Lua/JAR first
 - N/W behavior for those pilots;
 - their frame/no-frame contracts;
 - HP/max-HP persistence for those pilots;
-- MetalWelding Moveables tool bridge through Sliding.
+- MetalWelding Moveables tool bridge through Sliding;
+- LargeGate segment item + WorldSprite is sufficient for both toolbar and right-click placement to create a functional leaf;
+- LargeGate mixed inventory/floor parcel lookup works.
 
-**IMPLEMENTED BUT NOT YET VALIDATED AS A COMPLETE CHECKPOINT:**
+**KNOWN LARGEGATE DEFECT UNDER CORRECTION:**
 
-- LargeGate Moveables runtime after the 2026-09-11 transport correction;
+- on `b92705e`, a nearby-floor parcel was left behind after otherwise successful placement.
+
+**IMPLEMENTED BUT RE-TEST REQUIRED:**
+
+- LargeGate pickup restored to vanilla `pickUpMoveableInternal()` per physical member;
+- verified floor-consumption result reporting;
 - LargeGate Build runtime.
 
 **NOT YET IMPLEMENTED/VALIDATED BROADLY:**
@@ -332,17 +374,14 @@ General rule: if the engine contract is uncertain, inspect vanilla Lua/JAR first
 
 ## Immediate next test
 
-Before any new family/refactor work, cold-start test a LargeGate replacement through both entry points:
+Use a freshly picked-up LargeGate leaf after the latest pickup-lifecycle correction:
 
 ```text
-1. Pickup one A or B leaf -> 2 parcels.
-2. Inventory right-click -> Place.
-3. Moveables toolbar -> Place.
-4. Check N and W.
-5. Check both A and B leaves.
-6. Check placement using parcels from nearby floor.
-7. Check closed partner and open partner behavior.
-8. Damage a member before pickup and verify HP/max-HP survives replacement.
+1. Pickup one A or B leaf -> confirm 2 floor parcels.
+2. Put one parcel in inventory; leave the other on the floor.
+3. Place from toolbar.
+4. Confirm BOTH parcels disappear.
+5. Repeat from inventory right-click Place.
 ```
 
-If this fails, instrument the first failing shared boundary. Do not add frontend-specific hacks until the common Moveables path has been ruled out.
+If the floor parcel still remains, use the new consumption failure log/result as the next boundary. Do not alter placement geometry/finalization while it remains functional.

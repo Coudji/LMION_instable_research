@@ -2,8 +2,6 @@ require "Moveables/ISMoveableSpriteProps"
 
 local LargeGateMembers = require "LMION/Services/Moveables/LargeGateMembers"
 local LargeGateMoveProps = require "LMION/Services/Moveables/LargeGateMoveProps"
-local LargeGateParcelFactory = require "LMION/Services/Moveables/LargeGateParcelFactory"
-local MoveableDoorSegmentPickup = require "LMION/PZ/MoveableDoorSegmentPickup"
 
 local LargeGatePickupHook = {}
 
@@ -17,14 +15,21 @@ local function getSelectedObject(moveProps, square, object)
     return moveProps:findOnSquare(square, moveProps.spriteName)
 end
 
+local function getClosedSprite(segment, partIndex)
+    local profile = segment and segment.profile or nil
+    local face = profile and profile.geometry[segment.facing] or nil
+    local parts = face and face[segment.leaf] or nil
+    local part = parts and parts[partIndex] or nil
+    return part and part.closed or nil
+end
+
 local function canPickUpLeaf(character, members)
     for partIndex = 1, 2 do
         local member = members[partIndex]
         local object = member and member.object or nil
         local segment = member and member.segment or nil
-        local profile = segment and segment.profile or nil
-        local part = profile and profile.geometry[segment.facing][segment.leaf][partIndex] or nil
-        local moveProps = part and ISMoveableSpriteProps.new(part.closed) or nil
+        local closedSprite = getClosedSprite(segment, partIndex)
+        local moveProps = closedSprite and ISMoveableSpriteProps.new(closedSprite) or nil
 
         if object == nil
             or moveProps == nil
@@ -42,37 +47,37 @@ local function canPickUpLeaf(character, members)
     return true
 end
 
-local function createLeafParcels(members)
+local function pickUpLeaf(character, members, createItem)
     local items = {}
+
     for partIndex = 1, 2 do
         local member = members[partIndex]
-        local segment = member.segment
-        items[partIndex] = LargeGateParcelFactory.create(
-            segment.profile,
-            segment,
-            member.object
+        local closedSprite = getClosedSprite(member.segment, partIndex)
+        local moveProps = closedSprite and ISMoveableSpriteProps.new(closedSprite) or nil
+        if moveProps == nil then
+            return nil
+        end
+
+        -- Legacy's validated LargeGate path lets vanilla own the actual
+        -- Moveable item lifecycle for each physical member. Keeping
+        -- isMultiSprite=true makes vanilla deliver each parcel to the floor.
+        moveProps.isMultiSprite = true
+        items[partIndex] = moveProps:pickUpMoveableInternal(
+            character,
+            member.square,
+            member.object,
+            nil,
+            closedSprite,
+            createItem,
+            false
         )
+
         if items[partIndex] == nil then
             return nil
         end
     end
-    return items
-end
 
-local function removeLeaf(character, members, items, createItem)
-    for partIndex = 1, 2 do
-        local member = members[partIndex]
-        if not MoveableDoorSegmentPickup.remove(
-            character,
-            member.square,
-            member.object,
-            items[partIndex],
-            createItem
-        ) then
-            return false
-        end
-    end
-    return true
+    return items
 end
 
 function LargeGatePickupHook.install()
@@ -128,11 +133,6 @@ function LargeGatePickupHook.install()
             return false
         end
 
-        local items = createLeafParcels(members)
-        if items == nil then
-            return false
-        end
-
         print(string.format(
             "[LMION:DEV] LargeGate pickup started: definition=%s leaf=%s facing=%s open=%s",
             tostring(selectedSegment.definitionId),
@@ -141,9 +141,10 @@ function LargeGatePickupHook.install()
             tostring(selectedSegment.isOpen)
         ))
 
-        if not removeLeaf(character, members, items, createItem) then
+        local items = pickUpLeaf(character, members, createItem)
+        if items == nil then
             print(string.format(
-                "[LMION:DEV] LargeGate pickup failed during removal: definition=%s leaf=%s",
+                "[LMION:DEV] LargeGate pickup failed during vanilla member pickup: definition=%s leaf=%s",
                 tostring(selectedSegment.definitionId),
                 tostring(selectedSegment.leaf)
             ))
