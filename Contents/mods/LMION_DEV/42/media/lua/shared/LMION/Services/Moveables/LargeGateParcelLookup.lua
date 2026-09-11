@@ -14,23 +14,23 @@ local function findInInventory(character, definitionId, leaf, partIndex)
     local inventory = character and character:getInventory() or nil
     local items = inventory and inventory:getItems() or nil
     if items == nil then
-        return nil, nil
+        return nil, nil, nil
     end
 
     for index = 0, items:size() - 1 do
         local item = items:get(index)
         if matches(item, definitionId, leaf, partIndex) then
-            return item, inventory
+            return item, inventory, nil
         end
     end
 
-    return nil, nil
+    return nil, nil, nil
 end
 
 local function findOnFloor(character, definitionId, leaf, partIndex)
     local playerSquare = character and character:getSquare() or nil
     if playerSquare == nil then
-        return nil, nil
+        return nil, nil, nil
     end
 
     local radius = ISMoveableSpriteProps.multiSpriteFloorRadius or 3
@@ -46,7 +46,7 @@ local function findOnFloor(character, definitionId, leaf, partIndex)
                     if instanceof(worldObject, "IsoWorldInventoryObject") then
                         local item = worldObject:getItem()
                         if matches(item, definitionId, leaf, partIndex) then
-                            return item, "floor"
+                            return item, "floor", worldObject
                         end
                     end
                 end
@@ -54,25 +54,13 @@ local function findOnFloor(character, definitionId, leaf, partIndex)
         end
     end
 
-    return nil, nil
+    return nil, nil, nil
 end
 
-function LargeGateParcelLookup.find(character, definitionId, leaf, partIndex, preferred)
-    if preferred ~= nil and matches(preferred, definitionId, leaf, partIndex) then
-        local container = preferred:getContainer()
-        if container ~= nil then
-            return preferred, container
-        end
-
-        local worldItem = preferred.getWorldItem and preferred:getWorldItem() or nil
-        if worldItem ~= nil and worldItem:getSquare() ~= nil then
-            return preferred, "floor"
-        end
-    end
-
-    local item, source = findInInventory(character, definitionId, leaf, partIndex)
+function LargeGateParcelLookup.find(character, definitionId, leaf, partIndex)
+    local item, source, worldItem = findInInventory(character, definitionId, leaf, partIndex)
     if item ~= nil then
-        return item, source
+        return item, source, worldItem
     end
 
     return findOnFloor(character, definitionId, leaf, partIndex)
