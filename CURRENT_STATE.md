@@ -351,6 +351,22 @@ remaining 3 parcels stay available
 
 Legacy parcel lookup is an availability pool across inventory + floor radius (`ISMoveableSpriteProps.multiSpriteFloorRadius or 3`). Selected parcels are the only ones consumed.
 
+Garage placement controls/policy for V3:
+
+```text
+width decrease/increase keys are client Mod Options keybinds
+rotation uses the normal PZ Rotate building bind and remains N/W only
+width limit is NOT a client Mod Option
+Sandbox option LMION.GarageMaxLength is an integer from 6 to 12, default 6
+Sandbox option LMION.UnlimitedGarageWidth disables LMION's width cap
+Sandbox authority is intentional so the host/admin controls the limit in multiplayer
+minimum placeable garage length remains L2
+```
+
+`LMION/Domain/GarageLengthPolicy.lua` is the single runtime policy boundary for the garage cap. It reads `SandboxVars.LMION`, returns `nil` for unlimited, otherwise clamps the configured cap to 6..12 and falls back to L6 when sandbox data is unavailable.
+
+The default L6 cap reflects the largest vanilla garage length observed during LMION development. It is an LMION gameplay default, not a claimed PZ engine maximum. Servers may choose L7..L12 or remove the LMION cap entirely.
+
 Do **not** redesign Garage around LargeGate pairing or cursor-item semantics. LargeGate and Garage share useful low-level lessons about exact floor-world-object identity, but Garage's stock/length transaction remains its own domain behavior.
 
 ## Historical failures / do not repeat
