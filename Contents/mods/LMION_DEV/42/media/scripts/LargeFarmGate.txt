@@ -62,7 +62,6 @@ module Base
         }
         component SpriteConfig
         {
-            dontNeedFrame = true,
             face W
             {
                 layer
@@ -107,7 +106,6 @@ module Base
         }
         component SpriteConfig
         {
-            dontNeedFrame = true,
             face W
             {
                 layer
