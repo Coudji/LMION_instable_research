@@ -3,5 +3,57 @@
     "Base.LMION_BlueChurchDoubleDoorLeft": "Blue Church Double Door - Left Leaf",
     "Base.LMION_BlueChurchDoubleDoorRight": "Blue Church Double Door - Right Leaf",
     "Base.LMION_SmallWhiteWoodenGate": "Small White Wooden Gate",
-    "Base.LMION_BrownSlidingGlassDoor": "Brown Sliding Glass Door"
+    "Base.LMION_BrownSlidingGlassDoor": "Brown Sliding Glass Door",
+
+    "Base.LMION_DoubleDoorA_Part1": "Large Wooden Gate A - Part 1",
+    "Base.LMION_DoubleDoorA_Part2": "Large Wooden Gate A - Part 2",
+    "Base.LMION_DoubleDoorB_Part1": "Large Wooden Gate B - Part 1",
+    "Base.LMION_DoubleDoorB_Part2": "Large Wooden Gate B - Part 2",
+
+    "Base.LMION_DoubleFenceGateA_Part1": "Large Scrap Metal Gate A - Part 1",
+    "Base.LMION_DoubleFenceGateA_Part2": "Large Scrap Metal Gate A - Part 2",
+    "Base.LMION_DoubleFenceGateB_Part1": "Large Scrap Metal Gate B - Part 1",
+    "Base.LMION_DoubleFenceGateB_Part2": "Large Scrap Metal Gate B - Part 2",
+
+    "Base.LMION_DoubleWireGateA_Part1": "Large Chain-Link Gate A - Part 1",
+    "Base.LMION_DoubleWireGateA_Part2": "Large Chain-Link Gate A - Part 2",
+    "Base.LMION_DoubleWireGateB_Part1": "Large Chain-Link Gate B - Part 1",
+    "Base.LMION_DoubleWireGateB_Part2": "Large Chain-Link Gate B - Part 2",
+
+    "Base.LMION_LargeFarmGateA_Part1": "Large Farm Gate A - Part 1",
+    "Base.LMION_LargeFarmGateA_Part2": "Large Farm Gate A - Part 2",
+    "Base.LMION_LargeFarmGateB_Part1": "Large Farm Gate B - Part 1",
+    "Base.LMION_LargeFarmGateB_Part2": "Large Farm Gate B - Part 2",
+
+    "Base.LMION_LargeHardenedWoodenGateA_Part1": "Large Hardened Wooden Gate A - Part 1",
+    "Base.LMION_LargeHardenedWoodenGateA_Part2": "Large Hardened Wooden Gate A - Part 2",
+    "Base.LMION_LargeHardenedWoodenGateB_Part1": "Large Hardened Wooden Gate B - Part 1",
+    "Base.LMION_LargeHardenedWoodenGateB_Part2": "Large Hardened Wooden Gate B - Part 2",
+
+    "Base.LMION_LargeWroughtIronGateA_Part1": "Large Wrought Iron Gate A - Part 1",
+    "Base.LMION_LargeWroughtIronGateA_Part2": "Large Wrought Iron Gate A - Part 2",
+    "Base.LMION_LargeWroughtIronGateB_Part1": "Large Wrought Iron Gate B - Part 1",
+    "Base.LMION_LargeWroughtIronGateB_Part2": "Large Wrought Iron Gate B - Part 2",
+
+    "Base.LMION_GreenGarageDoor_Part1": "Green Garage Door - Start",
+    "Base.LMION_GreenGarageDoor_Part2": "Green Garage Door - Middle",
+    "Base.LMION_GreenGarageDoor_Part3": "Green Garage Door - End",
+    "Base.LMION_GreyGarageDoor_Part1": "Grey Garage Door - Start",
+    "Base.LMION_GreyGarageDoor_Part2": "Grey Garage Door - Middle",
+    "Base.LMION_GreyGarageDoor_Part3": "Grey Garage Door - End",
+    "Base.LMION_IndustrialGarageDoor_Part1": "Industrial Garage Door - Start",
+    "Base.LMION_IndustrialGarageDoor_Part2": "Industrial Garage Door - Middle",
+    "Base.LMION_IndustrialGarageDoor_Part3": "Industrial Garage Door - End",
+    "Base.LMION_RedWindowGarageDoor_Part1": "Red Window Garage Door - Start",
+    "Base.LMION_RedWindowGarageDoor_Part2": "Red Window Garage Door - Middle",
+    "Base.LMION_RedWindowGarageDoor_Part3": "Red Window Garage Door - End",
+    "Base.LMION_RollingGarageDoor_Part1": "Rolling Garage Door - Start",
+    "Base.LMION_RollingGarageDoor_Part2": "Rolling Garage Door - Middle",
+    "Base.LMION_RollingGarageDoor_Part3": "Rolling Garage Door - End",
+    "Base.LMION_RollingWindowGarageDoor_Part1": "Rolling Window Garage Door - Start",
+    "Base.LMION_RollingWindowGarageDoor_Part2": "Rolling Window Garage Door - Middle",
+    "Base.LMION_RollingWindowGarageDoor_Part3": "Rolling Window Garage Door - End",
+    "Base.LMION_WhiteGarageDoor_Part1": "White Garage Door - Start",
+    "Base.LMION_WhiteGarageDoor_Part2": "White Garage Door - Middle",
+    "Base.LMION_WhiteGarageDoor_Part3": "White Garage Door - End"
 }
