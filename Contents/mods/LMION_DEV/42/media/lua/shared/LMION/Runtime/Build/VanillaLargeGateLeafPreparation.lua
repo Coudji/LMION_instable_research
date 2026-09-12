@@ -14,6 +14,7 @@ entity DoubleDoor
 {
     component SpriteConfig
     {
+        dontNeedFrame = true,
         BreakSound = BreakDoor,
         face W { layer { row = fixtures_doors_fences_01_97, row = fixtures_doors_fences_01_96, } }
         face N { layer { row = fixtures_doors_fences_01_98 fixtures_doors_fences_01_99, } }
@@ -34,6 +35,7 @@ entity DoubleWireGate
 {
     component SpriteConfig
     {
+        dontNeedFrame = true,
         BreakSound = BreakDoor,
         face W { layer { row = fixtures_doors_fences_01_65, row = fixtures_doors_fences_01_64, } }
         face N { layer { row = fixtures_doors_fences_01_66 fixtures_doors_fences_01_67, } }
@@ -54,6 +56,7 @@ entity DoubleFenceGate
 {
     component SpriteConfig
     {
+        dontNeedFrame = true,
         BreakSound = BreakDoor,
         face W { layer { row = fixtures_doors_fences_01_81, row = fixtures_doors_fences_01_80, } }
         face N { layer { row = fixtures_doors_fences_01_82 fixtures_doors_fences_01_83, } }
