@@ -27,7 +27,9 @@ Use normal block formatting instead.
 
 PZ script files contain only parse-time facts that the engine actually needs.
 
-Do not duplicate `dontNeedFrame` in static `component SpriteConfig` blocks. Frame requirements are semantic consequences of the effective Lua definition / `doorType` model and are projected into the loaded PZ GameEntity scripts at `OnGameBoot` by `Runtime/Build/DoorScriptProjection.lua`.
+Frame requirements remain semantic consequences of the effective Lua definition / `doorType` model. Do not treat `dontNeedFrame` as definition data or require external LMION definitions to duplicate that PZ implementation detail.
+
+However, the exact engine bridge for Build frame policy is currently unresolved. A minimal late `GameEntityScript:Load()` projection of `dontNeedFrame` was tested and failed; see `Docs/Research/Build/LargeGateBuild.md`. Do not reintroduce that failed projection or claim that it is active.
 
 `BreakSound` must not be added merely as redundant documentation. Keep it only where an engine-facing script rewrite genuinely owns or requires that value.
 
