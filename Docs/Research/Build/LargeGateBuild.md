@@ -43,14 +43,23 @@ The other LargeGate definitions use explicit `...A` and `...B` GameEntities dire
 
 This is the same control point used by the validated Legacy architecture. The V3 implementation deliberately refuses the rewrite if the expected vanilla SpriteConfig no longer matches.
 
+After that topology preparation, `Runtime/Build/DoorScriptProjection.lua` projects the effective LMION door definition back into the PZ GameEntity scripts for engine properties that vanilla Build still consumes directly. Frame policy is the first such projection:
+
+```text
+doorType -> DoorTypes.frameRequirement -> SpriteConfig.dontNeedFrame
+```
+
+For LargeGate, both derived leaf entities A and B receive `dontNeedFrame = true` because `LargeGate -> frameRequirement = none`.
+
 ## Static script policy
 
-There is one `media/scripts/*.txt` file per LargeGate definition. These files contain only engine-facing Build data:
+There is one `media/scripts/*.txt` file per LargeGate definition. These files contain only engine-facing Build data that still has to exist statically:
 
 - A/B XUI presentation;
 - the two-tile closed SpriteConfig required by vanilla Build;
-- `dontNeedFrame = true`;
 - CraftRecipe fields required by PZ's script-time recipe parser.
+
+`dontNeedFrame` is intentionally absent from the static scripts. The Lua definition remains authoritative and the value is projected at `OnGameBoot`.
 
 Durability values are not duplicated in SpriteConfig. V3 definitions remain authoritative for construction health.
 
@@ -76,12 +85,18 @@ The hook does not replace vanilla placement or resource consumption.
 
 ## Lifecycle
 
-`media/scripts` is parsed before Lua. The three vanilla base SpriteConfigs are narrowed at `OnGameBoot`, before loaded tile definitions configure runtime moveable metadata.
+`media/scripts` is parsed before Lua. At `OnGameBoot`:
 
-Because this checkpoint changes both `media/scripts` and `OnGameBoot` GameEntity topology, runtime validation requires a cold game restart.
+1. the three vanilla base LargeGate SpriteConfigs are narrowed to leaf A;
+2. LMION resolves the registered effective definitions;
+3. frame requirements are projected into each managed GameEntity `SpriteConfig` without `PreReload()`, so existing faces and tiles remain untouched;
+4. Build diagnostics run against the resulting engine state.
+
+Because this checkpoint changes `OnGameBoot` GameEntity state, runtime validation requires a cold game restart.
 
 ## Evidence
 
 - A/B topology and recipes: `OBSERVÉ DANS LEGACY / SOURCE`.
 - `GameEntityScript:Load` component reload behavior: `OBSERVÉ DANS PZ 42.20.3 JAR`.
-- V3 LargeGate Build behavior: `HYPOTHÈSE / NON VALIDÉ` until the integrated game checkpoint.
+- `SpriteConfigScript.dontNeedFrame` parsing/getter: `OBSERVÉ DANS PZ 42.20.3 JAR`.
+- V3 definition-owned frame projection: `IMPLÉMENTÉ / À VALIDER EN JEU`.
