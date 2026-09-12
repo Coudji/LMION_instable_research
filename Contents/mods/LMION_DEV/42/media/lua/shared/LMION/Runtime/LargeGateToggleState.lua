@@ -104,33 +104,17 @@ local function restoreStates(source, states)
     return true
 end
 
-local function findMemberOnSquare(
-    square,
-    logicalIndex,
-    definitionId,
-    facing,
-    isOpen
-)
-    if square == nil then
+local function getSquare(anchor, facing, state, logicalIndex)
+    local offset = LargeGateTopology.getStateOffset(facing, state, logicalIndex)
+    if anchor == nil or offset == nil then
         return nil
     end
 
-    local objects = square:getSpecialObjects()
-
-    for objectIndex = 0, objects:size() - 1 do
-        local object = objects:get(objectIndex)
-        local segment = LargeGateMembers.getSegmentForObject(object)
-
-        if segment ~= nil
-            and getLogicalIndex(object) == logicalIndex
-            and segment.definitionId == definitionId
-            and segment.facing == facing
-            and segment.isOpen == isOpen then
-            return object
-        end
-    end
-
-    return nil
+    return getCell():getGridSquare(
+        anchor.x + tonumber(offset[1]),
+        anchor.y + tonumber(offset[2]),
+        anchor.z
+    )
 end
 
 local function getAnchorFromMember(square, facing, state, logicalIndex)
@@ -146,47 +130,48 @@ local function getAnchorFromMember(square, facing, state, logicalIndex)
     }
 end
 
-local function getSquare(anchor, facing, state, logicalIndex)
-    local offset = LargeGateTopology.getStateOffset(facing, state, logicalIndex)
-    if anchor == nil or offset == nil then
+local function findKnownOnSquare(square, logicalIndex, definitionId, facing)
+    if square == nil then
         return nil
     end
 
-    return getCell():getGridSquare(
-        anchor.x + tonumber(offset[1]),
-        anchor.y + tonumber(offset[2]),
-        anchor.z
-    )
+    local objects = square:getSpecialObjects()
+
+    for objectIndex = 0, objects:size() - 1 do
+        local object = objects:get(objectIndex)
+        local segment = LargeGateMembers.getSegmentForObject(object)
+
+        if segment ~= nil
+            and getLogicalIndex(object) == logicalIndex
+            and segment.definitionId == definitionId
+            and segment.facing == facing then
+            return object
+        end
+    end
+
+    return nil
 end
 
-local function collectMembers(
-    anchor,
-    definitionId,
-    facing,
-    state
-)
-    local isOpen = state == "open"
+local function collectKnownMembers(anchor, definitionId, facing, state)
     local members = {}
 
     for logicalIndex = 1, 4 do
         local square = getSquare(anchor, facing, state, logicalIndex)
-        local object = findMemberOnSquare(
+        local object = findKnownOnSquare(
             square,
             logicalIndex,
             definitionId,
-            facing,
-            isOpen
+            facing
         )
-        local segment = LargeGateMembers.getSegmentForObject(object)
 
-        if segment == nil then
+        if object == nil then
             return nil
         end
 
         members[logicalIndex] = {
             object = object,
             square = square,
-            segment = segment,
+            segment = LargeGateMembers.getSegmentForObject(object),
         }
     end
 
@@ -204,6 +189,9 @@ local function makeTransitionKey(anchor, definitionId, facing)
 end
 
 local function onAboutToRemove(object)
+    -- Vanilla recreates LargeGate members during ToggleDoor(). Member 2 is the
+    -- stable point where Legacy observed the transition: IsOpen() already holds
+    -- the target state while sprite/square still describe the previous layout.
     if getLogicalIndex(object) ~= 2 then
         return
     end
@@ -214,19 +202,9 @@ local function onAboutToRemove(object)
     end
 
     local targetOpen = object:IsOpen()
-
-    -- During vanilla ToggleDoor(), member 2 is removed after its open-state flag
-    -- has already changed, while its sprite and square still describe the previous
-    -- layout. Ordinary Pickup/removal keeps both values in agreement and must not
-    -- be mistaken for a toggle transition.
-    if segment.isOpen == targetOpen then
-        return
-    end
-
-    local previousState = segment.isOpen and "open" or "closed"
-    local square = object:getSquare()
+    local previousState = targetOpen and "closed" or "open"
     local anchor = getAnchorFromMember(
-        square,
+        object:getSquare(),
         segment.facing,
         previousState,
         2
@@ -236,7 +214,12 @@ local function onAboutToRemove(object)
         return
     end
 
-    local members = collectMembers(
+    -- Deliberately identify the old members from their previous-layout squares,
+    -- logical indices and profile identity only. Do not require sprite open-state
+    -- parity here: during ToggleDoor() the engine is between both representations.
+    -- Ordinary Pickup/removal does not form the opposite layout, so it naturally
+    -- fails this collection instead of needing a separate removal heuristic.
+    local members = collectKnownMembers(
         anchor,
         segment.definitionId,
         segment.facing,
@@ -267,26 +250,36 @@ local function onContainerUpdate()
     for key, transition in pairs(pendingTransitions) do
         pendingTransitions[key] = nil
 
-        local targetState = transition.targetOpen and "open" or "closed"
-        local members = collectMembers(
-            transition.anchor,
-            transition.definitionId,
-            transition.facing,
-            targetState
+        local anchorSquare = getCell():getGridSquare(
+            transition.anchor.x,
+            transition.anchor.y,
+            transition.anchor.z
         )
+        local anchor = findKnownOnSquare(
+            anchorSquare,
+            1,
+            transition.definitionId,
+            transition.facing
+        )
+        local members = anchor and getGateMembers(anchor) or nil
+        local valid = members ~= nil
 
-        if members ~= nil then
-            local anchor = members[1] and members[1].object or nil
-
-            if anchor ~= nil
-                and restoreStates(anchor, transition.states) then
-                print(string.format(
-                    "[LMION:DEV] LargeGate toggle state restored: definition=%s facing=%s open=%s",
-                    tostring(transition.definitionId),
-                    tostring(transition.facing),
-                    tostring(transition.targetOpen)
-                ))
+        if valid then
+            for logicalIndex = 1, 4 do
+                if members[logicalIndex].object:IsOpen() ~= transition.targetOpen then
+                    valid = false
+                    break
+                end
             end
+        end
+
+        if valid and restoreStates(anchor, transition.states) then
+            print(string.format(
+                "[LMION:DEV] LargeGate toggle state restored: definition=%s facing=%s open=%s",
+                tostring(transition.definitionId),
+                tostring(transition.facing),
+                tostring(transition.targetOpen)
+            ))
         end
     end
 end
