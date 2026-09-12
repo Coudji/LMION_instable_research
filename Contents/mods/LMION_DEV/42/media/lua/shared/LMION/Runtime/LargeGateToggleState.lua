@@ -22,88 +22,6 @@ local function getLogicalIndex(object)
     return value
 end
 
-local function getDoubleDoorObject(source, logicalIndex)
-    if source == nil or IsoDoor == nil or IsoDoor.getDoubleDoorObject == nil then
-        return nil
-    end
-
-    local ok, object = pcall(IsoDoor.getDoubleDoorObject, source, logicalIndex)
-    return ok and object or nil
-end
-
-local function getGateMembers(source)
-    local sourceSegment = LargeGateMembers.getSegmentForObject(source)
-    if sourceSegment == nil then
-        return nil
-    end
-
-    local members = {}
-
-    for logicalIndex = 1, 4 do
-        local object = getDoubleDoorObject(source, logicalIndex)
-        local segment = LargeGateMembers.getSegmentForObject(object)
-
-        if segment == nil
-            or segment.definitionId ~= sourceSegment.definitionId
-            or segment.facing ~= sourceSegment.facing
-            or segment.isOpen ~= sourceSegment.isOpen then
-            return nil
-        end
-
-        members[logicalIndex] = {
-            object = object,
-            square = object:getSquare(),
-            segment = segment,
-        }
-    end
-
-    return members
-end
-
-local function captureStates(members)
-    if members == nil then
-        return nil
-    end
-
-    local states = {}
-
-    for logicalIndex = 1, 4 do
-        local member = members[logicalIndex]
-        local state = member and DoorState.capture(member.object) or nil
-
-        if state == nil then
-            return nil
-        end
-
-        states[logicalIndex] = state
-    end
-
-    return states
-end
-
-local function restoreStates(source, states)
-    if source == nil or states == nil then
-        return false
-    end
-
-    for logicalIndex = 1, 4 do
-        local object = getDoubleDoorObject(source, logicalIndex)
-        local state = states[logicalIndex]
-
-        if not DoorState.restore(object, state) then
-            return false
-        end
-
-        if isServer ~= nil
-            and isServer()
-            and object.transmitCompleteItemToClients ~= nil then
-            object:transmitCompleteItemToClients()
-        end
-    end
-
-    return true
-end
-
 local function getSquare(anchor, facing, state, logicalIndex)
     local offset = LargeGateTopology.getStateOffset(facing, state, logicalIndex)
     if anchor == nil or offset == nil then
@@ -130,7 +48,14 @@ local function getAnchorFromMember(square, facing, state, logicalIndex)
     }
 end
 
-local function findKnownOnSquare(square, logicalIndex, definitionId, facing)
+local function findLeafMemberOnSquare(
+    square,
+    logicalIndex,
+    definitionId,
+    facing,
+    leaf,
+    partIndex
+)
     if square == nil then
         return nil
     end
@@ -144,7 +69,9 @@ local function findKnownOnSquare(square, logicalIndex, definitionId, facing)
         if segment ~= nil
             and getLogicalIndex(object) == logicalIndex
             and segment.definitionId == definitionId
-            and segment.facing == facing then
+            and segment.facing == facing
+            and segment.leaf == leaf
+            and segment.partIndex == partIndex then
             return object
         end
     end
@@ -152,23 +79,37 @@ local function findKnownOnSquare(square, logicalIndex, definitionId, facing)
     return nil
 end
 
-local function collectKnownMembers(anchor, definitionId, facing, state)
+local function collectLeafMembers(
+    anchor,
+    definitionId,
+    facing,
+    leaf,
+    state
+)
+    local indices = LargeGateTopology.getLeafIndices(facing, leaf)
+    if indices == nil then
+        return nil
+    end
+
     local members = {}
 
-    for logicalIndex = 1, 4 do
+    for partIndex = 1, 2 do
+        local logicalIndex = tonumber(indices[partIndex])
         local square = getSquare(anchor, facing, state, logicalIndex)
-        local object = findKnownOnSquare(
+        local object = findLeafMemberOnSquare(
             square,
             logicalIndex,
             definitionId,
-            facing
+            facing,
+            leaf,
+            partIndex
         )
 
         if object == nil then
             return nil
         end
 
-        members[logicalIndex] = {
+        members[partIndex] = {
             object = object,
             square = square,
             segment = LargeGateMembers.getSegmentForObject(object),
@@ -178,21 +119,69 @@ local function collectKnownMembers(anchor, definitionId, facing, state)
     return members
 end
 
-local function makeTransitionKey(anchor, definitionId, facing)
+local function captureStates(members)
+    if members == nil then
+        return nil
+    end
+
+    local states = {}
+
+    for partIndex = 1, 2 do
+        local member = members[partIndex]
+        local state = member and DoorState.capture(member.object) or nil
+
+        if state == nil then
+            return nil
+        end
+
+        states[partIndex] = state
+    end
+
+    return states
+end
+
+local function restoreStates(members, states)
+    if members == nil or states == nil then
+        return false
+    end
+
+    for partIndex = 1, 2 do
+        local member = members[partIndex]
+        local object = member and member.object or nil
+        local state = states[partIndex]
+
+        if not DoorState.restore(object, state) then
+            return false
+        end
+
+        if isServer ~= nil
+            and isServer()
+            and object.transmitCompleteItemToClients ~= nil then
+            object:transmitCompleteItemToClients()
+        end
+    end
+
+    return true
+end
+
+local function makeTransitionKey(anchor, definitionId, facing, leaf)
     return table.concat({
         tostring(anchor.x),
         tostring(anchor.y),
         tostring(anchor.z),
         tostring(facing),
         tostring(definitionId),
+        tostring(leaf),
     }, ":")
 end
 
 local function onAboutToRemove(object)
-    -- Vanilla recreates LargeGate members during ToggleDoor(). Member 2 is the
-    -- stable point where Legacy observed the transition: IsOpen() already holds
-    -- the target state while sprite/square still describe the previous layout.
-    if getLogicalIndex(object) ~= 2 then
+    local logicalIndex = getLogicalIndex(object)
+
+    -- PZ recreates the two internal logical members of a double door: 2 and 3.
+    -- Depending on facing, either one may belong to leaf A or leaf B. Treat the
+    -- LMION leaf as the state-preservation unit so A/B remain fully independent.
+    if logicalIndex ~= 2 and logicalIndex ~= 3 then
         return
     end
 
@@ -207,22 +196,21 @@ local function onAboutToRemove(object)
         object:getSquare(),
         segment.facing,
         previousState,
-        2
+        logicalIndex
     )
 
     if anchor == nil then
         return
     end
 
-    -- Deliberately identify the old members from their previous-layout squares,
-    -- logical indices and profile identity only. Do not require sprite open-state
-    -- parity here: during ToggleDoor() the engine is between both representations.
-    -- Ordinary Pickup/removal does not form the opposite layout, so it naturally
-    -- fails this collection instead of needing a separate removal heuristic.
-    local members = collectKnownMembers(
+    -- At this boundary IsOpen() already describes the target state while the
+    -- world layout still describes the previous state. Identify only the two
+    -- members of the affected leaf; the partner leaf may legitimately not exist.
+    local members = collectLeafMembers(
         anchor,
         segment.definitionId,
         segment.facing,
+        segment.leaf,
         previousState
     )
     local states = captureStates(members)
@@ -234,13 +222,15 @@ local function onAboutToRemove(object)
     local key = makeTransitionKey(
         anchor,
         segment.definitionId,
-        segment.facing
+        segment.facing,
+        segment.leaf
     )
 
     pendingTransitions[key] = {
         anchor = anchor,
         definitionId = segment.definitionId,
         facing = segment.facing,
+        leaf = segment.leaf,
         targetOpen = targetOpen,
         states = states,
     }
@@ -250,34 +240,36 @@ local function onContainerUpdate()
     for key, transition in pairs(pendingTransitions) do
         pendingTransitions[key] = nil
 
-        local anchorSquare = getCell():getGridSquare(
-            transition.anchor.x,
-            transition.anchor.y,
-            transition.anchor.z
-        )
-        local anchor = findKnownOnSquare(
-            anchorSquare,
-            1,
+        local targetState = transition.targetOpen and "open" or "closed"
+        local members = collectLeafMembers(
+            transition.anchor,
             transition.definitionId,
-            transition.facing
+            transition.facing,
+            transition.leaf,
+            targetState
         )
-        local members = anchor and getGateMembers(anchor) or nil
         local valid = members ~= nil
 
         if valid then
-            for logicalIndex = 1, 4 do
-                if members[logicalIndex].object:IsOpen() ~= transition.targetOpen then
+            for partIndex = 1, 2 do
+                local member = members[partIndex]
+                local segment = member.segment
+
+                if member.object:IsOpen() ~= transition.targetOpen
+                    or segment == nil
+                    or segment.isOpen ~= transition.targetOpen then
                     valid = false
                     break
                 end
             end
         end
 
-        if valid and restoreStates(anchor, transition.states) then
+        if valid and restoreStates(members, transition.states) then
             print(string.format(
-                "[LMION:DEV] LargeGate toggle state restored: definition=%s facing=%s open=%s",
+                "[LMION:DEV] LargeGate leaf toggle state restored: definition=%s facing=%s leaf=%s open=%s",
                 tostring(transition.definitionId),
                 tostring(transition.facing),
+                tostring(transition.leaf),
                 tostring(transition.targetOpen)
             ))
         end
