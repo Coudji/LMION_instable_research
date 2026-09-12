@@ -27,19 +27,40 @@ Use normal block formatting instead.
 
 PZ script files contain only parse-time facts that the engine actually needs.
 
-Frame requirements remain semantic consequences of the effective Lua definition / `doorType` model. Do not treat `dontNeedFrame` as definition data or require external LMION definitions to duplicate that PZ implementation detail.
+Frame requirements remain semantic consequences of the effective Lua definition / `doorType` model. Do not treat `dontNeedFrame` as public definition data and do not require external LMION definitions to duplicate that PZ implementation detail.
 
-However, the exact engine bridge for Build frame policy is currently unresolved. A minimal late `GameEntityScript:Load()` projection of `dontNeedFrame` was tested and failed; see `Docs/Research/Build/LargeGateBuild.md`. Do not reintroduce that failed projection or claim that it is active.
+The active V3 Build policy is now definition-owned:
 
-`BreakSound` must not be added merely as redundant documentation. Keep it only where an engine-facing script rewrite genuinely owns or requires that value.
+```text
+effective LMION definition
+-> doorType
+-> DoorTypes frame requirement
+-> ISBuildIsoEntity.dontNeedFrame
+```
+
+`Hooks/Build/DoorFrameRequirement.lua` applies that consequence after vanilla creates the `ISBuildIsoEntity` object. This keeps the public definition semantic while still supplying the boolean expected by vanilla Build validation.
+
+In-game validation confirmed the intended distinction after static `dontNeedFrame` metadata was removed from LMION scripts:
+
+```text
+Simple / Paired -> frame still required
+FenceGate / Sliding / LargeGate / Garage -> no frame required
+```
+
+A previous experiment attempted to project only `dontNeedFrame` into already-loaded `GameEntityScript` / `SpriteConfig` objects with a minimal `GameEntityScript:Load()` fragment. That approach failed in game and was reverted. Do not reintroduce that projection. The investigation is recorded in `Docs/Research/Build/LargeGateBuild.md`.
+
+The three vanilla LargeGate A entities are still narrowed by `Runtime/Build/VanillaLargeGateLeafPreparation.lua`; that engine-topology rewrite is a separate concern from the generic frame policy. Its historical `dontNeedFrame` assignment is redundant with the validated Build hook and should not be used as the architectural source of truth.
+
+`BreakSound` must not be added merely as redundant documentation. It is a real PZ `SpriteConfig` property, but LMION should keep it only where an engine-facing script rewrite genuinely owns or requires that value.
 
 In V3:
 
 - frame requirements are semantic consequences of the Lua definition / `doorType` model;
+- Build translates that semantic requirement only at the narrow vanilla boundary that needs `dontNeedFrame`;
 - material and sound behavior belong to the definition/runtime material model;
-- unsupported or redundant script properties must not be duplicated merely as documentation.
+- supported PZ properties must not be duplicated merely as documentation when LMION does not need to own them.
 
-If a future Project Zomboid version introduces a supported script property that LMION genuinely needs, verify it against current vanilla scripts/API before adding it.
+If a future Project Zomboid version changes a script property or Build boundary that LMION relies on, verify it against current vanilla scripts/API/JAR before changing the integration.
 
 ## Localization
 
