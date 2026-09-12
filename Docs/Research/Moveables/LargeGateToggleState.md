@@ -1,6 +1,6 @@
 # LargeGate open/close state preservation
 
-Status: TOPOLOGY ROOT CAUSE CORRECTED / IN-GAME RETEST PENDING.
+Status: HP PRESERVATION VALIDATED IN GAME FOR THE RETESTED CASE.
 
 ## Problem
 
@@ -182,26 +182,17 @@ modData
 
 The toggle runtime does not define these fields itself.
 
-## Validation required
+## In-game validation
 
-The correction in `bd6fbac...` is not yet validated in game.
+After the topology correction in `bd6fbac...`, the user retested the damaged LargeGate open/close path and reported that HP preservation now appears correct.
 
-Test at minimum:
-
-```text
-1. damage one or both internal members to non-100 values
-2. open the complete LargeGate
-3. verify damaged values survive
-4. close it again
-5. verify they still survive
-```
-
-Prefer different values on the two recreated/internal members so accidental copying is visible. If practical, test one N and one W orientation because the corrected topology affects both.
-
-Expected debug line after a successful restore:
+Validated for the tested case:
 
 ```text
-[LMION:DEV] LargeGate toggle state restored: definition=... facing=... open=true/false
+damaged internal member HP survives normal LargeGate opening/closing
+PZ's recreation of the internal members no longer resets the observed HP to 100/100
 ```
 
-Because `LargeGateTopology` is also shared by placement/world-state services, a successful durability retest should later be followed by a small LargeGate N/W replacement regression check. Do not mark this checkpoint validated until the user confirms the in-game result.
+This validates the durability-preservation bug fix for the retested scenario. It does not by itself prove the complete N/W, all-family, lock/modData matrix.
+
+A small LargeGate N/W replacement regression check remains worthwhile because `LargeGateTopology` is shared by placement/world-state services.
