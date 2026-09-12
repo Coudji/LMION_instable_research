@@ -83,8 +83,6 @@ module Base
 
         component SpriteConfig
         {
-            dontNeedFrame = true,
-            BreakSound = BreakDoor,
             face W
             {
                 layer
