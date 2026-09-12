@@ -170,6 +170,44 @@ Use one PZ script file per opening/family rather than separate `_Item`, `_Build`
 
 Script files contain only parse-time facts PZ actually needs, such as transport items, XUI, CraftRecipe and SpriteConfig. LMION Lua definitions remain authoritative for semantic type, durability, geometry and gameplay data.
 
+Source must remain human-readable. Baseline localization is EN + FR. `Entity.json` owns Construction/GameEntity display labels, while `ItemName.json` owns inventory item labels.
+
+## Build frame policy — VALIDATED IN GAME
+
+Static LMION SpriteConfigs no longer own `dontNeedFrame`. The semantic source of truth is the effective Lua definition through `doorType` / `DoorTypes`.
+
+Active boundary:
+
+```text
+ISBuildIsoEntity.new(...)
+-> vanilla Build object
+-> Hooks/Build/DoorFrameRequirement.lua
+-> effective LMION definition
+-> frame requirement
+-> buildObject.dontNeedFrame
+```
+
+Commit:
+
+```text
+f8cf884e6e3dcb162a5bee797f8c6d1b76f36968  Derive Build frame requirement from LMION door type
+```
+
+User validated in game:
+
+```text
+framed doors still require their frame
+FenceGate / Sliding build without a frame
+LargeGate A and B build without a frame
+Garage builds without a frame
+```
+
+A previous attempt to patch already-loaded `GameEntityScript` / `SpriteConfig` with a minimal scalar-only `GameEntityScript:Load()` fragment failed in game and was reverted. Do not repeat that approach.
+
+Separate observation: unframed Build placement is currently permissive enough to allow semantically odd placements against/inside walls or frame structures. This predates/is independent from the definition-owned `dontNeedFrame` hook. Treat stricter wall/frame compatibility as a separate placement-validation task.
+
+Research: `Docs/Research/Build/LargeGateBuild.md`.
+
 ## LargeGate runtime — MOVEABLES REPLACEMENT VALIDATED IN GAME
 
 LargeGate V3 has family-specific services for:
@@ -316,11 +354,44 @@ Docs/Research/Moveables/VanillaMoveablesBehavior.md
 Docs/Research/Moveables/LargeGateGhostRendering.md
 ```
 
+### LargeGate ToggleDoor state preservation — TEST PENDING
+
+User observed that pickup/replacement preserves damaged HP correctly, but normal open/close recreates internal LargeGate members and resets them to `100/100`.
+
+Legacy has a dedicated proven workaround around PZ's recreation boundary. Workshop does not appear to contain an equivalent normal-toggle preservation path, so Legacy is the oracle for this issue.
+
+First V3 port failed in game because it added stricter sprite/open-state parity checks that Legacy does not use during the transition.
+
+Current implementation was realigned with Legacy timing while preserving V3 ownership boundaries:
+
+```text
+OnObjectAboutToBeRemoved(logical member 2)
+-> object:IsOpen() is target state
+-> derive previous layout from LargeGateTopology
+-> locate the four old members by square + logical index + definitionId + facing
+-> DoorState.capture() all four
+
+OnContainerUpdate
+-> resolve recreated gate
+-> verify all four reached target state
+-> DoorState.restore() all four
+```
+
+Commit:
+
+```text
+709d1ae32829a297f14b21170f50c40e20da9427  Align LargeGate toggle state preservation with Legacy
+```
+
+Do **not** call this validated until the current in-game retest confirms HP survives open and close.
+
+Research: `Docs/Research/Moveables/LargeGateToggleState.md`.
+
 ## LargeGate Build status
 
 LargeGate Build code exists, including vanilla full-gate narrowing for supported vanilla entities, A/B GameEntity profiles and post-build canonicalization.
 
-It remains **NOT VALIDATED IN GAME** as an integrated LargeGate Build checkpoint. Keep Build validation separate from Moveables replacement tests.
+The frame/no-frame Build integration is validated, but the complete LargeGate Build matrix is still **NOT FULLY VALIDATED IN GAME**. Keep resource/finalization/family/orientation validation separate from the already validated frame policy.
 
 ## Garage runtime — CORE WORKFLOW VALIDATED IN GAME
 
@@ -434,6 +505,7 @@ rollback/failure paths
 
 - Kahlua global `next()` was nil in a profile path. Use `pairs()` + explicit counting.
 - Build CraftRecipe without a GameEntity SpriteConfig can appear in the menu but clicking Build produces no cursor.
+- minimal late `GameEntityScript:Load()` projection of scalar-only `dontNeedFrame` does not update the already-loaded SpriteConfig as intended; use the validated definition-owned `ISBuildIsoEntity.new` boundary instead.
 - V2 LargeGate toolbar could show a complete ghost while click placement failed; do not resume speculative V2 patches.
 - V3 generic `Base.LMION_OpeningParcel` without a WorldSprite broke both LargeGate placement frontends on `5841a976...`.
 - Workshop/manual multipart pickup lifecycle is not the behavioral reference; Legacy delegates each LargeGate member to vanilla `pickUpMoveableInternal()`.
@@ -442,6 +514,7 @@ rollback/failure paths
 - Do not add batch IDs/pickup-session pairing to LargeGate or Garage stock.
 - Garage synthetic L3 SpriteGrid is a technical Moveables adapter only; do not use it as the actual variable-chain pickup footprint.
 - A custom `ISMoveablesAction` derivative must provide the normal Moveables context expected by vanilla (`moveProps` and related origin fields) if it inherits vanilla start/sound behavior.
+- LargeGate ToggleDoor transition detection must not require sprite/open-state parity while PZ is between old and new layouts; the first V3 attempt did this and failed in game.
 
 General rule: inspect vanilla Lua/JAR before changing an engine boundary and record the result here or under `Docs/Research`.
 
@@ -457,14 +530,15 @@ General rule: inspect vanilla Lua/JAR before changing an engine boundary and rec
 - Brown Sliding Glass Door pilot;
 - N/W behavior for those pilots;
 - their frame/no-frame contracts;
-- HP/max-HP persistence for those pilots;
+- definition-owned Build `dontNeedFrame` behavior for framed vs unframed types, including LargeGate A/B and Garage;
+- HP/max-HP persistence for the 1x1 pilots;
 - MetalWelding Moveables tool bridge through Sliding;
 - LargeGate segment-specific item + WorldSprite transport;
 - LargeGate pickup through vanilla physical-member lifecycle;
 - LargeGate toolbar and inventory/right-click replacement;
 - LargeGate mixed inventory/floor parcel lookup in either Part1/Part2 arrangement;
 - LargeGate exact floor-parcel consumption after successful placement;
-- LargeGate per-parcel HP/maxHP restoration;
+- LargeGate per-parcel HP/maxHP restoration through pickup/replacement;
 - functional canonical `IsoDoor` LargeGate leaf after replacement;
 - Garage Green Build L3/L6;
 - Garage Green pickup L3/L6 with requirements met/bypassed;
@@ -474,7 +548,8 @@ General rule: inspect vanilla Lua/JAR before changing an engine boundary and rec
 
 **IMPLEMENTED BUT TEST STILL REQUIRED:**
 
-- LargeGate Build runtime;
+- LargeGate normal open/close state preservation at commit `709d1ae...`;
+- complete LargeGate Build matrix beyond frame-policy behavior;
 - Garage broader family/resource/stock/HP/floor/toolbar matrix listed above.
 
 **NOT YET VALIDATED BROADLY:**
@@ -486,4 +561,6 @@ General rule: inspect vanilla Lua/JAR before changing an engine boundary and rec
 
 ## Immediate next work
 
-Continue Garage validation rather than redesigning it. Highest-value next checks are the stock transaction cases (L6 -> L3 surplus, mixed inventory/floor), HP/maxHP persistence and exact resource consumption outside Build cheat. After those pass, broaden across Garage families/orientations and then return to remaining API/catalog validation.
+Current immediate checkpoint is the in-game retest of LargeGate HP/state preservation across normal open -> close after `709d1ae...`.
+
+After that, address the separately observed permissive placement rules for unframed Build objects without conflating them with `dontNeedFrame`. Garage broader validation remains queued after these focused regressions are closed.
