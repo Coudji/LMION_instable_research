@@ -8,10 +8,40 @@ local SingleTileDoorSprites = require "LMION/Runtime/Moveables/SingleTileDoorSpr
 local GarageSpriteGrids = require "LMION/Runtime/Moveables/GarageSpriteGrids"
 local LargeGateSprites = require "LMION/Runtime/Moveables/LargeGateSprites"
 local LargeGateSpriteGrids = require "LMION/Runtime/Moveables/LargeGateSpriteGrids"
+local LargeGateToggleState = require "LMION/Runtime/LargeGateToggleState"
 local ToolDefinitions = require "LMION/Runtime/Moveables/ToolDefinitions"
-local MoveablesBootstrap = {}; local hasRun=false
-local function configureSprites() SingleTileDoorSprites.configure(); GarageSpriteGrids.configure(); LargeGateSprites.configure(); LargeGateSpriteGrids.configure() end
-function MoveablesBootstrap.run()
- if hasRun then return false end; hasRun=true; ToolDefinitions.install(); SingleTileDoorHook.install(); GaragePickupHook.install(); GaragePlacementHook.install(); LargeGateFacingHook.install(); LargeGatePickupHook.install(); LargeGatePlacementHook.install(); if Events and Events.OnLoadedTileDefinitions then Events.OnLoadedTileDefinitions.Add(configureSprites) end; return true
+
+local MoveablesBootstrap = {}
+local hasRun = false
+
+local function configureSprites()
+    SingleTileDoorSprites.configure()
+    GarageSpriteGrids.configure()
+    LargeGateSprites.configure()
+    LargeGateSpriteGrids.configure()
 end
+
+function MoveablesBootstrap.run()
+    if hasRun then
+        return false
+    end
+
+    hasRun = true
+
+    ToolDefinitions.install()
+    SingleTileDoorHook.install()
+    GaragePickupHook.install()
+    GaragePlacementHook.install()
+    LargeGateFacingHook.install()
+    LargeGatePickupHook.install()
+    LargeGatePlacementHook.install()
+    LargeGateToggleState.install()
+
+    if Events and Events.OnLoadedTileDefinitions then
+        Events.OnLoadedTileDefinitions.Add(configureSprites)
+    end
+
+    return true
+end
+
 return MoveablesBootstrap
