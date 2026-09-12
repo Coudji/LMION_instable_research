@@ -11,6 +11,9 @@ local LEAF_INDICES = {
     },
 }
 
+-- Physical offsets are Project Zomboid's native DoubleDoor layout, relative to
+-- logical member 1. Keep this table aligned with IsoDoor's
+-- DoubleDoor*{Closed,Open}{X,Y}Offset arrays.
 local STATE_OFFSETS = {
     N = {
         closed = {
@@ -21,23 +24,23 @@ local STATE_OFFSETS = {
         },
         open = {
             [1] = { 0, 0 },
-            [2] = { 0, -1 },
-            [3] = { 3, -1 },
+            [2] = { 0, 1 },
+            [3] = { 3, 1 },
             [4] = { 3, 0 },
         },
     },
     W = {
         closed = {
             [1] = { 0, 0 },
-            [2] = { 0, 1 },
-            [3] = { 0, 2 },
-            [4] = { 0, 3 },
+            [2] = { 0, -1 },
+            [3] = { 0, -2 },
+            [4] = { 0, -3 },
         },
         open = {
             [1] = { 0, 0 },
-            [2] = { -1, 0 },
-            [3] = { -1, 3 },
-            [4] = { 0, 3 },
+            [2] = { 1, 0 },
+            [3] = { 1, -3 },
+            [4] = { 0, -3 },
         },
     },
 }
