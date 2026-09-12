@@ -27,7 +27,9 @@ Use normal block formatting instead.
 
 PZ script files contain only parse-time facts that the engine actually needs.
 
-Do not add `dontNeedFrame` or `BreakSound` to `component SpriteConfig`.
+Do not duplicate `dontNeedFrame` in static `component SpriteConfig` blocks. Frame requirements are semantic consequences of the effective Lua definition / `doorType` model and are projected into the loaded PZ GameEntity scripts at `OnGameBoot` by `Runtime/Build/DoorScriptProjection.lua`.
+
+`BreakSound` must not be added merely as redundant documentation. Keep it only where an engine-facing script rewrite genuinely owns or requires that value.
 
 In V3:
 
@@ -51,6 +53,7 @@ FR
 This includes:
 
 - `ItemName.json` for moveable/transport items;
+- `Entity.json` for Construction/GameEntity display names;
 - `IG_UI.json` for LMION UI labels and keybind descriptions;
 - `Sandbox.json` for LMION Sandbox settings;
 - `Mod.json` for translated `mod.info` name/description metadata.
