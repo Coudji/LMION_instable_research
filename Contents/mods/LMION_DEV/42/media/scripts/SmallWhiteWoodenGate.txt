@@ -13,7 +13,7 @@ module Base
         entity ES_LMION_SmallWhiteWoodenGate
         {
             LuaWindowClass = ISEntityWindow,
-            DisplayName = Small White Wooden Gate,
+            DisplayName = EC_LMION_SmallWhiteWoodenGate,
             Icon = LMION/doors/SmallWhiteWoodenGate,
         }
     }

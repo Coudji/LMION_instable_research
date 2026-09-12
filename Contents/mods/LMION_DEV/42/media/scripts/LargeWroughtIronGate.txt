@@ -41,13 +41,13 @@ module Base
         entity ES_LargeWroughtIronGateA
         {
             LuaWindowClass = ISEntityWindow,
-            DisplayName = Large Wrought Iron Gate A,
+            DisplayName = EC_LMION_LargeWroughtIronGateA,
             Icon = LMION/doors/LargeWroughtIronGate,
         }
         entity ES_LargeWroughtIronGateB
         {
             LuaWindowClass = ISEntityWindow,
-            DisplayName = Large Wrought Iron Gate B,
+            DisplayName = EC_LMION_LargeWroughtIronGateB,
             Icon = LMION/doors/LargeWroughtIronGate,
         }
     }

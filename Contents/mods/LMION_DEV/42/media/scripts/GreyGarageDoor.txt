@@ -32,7 +32,7 @@ module Base
         entity ES_LMION_GreyGarageDoor
         {
             LuaWindowClass = ISEntityWindow,
-            DisplayName = Grey Garage Door,
+            DisplayName = EC_LMION_GreyGarageDoor,
             Icon = LMION/doors/GreyGarageDoor,
         }
     }

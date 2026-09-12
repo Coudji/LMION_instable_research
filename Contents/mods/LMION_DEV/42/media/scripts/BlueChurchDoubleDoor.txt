@@ -21,14 +21,14 @@ module Base
         entity ES_LMION_BlueChurchDoubleDoorLeft
         {
             LuaWindowClass = ISEntityWindow,
-            DisplayName = Blue Church Double Door,
+            DisplayName = EC_LMION_BlueChurchDoubleDoorLeft,
             Icon = LMION/doors/BlueChurchDoubleDoorLeft,
         }
 
         entity ES_LMION_BlueChurchDoubleDoorRight
         {
             LuaWindowClass = ISEntityWindow,
-            DisplayName = Blue Church Double Door,
+            DisplayName = EC_LMION_BlueChurchDoubleDoorRight,
             Icon = LMION/doors/BlueChurchDoubleDoorRight,
         }
     }

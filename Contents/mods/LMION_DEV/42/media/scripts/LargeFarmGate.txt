@@ -41,13 +41,13 @@ module Base
         entity ES_LargeFarmGateA
         {
             LuaWindowClass = ISEntityWindow,
-            DisplayName = Large Farm Gate A,
+            DisplayName = EC_LMION_LargeFarmGateA,
             Icon = LMION/doors/LargeFarmGate,
         }
         entity ES_LargeFarmGateB
         {
             LuaWindowClass = ISEntityWindow,
-            DisplayName = Large Farm Gate B,
+            DisplayName = EC_LMION_LargeFarmGateB,
             Icon = LMION/doors/LargeFarmGate,
         }
     }

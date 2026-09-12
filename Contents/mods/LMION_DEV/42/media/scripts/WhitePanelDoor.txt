@@ -13,7 +13,7 @@ module Base
         entity ES_LMION_WhitePanelDoor
         {
             LuaWindowClass = ISEntityWindow,
-            DisplayName = White Panel Door,
+            DisplayName = EC_LMION_WhitePanelDoor,
             Icon = LMION/doors/WhitePanelDoor,
         }
     }

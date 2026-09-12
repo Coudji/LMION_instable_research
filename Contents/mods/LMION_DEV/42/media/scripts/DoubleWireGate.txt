@@ -40,13 +40,13 @@ module Base
     {
         entity ES_DoubleWireGate
         {
-            DisplayName = Large Chain-Link Gate A,
+            DisplayName = EC_LMION_DoubleWireGateA,
         }
 
         entity ES_DoubleWireGateB
         {
             LuaWindowClass = ISEntityWindow,
-            DisplayName = Large Chain-Link Gate B,
+            DisplayName = EC_LMION_DoubleWireGateB,
             Icon = Build_DoubleWireGate,
         }
     }

@@ -13,7 +13,7 @@ module Base
         entity ES_LMION_BrownSlidingGlassDoor
         {
             LuaWindowClass = ISEntityWindow,
-            DisplayName = Brown Sliding Glass Door,
+            DisplayName = EC_LMION_BrownSlidingGlassDoor,
             Icon = LMION/doors/BrownSlidingGlassDoor,
         }
     }

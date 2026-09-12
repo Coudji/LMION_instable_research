@@ -40,13 +40,13 @@ module Base
     {
         entity ES_Dumbledoor
         {
-            DisplayName = Large Wooden Gate A,
+            DisplayName = EC_LMION_DoubleDoorA,
         }
 
         entity ES_DoubleDoorB
         {
             LuaWindowClass = ISEntityWindow,
-            DisplayName = Large Wooden Gate B,
+            DisplayName = EC_LMION_DoubleDoorB,
             Icon = Build_DoubleWoodGate,
         }
     }

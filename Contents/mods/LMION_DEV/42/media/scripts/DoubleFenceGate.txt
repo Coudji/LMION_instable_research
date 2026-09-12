@@ -40,13 +40,13 @@ module Base
     {
         entity ES_DoubleFenceGate
         {
-            DisplayName = Large Scrap Metal Gate A,
+            DisplayName = EC_LMION_DoubleFenceGateA,
         }
 
         entity ES_DoubleFenceGateB
         {
             LuaWindowClass = ISEntityWindow,
-            DisplayName = Large Scrap Metal Gate B,
+            DisplayName = EC_LMION_DoubleFenceGateB,
             Icon = Build_DoublePoleGate,
         }
     }

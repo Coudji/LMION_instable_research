@@ -32,7 +32,7 @@ module Base
         entity ES_LMION_RollingGarageDoor
         {
             LuaWindowClass = ISEntityWindow,
-            DisplayName = Rolling Garage Door,
+            DisplayName = EC_LMION_RollingGarageDoor,
             Icon = LMION/doors/RollingGarageDoor,
         }
     }
