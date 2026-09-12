@@ -1,5 +1,6 @@
 require "BuildingObjects/ISBuildIsoEntity"
 
+local DoorPlacement = require "LMION/Runtime/DoorPlacement"
 local GarageBuild = require "LMION/Services/Build/GarageLengthState"
 
 local function getProfile(buildObject)
@@ -30,12 +31,22 @@ local function getContainers(buildObject)
     return buildObject and buildObject.containers or nil
 end
 
+local function isPlacementValid(buildObject, square)
+    if getProfile(buildObject) == nil then
+        return true
+    end
+
+    local facing = buildObject.north == true and "N" or "W"
+    return DoorPlacement.canPlaceUnframedAt(square, facing)
+end
+
 if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
     ISBuildIsoEntity._lmionV3GarageBuildInstalled = true
 
     local previousNew = ISBuildIsoEntity.new
     local previousGetFace = ISBuildIsoEntity.getFace
     local previousIsValid = ISBuildIsoEntity.isValid
+    local previousIsValidPerSquare = ISBuildIsoEntity.isValidPerSquare
     local previousCreate = ISBuildIsoEntity.create
 
     ISBuildIsoEntity.new = function(
@@ -86,7 +97,8 @@ if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
     end
 
     ISBuildIsoEntity.isValid = function(self, square)
-        if not previousIsValid(self, square) then
+        if not previousIsValid(self, square)
+            or not isPlacementValid(self, square) then
             return false
         end
 
@@ -101,6 +113,24 @@ if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
             getLength(self),
             getContainers(self)
         )
+    end
+
+    ISBuildIsoEntity.isValidPerSquare = function(
+        self,
+        square,
+        tileInfo,
+        requiresFloor,
+        extendsN,
+        extendsW
+    )
+        return previousIsValidPerSquare(
+            self,
+            square,
+            tileInfo,
+            requiresFloor,
+            extendsN,
+            extendsW
+        ) and isPlacementValid(self, square)
     end
 
     ISBuildIsoEntity.create = function(self, x, y, z, north, sprite)
