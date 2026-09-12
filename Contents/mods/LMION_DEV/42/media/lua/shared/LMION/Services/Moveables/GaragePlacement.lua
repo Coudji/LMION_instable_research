@@ -1,47 +1,257 @@
 require "Moveables/ISMoveableSpriteProps"
-local GarageLengthPolicy=require "LMION/Domain/GarageLengthPolicy"
-local GarageParcelLookup=require "LMION/Services/Moveables/GarageParcelLookup"
-local GarageProfiles=require "LMION/Services/Moveables/GarageProfiles"
-local SingleTileDoorPlacementFinalizer=require "LMION/Services/Moveables/SingleTileDoorPlacementFinalizer"
-local GaragePlacement={}
 
-local function available(character,profile)
-    return {START=GarageParcelLookup.collect(character,profile.itemTypes[1]),MIDDLE=GarageParcelLookup.collect(character,profile.itemTypes[2]),END=GarageParcelLookup.collect(character,profile.itemTypes[3])}
+local GarageLengthPolicy = require "LMION/Domain/GarageLengthPolicy"
+local GarageParcelLookup = require "LMION/Services/Moveables/GarageParcelLookup"
+local GarageProfiles = require "LMION/Services/Moveables/GarageProfiles"
+local SingleTileDoorPlacementFinalizer = require "LMION/Services/Moveables/SingleTileDoorPlacementFinalizer"
+
+local GaragePlacement = {}
+
+local function collectAvailableParcels(character, profile)
+    return {
+        START = GarageParcelLookup.collect(character, profile.itemTypes[1]),
+        MIDDLE = GarageParcelLookup.collect(character, profile.itemTypes[2]),
+        END = GarageParcelLookup.collect(character, profile.itemTypes[3]),
+    }
 end
-local function maximum(parts)
-    if not parts or #parts.START<1 or #parts.END<1 then return nil end
-    local value=2+#parts.MIDDLE; local cap=GarageLengthPolicy.getMaximumLength(); return cap and math.min(value,cap) or value
+
+local function getMaximumLength(parts)
+    if parts == nil
+        or #parts.START < 1
+        or #parts.END < 1 then
+        return nil
+    end
+
+    local maximum = 2 + #parts.MIDDLE
+    local policyMaximum = GarageLengthPolicy.getMaximumLength()
+
+    if policyMaximum ~= nil then
+        maximum = math.min(maximum, policyMaximum)
+    end
+
+    return maximum
 end
-function GaragePlacement.getMaximumAvailableLength(character,definitionId) local p=GarageProfiles.getByDefinitionId(definitionId);return p and maximum(available(character,p)) or nil end
-function GaragePlacement.buildPlan(character,definitionId,length,facing,startSquare)
-    local p=GarageProfiles.getByDefinitionId(definitionId);length=tonumber(length);if not p or not startSquare or (facing~="N" and facing~="W") then return nil end
-    local parts=available(character,p);local max=maximum(parts);if not max or not length or length~=math.floor(length) or length<2 or length>max or not GarageLengthPolicy.isLengthAllowed(length) then return nil end
-    local plan={length=length,definitionId=definitionId,facing=facing,profile=p};local middle=1
-    for pos=1,length do local role,parcel;if pos==1 then role="START";parcel=parts.START[1] elseif pos==length then role="END";parcel=parts.END[1] else role="MIDDLE";parcel=parts.MIDDLE[middle];middle=middle+1 end
-        local x=startSquare:getX()+(facing=="N" and pos-1 or 0);local y=startSquare:getY()-(facing=="W" and pos-1 or 0);local sq=getCell():getGridSquare(x,y,startSquare:getZ());local sprite=p.geometry[facing][role].closed
-        if not parcel or not sq or not sprite then return nil end;plan[pos]={item=parcel.item,source=parcel.source,worldItem=parcel.worldItem,square=sq,spriteName=sprite,role=role}
-    end;return plan
+
+function GaragePlacement.getMaximumAvailableLength(character, definitionId)
+    local profile = GarageProfiles.getByDefinitionId(definitionId)
+    if profile == nil then
+        return nil
+    end
+
+    return getMaximumLength(collectAvailableParcels(character, profile))
 end
-local function props(entry) local p=ISMoveableSpriteProps.new(entry.spriteName);if p then p.isMultiSprite=false end;return p end
-local function sourceValid(e)
-    if e.source=="floor" then return e.worldItem~=nil and e.worldItem:getSquare()~=nil and e.worldItem:getItem()==e.item end
-    return e.source~=nil and e.item~=nil and e.item:getContainer()==e.source
+
+function GaragePlacement.buildPlan(
+    character,
+    definitionId,
+    length,
+    facing,
+    startSquare
+)
+    local profile = GarageProfiles.getByDefinitionId(definitionId)
+    length = tonumber(length)
+
+    if profile == nil
+        or startSquare == nil
+        or (facing ~= "N" and facing ~= "W") then
+        return nil
+    end
+
+    local parts = collectAvailableParcels(character, profile)
+    local maximum = getMaximumLength(parts)
+
+    if maximum == nil
+        or length == nil
+        or length ~= math.floor(length)
+        or length < 2
+        or length > maximum
+        or not GarageLengthPolicy.isLengthAllowed(length) then
+        return nil
+    end
+
+    local plan = {
+        length = length,
+        definitionId = definitionId,
+        facing = facing,
+        profile = profile,
+    }
+
+    local middleIndex = 1
+
+    for position = 1, length do
+        local role = nil
+        local parcel = nil
+
+        if position == 1 then
+            role = "START"
+            parcel = parts.START[1]
+        elseif position == length then
+            role = "END"
+            parcel = parts.END[1]
+        else
+            role = "MIDDLE"
+            parcel = parts.MIDDLE[middleIndex]
+            middleIndex = middleIndex + 1
+        end
+
+        local x = startSquare:getX()
+        local y = startSquare:getY()
+
+        if facing == "N" then
+            x = x + position - 1
+        else
+            y = y - position + 1
+        end
+
+        local square = getCell():getGridSquare(x, y, startSquare:getZ())
+        local spriteName = profile.geometry[facing][role].closed
+
+        if parcel == nil or square == nil or spriteName == nil then
+            return nil
+        end
+
+        plan[position] = {
+            item = parcel.item,
+            source = parcel.source,
+            worldItem = parcel.worldItem,
+            square = square,
+            spriteName = spriteName,
+            role = role,
+        }
+    end
+
+    return plan
 end
-function GaragePlacement.validate(character,plan)
-    if not character or not plan then return false end
-    for i=1,plan.length do local e=plan[i];local p=props(e);if not p or not sourceValid(e) or not e.square or not p:canPlaceMoveableInternal(character,e.square,e.item) then return false end end;return true
+
+local function getMoveProps(entry)
+    local moveProps = ISMoveableSpriteProps.new(entry.spriteName)
+    if moveProps ~= nil then
+        moveProps.isMultiSprite = false
+    end
+
+    return moveProps
 end
-local function removePlaced(list)
-    for i=#list,1,-1 do local o=list[i];local sq=o and o:getSquare() or nil;if o and sq then sq:transmitRemoveItemFromSquare(o);sq:RecalcAllWithNeighbours(true) end end
+
+local function isSourceValid(entry)
+    if entry.source == "floor" then
+        return entry.worldItem ~= nil
+            and entry.worldItem:getSquare() ~= nil
+            and entry.worldItem:getItem() == entry.item
+    end
+
+    return entry.source ~= nil
+        and entry.item ~= nil
+        and entry.item:getContainer() == entry.source
 end
-local function consume(e)
-    if e.source=="floor" then local wo=e.worldItem;local sq=wo and wo:getSquare() or nil;if not wo or not sq then return false end;sq:transmitRemoveItemFromSquare(wo);sq:removeWorldObject(wo);if e.item:getWorldItem()==wo then e.item:setWorldItem(nil) end;return true end
-    if e.source and e.source.Remove then e.source:Remove(e.item);sendRemoveItemFromContainer(e.source,e.item);return true end;return false
+
+function GaragePlacement.validate(character, plan)
+    if character == nil or plan == nil then
+        return false
+    end
+
+    for index = 1, plan.length do
+        local entry = plan[index]
+        local moveProps = getMoveProps(entry)
+
+        if moveProps == nil
+            or not isSourceValid(entry)
+            or entry.square == nil
+            or not moveProps:canPlaceMoveableInternal(
+                character,
+                entry.square,
+                entry.item
+            ) then
+            return false
+        end
+    end
+
+    return true
 end
-function GaragePlacement.place(character,plan)
-    if not GaragePlacement.validate(character,plan) then return nil end;local placed={}
-    for i=1,plan.length do local e=plan[i];local p=props(e);local raw=p and p:placeMoveableInternal(e.square,e.item,e.spriteName) or nil;local final=raw and SingleTileDoorPlacementFinalizer.finalize(e.square,raw,e.item,e.spriteName,plan.profile) or nil
-        if not final then removePlaced(placed);if raw and raw:getSquare() then removePlaced({raw}) end;return nil end;placed[i]=final end
-    for i=1,plan.length do if not consume(plan[i]) then print("[LMION:DEV] Garage parcel consumption failed after completed placement") end end;return placed
+
+local function removePlacedObjects(objects)
+    for index = #objects, 1, -1 do
+        local object = objects[index]
+        local square = object and object:getSquare() or nil
+
+        if object ~= nil and square ~= nil then
+            square:transmitRemoveItemFromSquare(object)
+            square:RecalcAllWithNeighbours(true)
+        end
+    end
 end
+
+local function consumeParcel(entry)
+    if entry.source == "floor" then
+        local worldItem = entry.worldItem
+        local square = worldItem and worldItem:getSquare() or nil
+
+        if worldItem == nil or square == nil then
+            return false
+        end
+
+        square:transmitRemoveItemFromSquare(worldItem)
+        square:removeWorldObject(worldItem)
+
+        if entry.item:getWorldItem() == worldItem then
+            entry.item:setWorldItem(nil)
+        end
+
+        return true
+    end
+
+    if entry.source ~= nil and entry.source.Remove ~= nil then
+        entry.source:Remove(entry.item)
+        sendRemoveItemFromContainer(entry.source, entry.item)
+        return true
+    end
+
+    return false
+end
+
+function GaragePlacement.place(character, plan)
+    if not GaragePlacement.validate(character, plan) then
+        return nil
+    end
+
+    local placed = {}
+
+    for index = 1, plan.length do
+        local entry = plan[index]
+        local moveProps = getMoveProps(entry)
+        local rawObject = moveProps and moveProps:placeMoveableInternal(
+            entry.square,
+            entry.item,
+            entry.spriteName
+        ) or nil
+
+        local finalObject = rawObject and SingleTileDoorPlacementFinalizer.finalize(
+            entry.square,
+            rawObject,
+            entry.item,
+            entry.spriteName,
+            plan.profile
+        ) or nil
+
+        if finalObject == nil then
+            removePlacedObjects(placed)
+
+            if rawObject ~= nil and rawObject:getSquare() ~= nil then
+                removePlacedObjects({ rawObject })
+            end
+
+            return nil
+        end
+
+        placed[index] = finalObject
+    end
+
+    for index = 1, plan.length do
+        if not consumeParcel(plan[index]) then
+            print("[LMION:DEV] Garage parcel consumption failed after completed placement")
+        end
+    end
+
+    return placed
+end
+
 return GaragePlacement
