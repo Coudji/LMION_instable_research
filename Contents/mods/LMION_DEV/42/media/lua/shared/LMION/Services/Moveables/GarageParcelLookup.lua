@@ -1,22 +1,67 @@
 require "Moveables/ISMoveableSpriteProps"
-local GarageParcelLookup={}
 
-local function inventoryMatches(character,itemType)
-    local out={}; local inv=character and character:getInventory() or nil; local items=inv and inv:getItems() or nil
-    if items then for i=0,items:size()-1 do local item=items:get(i); if item and item:getFullType()==itemType then out[#out+1]={item=item,source=inv} end end end
-    return out
+local GarageParcelLookup = {}
+
+local function collectInventory(character, itemType)
+    local found = {}
+    local inventory = character and character:getInventory() or nil
+    local items = inventory and inventory:getItems() or nil
+
+    if items == nil then
+        return found
+    end
+
+    for index = 0, items:size() - 1 do
+        local item = items:get(index)
+        if item ~= nil and item:getFullType() == itemType then
+            found[#found + 1] = {
+                item = item,
+                source = inventory,
+            }
+        end
+    end
+
+    return found
 end
 
-function GarageParcelLookup.collect(character,itemType)
-    local out=inventoryMatches(character,itemType); local square=character and character:getSquare() or nil
-    if not square then return out end
-    local radius=ISMoveableSpriteProps.multiSpriteFloorRadius or 3; local sx,sy,sz=square:getX(),square:getY(),square:getZ()
-    for x=sx-radius,sx+radius do for y=sy-radius,sy+radius do
-        local sq=getCell():getGridSquare(x,y,sz); local objects=sq and sq:getWorldObjects() or nil
-        if objects then for i=0,objects:size()-1 do local wo=objects:get(i)
-            if instanceof(wo,"IsoWorldInventoryObject") then local item=wo:getItem(); if item and item:getFullType()==itemType then out[#out+1]={item=item,source="floor",worldItem=wo} end end
-        end end
-    end end
-    return out
+function GarageParcelLookup.collect(character, itemType)
+    local found = collectInventory(character, itemType)
+    local playerSquare = character and character:getSquare() or nil
+
+    if playerSquare == nil then
+        return found
+    end
+
+    local radius = ISMoveableSpriteProps.multiSpriteFloorRadius or 3
+    local startX = playerSquare:getX()
+    local startY = playerSquare:getY()
+    local z = playerSquare:getZ()
+
+    for x = startX - radius, startX + radius do
+        for y = startY - radius, startY + radius do
+            local square = getCell():getGridSquare(x, y, z)
+            local worldObjects = square and square:getWorldObjects() or nil
+
+            if worldObjects ~= nil then
+                for index = 0, worldObjects:size() - 1 do
+                    local worldObject = worldObjects:get(index)
+
+                    if instanceof(worldObject, "IsoWorldInventoryObject") then
+                        local item = worldObject:getItem()
+                        if item ~= nil and item:getFullType() == itemType then
+                            found[#found + 1] = {
+                                item = item,
+                                source = "floor",
+                                worldItem = worldObject,
+                            }
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    return found
 end
+
 return GarageParcelLookup

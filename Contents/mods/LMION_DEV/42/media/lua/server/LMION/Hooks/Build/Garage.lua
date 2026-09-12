@@ -1,22 +1,123 @@
 require "BuildingObjects/ISBuildIsoEntity"
-local GarageBuild=require "LMION/Services/Build/GarageLengthState"
-local function profile(self) return self and self.objectInfo and GarageBuild.getProfileFromObjectInfo(self.objectInfo) or nil end
-local function length(self) return GarageBuild.normalizeLength(tonumber(self and self.lmionGarageLength) or GarageBuild.getLengthFromLogic(self and self.buildPanelLogic)) end
-local function containers(self) local l=self and self.buildPanelLogic;return l and l.getContainers and l:getContainers() or (self and self.containers or nil) end
+
+local GarageBuild = require "LMION/Services/Build/GarageLengthState"
+
+local function getProfile(buildObject)
+    if buildObject == nil or buildObject.objectInfo == nil then
+        return nil
+    end
+
+    return GarageBuild.getProfileFromObjectInfo(buildObject.objectInfo)
+end
+
+local function getLength(buildObject)
+    local selected = buildObject and buildObject.lmionGarageLength or nil
+    local logic = buildObject and buildObject.buildPanelLogic or nil
+    local fallback = GarageBuild.getLengthFromLogic(logic)
+
+    return GarageBuild.normalizeLength(tonumber(selected) or fallback)
+end
+
+local function getContainers(buildObject)
+    local logic = buildObject and buildObject.buildPanelLogic or nil
+
+    if logic ~= nil and logic.getContainers ~= nil then
+        return logic:getContainers()
+    end
+
+    return buildObject and buildObject.containers or nil
+end
+
 if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
- ISBuildIsoEntity._lmionV3GarageBuildInstalled=true
- local previousNew=ISBuildIsoEntity.new;local previousFace=ISBuildIsoEntity.getFace;local previousValid=ISBuildIsoEntity.isValid;local previousCreate=ISBuildIsoEntity.create
- ISBuildIsoEntity.new=function(self,character,objectInfo,nSprite,containersArg,logic,lmionGarageLength)
-  local o=previousNew(self,character,objectInfo,nSprite,containersArg,logic);local p=GarageBuild.getProfileFromObjectInfo(objectInfo);if p then o.lmionGarageLength=GarageBuild.normalizeLength(lmionGarageLength or (logic and GarageBuild.getLengthFromLogic(logic)) or 3) end;return o
- end
- ISBuildIsoEntity.getFace=function(self)
-  local face=previousFace(self);if not profile(self) or not face then return face end;local l=length(self);if self._lmionGarageFaceSource~=face or self._lmionGarageFaceLength~=l then self._lmionGarageFaceSource=face;self._lmionGarageFaceLength=l;self._lmionGarageFaceProxy=GarageBuild.createFaceProxy(face,l) end;return self._lmionGarageFaceProxy
- end
- ISBuildIsoEntity.isValid=function(self,square)
-  if not previousValid(self,square) then return false end;local p=profile(self);if not p or self.character:isBuildCheat() then return true end;return GarageBuild.hasRequirements(self.character,p,length(self),containers(self))
- end
- ISBuildIsoEntity.create=function(self,x,y,z,north,sprite)
-  local p=profile(self);if p and not self.character:isBuildCheat() and not GarageBuild.hasRequirements(self.character,p,length(self),containers(self)) then return false end;self._lmionGarageExtrasConsumed=false;return previousCreate(self,x,y,z,north,sprite)
- end
- print("[LMION:DEV] variable Garage Build cursor hook installed")
+    ISBuildIsoEntity._lmionV3GarageBuildInstalled = true
+
+    local previousNew = ISBuildIsoEntity.new
+    local previousGetFace = ISBuildIsoEntity.getFace
+    local previousIsValid = ISBuildIsoEntity.isValid
+    local previousCreate = ISBuildIsoEntity.create
+
+    ISBuildIsoEntity.new = function(
+        self,
+        character,
+        objectInfo,
+        nSprite,
+        containersArg,
+        logic,
+        lmionGarageLength
+    )
+        local buildObject = previousNew(
+            self,
+            character,
+            objectInfo,
+            nSprite,
+            containersArg,
+            logic
+        )
+
+        local profile = GarageBuild.getProfileFromObjectInfo(objectInfo)
+        if profile ~= nil then
+            buildObject.lmionGarageLength = GarageBuild.normalizeLength(
+                lmionGarageLength
+                    or (logic and GarageBuild.getLengthFromLogic(logic))
+                    or GarageBuild.DefaultLength
+            )
+        end
+
+        return buildObject
+    end
+
+    ISBuildIsoEntity.getFace = function(self)
+        local face = previousGetFace(self)
+        if getProfile(self) == nil or face == nil then
+            return face
+        end
+
+        local length = getLength(self)
+        if self._lmionGarageFaceSource ~= face
+            or self._lmionGarageFaceLength ~= length then
+            self._lmionGarageFaceSource = face
+            self._lmionGarageFaceLength = length
+            self._lmionGarageFaceProxy = GarageBuild.createFaceProxy(face, length)
+        end
+
+        return self._lmionGarageFaceProxy
+    end
+
+    ISBuildIsoEntity.isValid = function(self, square)
+        if not previousIsValid(self, square) then
+            return false
+        end
+
+        local profile = getProfile(self)
+        if profile == nil or self.character:isBuildCheat() then
+            return true
+        end
+
+        return GarageBuild.hasRequirements(
+            self.character,
+            profile,
+            getLength(self),
+            getContainers(self)
+        )
+    end
+
+    ISBuildIsoEntity.create = function(self, x, y, z, north, sprite)
+        local profile = getProfile(self)
+
+        if profile ~= nil
+            and not self.character:isBuildCheat()
+            and not GarageBuild.hasRequirements(
+                self.character,
+                profile,
+                getLength(self),
+                getContainers(self)
+            ) then
+            return false
+        end
+
+        self._lmionGarageExtrasConsumed = false
+        return previousCreate(self, x, y, z, north, sprite)
+    end
+
+    print("[LMION:DEV] variable Garage Build cursor hook installed")
 end
