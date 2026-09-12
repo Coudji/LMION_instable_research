@@ -12,10 +12,12 @@ end
 
 local function getLength(buildObject)
     local selected = buildObject and buildObject.lmionGarageLength or nil
-    local logic = buildObject and buildObject.buildPanelLogic or nil
-    local fallback = GarageBuild.getLengthFromLogic(logic)
+    if selected ~= nil then
+        return GarageBuild.normalizeLength(tonumber(selected))
+    end
 
-    return GarageBuild.normalizeLength(tonumber(selected) or fallback)
+    local logic = buildObject and buildObject.buildPanelLogic or nil
+    return GarageBuild.normalizeLength(GarageBuild.getLengthFromLogic(logic))
 end
 
 local function getContainers(buildObject)
