@@ -1,4 +1,5 @@
 local DoorObject = require "LMION/PZ/DoorObject"
+local DoorFrame = require "LMION/PZ/DoorFrame"
 local PairedDoorFrame = require "LMION/PZ/PairedDoorFrame"
 local StandardDoorFrame = require "LMION/PZ/StandardDoorFrame"
 
@@ -12,6 +13,43 @@ local function hasDoorAt(square, north)
         if DoorObject.isDoor(object) and DoorObject.getNorth(object) == north then
             return true
         end
+    end
+
+    return false
+end
+
+local function hasAnyDoorFrameAt(square, north)
+    return DoorFrame.existsAt(square, north, "standard")
+        or DoorFrame.existsAt(square, north, "paired-left")
+        or DoorFrame.existsAt(square, north, "paired-right")
+end
+
+local function hasObjectFrom(square, methodName, north)
+    local method = square and square[methodName] or nil
+    if method == nil then
+        return false
+    end
+
+    local ok, object = pcall(method, square, north)
+    return ok and object ~= nil
+end
+
+local function hasBlockingEdgeAt(square, north)
+    -- An unframed opening still occupies a real N/W world edge. "No frame"
+    -- means that no supporting frame is required; it does not permit replacing
+    -- an existing wall, fence, frame, window or other edge object in-place.
+    if hasAnyDoorFrameAt(square, north) then
+        return true
+    end
+
+    if hasObjectFrom(square, "getWall", north)
+        or hasObjectFrom(square, "getThumpableWall", north)
+        or hasObjectFrom(square, "getHoppableWall", north)
+        or hasObjectFrom(square, "getWindow", north)
+        or hasObjectFrom(square, "getThumpableWindow", north)
+        or hasObjectFrom(square, "getWindowFrame", north)
+        or hasObjectFrom(square, "getGarageDoor", north) then
+        return true
     end
 
     return false
@@ -72,6 +110,10 @@ function DoorPlacement.canPlaceUnframedAt(square, facing)
     local north, reason = validateTarget(square, facing)
     if north == nil then
         return false, reason
+    end
+
+    if hasBlockingEdgeAt(square, north) then
+        return false, "edge-already-occupied"
     end
 
     return true, "ok"
