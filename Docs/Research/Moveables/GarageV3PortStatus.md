@@ -1,6 +1,6 @@
 # Garage V3 implementation checkpoint
 
-Status: **implemented, in-game validation pending** (2026-09-11).
+Status: **core Build + pickup + variable replacement validated in game** (2026-09-12). Broader catalog/resource/edge-case validation is still pending.
 
 Legacy remains the behavioral oracle. Workshop/late Legacy is the resource/UI archaeology reference where it refined the Garage Build model.
 
@@ -38,6 +38,11 @@ Vanilla toolbar placement:
 - keeps the vanilla Moveables L3 SpriteGrid/ghost;
 - remains intentionally fixed L3;
 - final placement is delegated to the same Garage placement plan instead of maintaining a second stock/consumption implementation.
+
+Pickup rendering:
+
+- the synthetic L3 SpriteGrid remains a technical vanilla Moveables adapter only;
+- Garage pickup rendering uses the actual native START/MIDDLE*/END chain footprint instead of exposing that fixed L3 technical grid.
 
 ### Build
 
@@ -84,6 +89,35 @@ LMION/Hooks/Build/DoorSetInfo.lua
 
 It dispatches only the family-specific finalization work. Family hooks keep their distinct validation/cursor/resource responsibilities.
 
+## In-game validation — 2026-09-12
+
+Tested on Project Zomboid 42.20.4 with `GarageDoors.GreenGarageDoor`.
+
+Confirmed:
+
+```text
+Build succeeds for Garage L3 and L6
+pickup L3 succeeds when skill requirement is met/bypassed
+pickup L6 succeeds
+replacement L3 succeeds
+replacement from L6 stock responds correctly to width +/- controls
+variable replacement creates the requested Garage width correctly
+post-placement ISMoveablesAction sound-context error is fixed
+```
+
+The initial apparent pickup failure was not a Garage chain failure: the test character had MetalWelding 2 while the Garage pickup definition requires MetalWelding 3. Enabling Moveables cheat confirmed the pickup path itself worked.
+
+A real rendering defect was also observed on L6 pickup: the fixed technical L3 SpriteGrid appeared as the highlighted pickup footprint. Commit `3ab07fc740e809fc40c6800bc61ae7c4c72d175c` changed pickup rendering to use the complete native Garage chain instead.
+
+A separate replacement error occurred after otherwise successful placement:
+
+```text
+attempted index: getSoundFromTool of non-table: null
+ISMoveablesAction.setActionSound
+```
+
+Cause: the V3 dedicated Garage placement action had omitted the normal Moveables context fields that Legacy supplied (`moveProps`, `origMoveProps`, `origSpriteName`). Commit `3fcb7e90043e235c8974206bb708855a289ed730` restored them. User retest: **works**.
+
 ## Commits
 
 ```text
@@ -97,35 +131,33 @@ b471bc86  Integrate Garage pickup with shared Moveables hooks
 150fa63a  Harden Garage SpriteGrid and parcel handling
 64aabed1  Restore Garage placement and Build safety guards
 054e947c  Centralize door Build finalization hook
+3ab07fc7  Render full Garage chain during pickup
+3fcb7e90  Restore Garage placement action Moveables context
 ```
 
-## Required cold-start validation
+## Validation still required
 
-Scripts changed, so test from a cold restart.
+The core Garage variable workflow is now proven, but the following matrix has not yet all been explicitly validated:
 
 Build:
 
-- solid + glazed Garage;
-- L2, L3, L6;
-- N/W;
-- `-` / `+` selector;
-- displayed requirements match selected L;
-- exact resource consumption;
+- glazed Garage;
+- exact resource consumption outside Build cheat;
 - mixed MetalBar/IronBar;
 - inventory/container/ground stock;
 - quick-repeat preserves L;
-- default Sandbox cap L6;
-- optionally higher cap/unlimited later.
+- Sandbox higher cap/unlimited.
 
 Pickup/replacement:
 
-- pickup L3 and L6, closed and open if practical;
-- inventory Place variable width and N/W rotation;
-- toolbar Place fixed L3;
-- mixed inventory/floor START/MIDDLE/END in more than one arrangement;
+- all 7 Garage families;
+- both N/W orientations as an explicit matrix;
+- open Garage pickup/replacement;
+- toolbar Place fixed L3 as a dedicated checkpoint;
+- mixed inventory/floor START/MIDDLE/END in multiple arrangements;
 - pickup L6 -> place L3 -> exactly 3 surplus parcels remain;
-- damaged member HP/maxHP survives;
-- final chain is functional and canonical `IsoDoor`;
-- no selected floor parcel remains after successful placement.
+- damaged member HP/maxHP survival;
+- exact floor-parcel consumption;
+- rollback/failure paths.
 
-Until these tests pass, Garage V3 is **implemented, not validated**.
+Do not downgrade the proven core workflow back to “not implemented”: Build, L3/L6 pickup, variable width controls and successful replacement are now in-game validated.
