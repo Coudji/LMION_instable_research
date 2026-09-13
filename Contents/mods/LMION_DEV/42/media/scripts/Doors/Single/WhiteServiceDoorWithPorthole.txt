@@ -1,0 +1,82 @@
+module Base
+{
+    item LMION_WhiteServiceDoorWithPorthole
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 17.0,
+        Tags = base:usedisplayname,
+    }
+
+    xuiSkin default
+    {
+        entity ES_LMION_WhiteServiceDoorWithPorthole
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_WhiteServiceDoorWithPorthole,
+            Icon = LMION/doors/WhiteServiceDoorWithPorthole,
+        }
+    }
+
+    entity WhiteServiceDoorWithPorthole
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_WhiteServiceDoorWithPorthole,
+            uiEnabled = false,
+        }
+
+        component CraftRecipe
+        {
+            timedAction = BuildWallMetal,
+            time = 120,
+            category = LMION,
+            SkillRequired = MetalWelding:3,
+            xpAward = MetalWelding:15,
+
+            inputs
+            {
+                item 1 [Base.Screwdriver] mode:keep,
+                item 1 [Base.SheetMetal],
+                item 1 [Base.SmallSheetMetal],
+                item 2 [Base.Plank],
+                item 6 [Base.Screws],
+                item 2 [Base.Hinge],
+                item 1 [Base.GlassPanel],
+            }
+        }
+
+        component SpriteConfig
+        {
+            face W
+            {
+                layer
+                {
+                    row = fixtures_doors_01_60,
+                }
+            }
+            face N
+            {
+                layer
+                {
+                    row = fixtures_doors_01_61,
+                }
+            }
+            face W_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_01_62,
+                }
+            }
+            face N_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_01_63,
+                }
+            }
+        }
+    }
+}
