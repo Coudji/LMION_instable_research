@@ -1,0 +1,59 @@
+module Base
+{
+    item LMION_BlackFullGlassDoor
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 14.0,
+        Tags = base:usedisplayname,
+    }
+
+    xuiSkin default
+    {
+        entity ES_LMION_BlackFullGlassDoor
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_BlackFullGlassDoor,
+            Icon = LMION/doors/BlackFullGlassDoor,
+        }
+    }
+
+    entity BlackFullGlassDoor
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_BlackFullGlassDoor,
+            uiEnabled = false,
+        }
+
+        component CraftRecipe
+        {
+            timedAction = BuildWallHammer,
+            time = 170,
+            category = LMION,
+            SkillRequired = Woodwork:7,
+            xpAward = Woodwork:40,
+
+            inputs
+            {
+                item 1 tags[base:hammer] mode:keep flags[Prop1;MayDegradeVeryLight],
+                item 1 [Base.Screwdriver] mode:keep,
+                item 2 [Base.Plank],
+                item 2 [Base.Nails],
+                item 2 [Base.Hinge],
+                item 4 [Base.Screws],
+                item 1 [Base.Doorknob],
+                item 3 [Base.GlassPanel],
+            }
+        }
+
+        component SpriteConfig
+        {
+            face W { layer { row = fixtures_doors_01_40, } }
+            face N { layer { row = fixtures_doors_01_41, } }
+            face W_OPEN { layer { row = fixtures_doors_01_42, } }
+            face N_OPEN { layer { row = fixtures_doors_01_43, } }
+        }
+    }
+}

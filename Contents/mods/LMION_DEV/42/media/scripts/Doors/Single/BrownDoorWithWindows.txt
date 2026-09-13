@@ -1,0 +1,59 @@
+module Base
+{
+    item LMION_BrownDoorWithWindows
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 16.0,
+        Tags = base:usedisplayname,
+    }
+
+    xuiSkin default
+    {
+        entity ES_LMION_BrownDoorWithWindows
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_BrownDoorWithWindows,
+            Icon = LMION/doors/BrownDoorWithWindows,
+        }
+    }
+
+    entity BrownDoorWithWindows
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_BrownDoorWithWindows,
+            uiEnabled = false,
+        }
+
+        component CraftRecipe
+        {
+            timedAction = BuildWallHammer,
+            time = 160,
+            category = LMION,
+            SkillRequired = Woodwork:6,
+            xpAward = Woodwork:35,
+
+            inputs
+            {
+                item 1 tags[base:hammer] mode:keep flags[Prop1;MayDegradeVeryLight],
+                item 1 [Base.Screwdriver] mode:keep,
+                item 4 [Base.Plank],
+                item 4 [Base.Nails],
+                item 2 [Base.Hinge],
+                item 4 [Base.Screws],
+                item 1 [Base.Doorknob],
+                item 1 [Base.GlassPanel],
+            }
+        }
+
+        component SpriteConfig
+        {
+            face W { layer { row = fixtures_doors_02_4, } }
+            face N { layer { row = fixtures_doors_02_5, } }
+            face W_OPEN { layer { row = fixtures_doors_02_6, } }
+            face N_OPEN { layer { row = fixtures_doors_02_7, } }
+        }
+    }
+}

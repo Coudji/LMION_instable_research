@@ -1,0 +1,55 @@
+module Base
+{
+    item LMION_BlueRestroomStallDoor
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 8.0,
+        Tags = base:usedisplayname,
+    }
+
+    xuiSkin default
+    {
+        entity ES_LMION_BlueRestroomStallDoor
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_BlueRestroomStallDoor,
+            Icon = LMION/doors/BlueRestroomStallDoor,
+        }
+    }
+
+    entity BlueRestroomStallDoor
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_BlueRestroomStallDoor,
+            uiEnabled = false,
+        }
+
+        component CraftRecipe
+        {
+            timedAction = BuildWallHammer,
+            time = 50,
+            category = LMION,
+            SkillRequired = Woodwork:1,
+            xpAward = Woodwork:5,
+
+            inputs
+            {
+                item 1 [Base.Screwdriver] mode:keep,
+                item 2 [Base.Plank],
+                item 4 [Base.Screws],
+                item 2 [Base.Hinge],
+            }
+        }
+
+        component SpriteConfig
+        {
+            face W { layer { row = fixtures_bathroom_01_48, } }
+            face N { layer { row = fixtures_bathroom_01_49, } }
+            face W_OPEN { layer { row = fixtures_bathroom_01_50, } }
+            face N_OPEN { layer { row = fixtures_bathroom_01_51, } }
+        }
+    }
+}
