@@ -106,3 +106,19 @@ This includes:
 - `Mod.json` for translated `mod.info` name/description metadata.
 
 Technical parcel items are still inventory-visible and therefore require localized names. Internal identifiers remain stable English/code identifiers; only display text is localized.
+
+### Naming rules
+
+Workshop's definition-name translations are the historical naming baseline when they already cover an opening. V3 should preserve those choices unless there is a deliberate language or clarity correction instead of inventing a fresh name during integration.
+
+Technical identifiers that come from Project Zomboid remain recognizable. In particular, vanilla-origin names such as `DoubleDoor`, `DoubleFenceGate`, and `DoubleWireGate` are not renamed simply to make them match the display label; modders may already know those vanilla identifiers.
+
+User-facing names follow the target language rather than word-for-word source order. Adjective and complement order should be idiomatic in EN and FR, and the same opening must keep the same base display name between `Entity.json` and `ItemName.json`.
+
+French size wording should avoid redundant qualifiers when the noun already conveys the distinction. Use `portillon` for the smaller form and `portail` for the larger form without mechanically adding `petit` or `grand`.
+
+Paired door display names use only `Left` / `Right` in EN and `Gauche` / `Droite` in FR. Do not add `Leaf` or `Vantail` to inventory or construction names.
+
+LargeGate sides remain `A` / `B` because their apparent left/right position changes with orientation.
+
+LargeGate transport parcels use the compact suffixes `Part 1` and `Part 2` in both EN and FR. Garage transport parcels keep their semantic `Start` / `Middle` / `End` and `Début` / `Milieu` / `Fin` suffixes.
