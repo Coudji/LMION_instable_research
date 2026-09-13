@@ -1,0 +1,84 @@
+module Base
+{
+    item LMION_BlackServiceDoor
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 18.0,
+        Tags = base:usedisplayname,
+    }
+
+    xuiSkin default
+    {
+        entity ES_LMION_BlackServiceDoor
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_BlackServiceDoor,
+            Icon = LMION/doors/BlackServiceDoor,
+        }
+    }
+
+    entity BlackServiceDoor
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_BlackServiceDoor,
+            uiEnabled = false,
+        }
+
+        component CraftRecipe
+        {
+            timedAction = BuildWallMetal,
+            time = 120,
+            category = LMION,
+            SkillRequired = MetalWelding:3,
+            xpAward = MetalWelding:15,
+
+            inputs
+            {
+                item 1 [Base.Screwdriver] mode:keep,
+                item 1 [Base.SheetMetal],
+                item 1 [Base.SmallSheetMetal],
+                item 2 [Base.Plank],
+                item 6 [Base.Screws],
+                item 2 [Base.Hinge],
+            }
+        }
+
+        component SpriteConfig
+        {
+            face W
+            {
+                layer
+                {
+                    row = fixtures_doors_02_12,
+                }
+            }
+
+            face N
+            {
+                layer
+                {
+                    row = fixtures_doors_02_13,
+                }
+            }
+
+            face W_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_02_14,
+                }
+            }
+
+            face N_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_02_15,
+                }
+            }
+        }
+    }
+}

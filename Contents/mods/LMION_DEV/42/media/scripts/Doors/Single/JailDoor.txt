@@ -1,0 +1,87 @@
+module Base
+{
+    item LMION_JailDoor
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 30.0,
+        Tags = base:usedisplayname,
+    }
+
+    xuiSkin default
+    {
+        entity ES_LMION_JailDoor
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_JailDoor,
+            Icon = LMION/doors/JailDoor,
+        }
+    }
+
+    entity JailDoor
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_JailDoor,
+            uiEnabled = false,
+        }
+
+        component CraftRecipe
+        {
+            timedAction = BuildWallMetal,
+            time = 300,
+            category = LMION,
+            SkillRequired = MetalWelding:10,
+            xpAward = MetalWelding:75,
+
+            inputs
+            {
+                item 1 [Base.WeldingMask] mode:keep,
+                item 1 [Base.Screwdriver] mode:keep,
+                item 10 [Base.BlowTorch] flags[DontRecordInput],
+                item 7 [Base.SteelBar],
+                item 2 [Base.SmallSheetMetal],
+                item 4 [Base.Hinge],
+                item 8 [Base.Screws],
+                item 1 [Base.Doorknob],
+                item 8 [Base.WeldingRods] flags[DontRecordInput],
+            }
+        }
+
+        component SpriteConfig
+        {
+            face W
+            {
+                layer
+                {
+                    row = location_community_police_01_4,
+                }
+            }
+
+            face N
+            {
+                layer
+                {
+                    row = location_community_police_01_5,
+                }
+            }
+
+            face W_OPEN
+            {
+                layer
+                {
+                    row = location_community_police_01_6,
+                }
+            }
+
+            face N_OPEN
+            {
+                layer
+                {
+                    row = location_community_police_01_7,
+                }
+            }
+        }
+    }
+}
