@@ -14,7 +14,7 @@ module Base
         {
             LuaWindowClass = ISEntityWindow,
             DisplayName = EC_LMION_MetalDoorLvl2,
-            Icon = LMION/doors/MetalDoorLvl2,
+            Icon = Build_DoorWeldedMetal,
         }
     }
 
