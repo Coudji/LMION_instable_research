@@ -1,0 +1,51 @@
+module Base
+{
+    item LMION_RoughWoodenDoor
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 14.0,
+        Tags = base:usedisplayname,
+    }
+    xuiSkin default
+    {
+        entity ES_LMION_RoughWoodenDoor
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_RoughWoodenDoor,
+            Icon = LMION/doors/RoughWoodenDoor,
+        }
+    }
+    entity RoughWoodenDoor
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_RoughWoodenDoor,
+            uiEnabled = false,
+        }
+        component CraftRecipe
+        {
+            timedAction = BuildWallHammer,
+            time = 90,
+            category = LMION,
+            SkillRequired = Woodwork:3,
+            xpAward = Woodwork:15,
+            inputs
+            {
+                item 1 tags[base:hammer] mode:keep flags[Prop1;MayDegradeVeryLight],
+                item 4 [Base.Plank],
+                item 4 [Base.Nails],
+                item 2 [Base.Hinge],
+                item 1 [Base.Doorknob],
+            }
+        }
+        component SpriteConfig
+        {
+            face W { layer { row = fixtures_doors_01_28, } }
+            face N { layer { row = fixtures_doors_01_29, } }
+            face W_OPEN { layer { row = fixtures_doors_01_30, } }
+            face N_OPEN { layer { row = fixtures_doors_01_31, } }
+        }
+    }
+}
