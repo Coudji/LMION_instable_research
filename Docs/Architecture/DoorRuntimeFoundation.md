@@ -6,88 +6,77 @@ This layer sits between LMION definitions and the narrow Project Zomboid integra
 
 Every LMION-managed final opening is an `IsoDoor`.
 
-`PZ/DoorObject.lua` reads one source door representation (`IsoDoor` or external/vanilla `IsoThumpable(isDoor)`) and preserves a meaningful `getNorth() == false` value.
+`PZ/DoorObject.lua` reads source door representations (`IsoDoor` or external/vanilla `IsoThumpable(isDoor)`) and preserves meaningful facing data.
 
-`Runtime/CanonicalDoor.lua` converges an LMION-owned source to `IsoDoor`. Build may supply `preserveLockState = false`; pickup/reinstallation preserves transported state by default.
+`Runtime/CanonicalDoor.lua` converges an LMION-owned source to `IsoDoor`. Build may use a fresh-state path; pickup/replacement restores transported state.
 
 ## Durability/state
 
 `Runtime/DoorDurability.lua` owns logical health/max-health access and the `lmionDoorMaxHealth` compatibility key.
 
-`Runtime/DoorState.lua` captures/restores normalized door state.
+`Runtime/DoorState.lua` owns normalized capture/restore semantics.
 
-`Runtime/Moveables/DoorTransportState.lua` serializes only the durability state currently transported through one Moveables item:
-
-```text
-lmionDoorHealth
-lmionDoorMaxHealth
-lmionDoorMaxWasLogical
-```
-
-Transport-package appearance is deliberately deferred until Garage and LargeGate runtime behavior exists.
+Moveables transport state remains separate from normal world-toggle state. In particular, LargeGate open/close preservation uses `DoorState` around PZ's internal recreation boundary rather than parcel transport.
 
 ## Frame adapters
 
-`PZ/DoorFrame.lua` has one engine-facing responsibility: classify/query a frame on one square/orientation.
+`PZ/DoorFrame.lua` classifies/query frames on one square/orientation.
 
 Internal classes:
 
 ```text
 standard
-paired-left   -> DoubleDoor1
-paired-right  -> DoubleDoor2
+paired-left
+paired-right
 ```
 
 `PZ/StandardDoorFrame.lua` asks only for `standard`.
 
-`PZ/PairedDoorFrame.lua` maps semantic Paired members to the corresponding structural frame class:
+`PZ/PairedDoorFrame.lua` maps semantic Paired members to the matching structural frame class.
 
-```text
-left  -> paired-left
-right -> paired-right
-```
-
-The public definition schema does not expose those frame implementation details.
+These implementation details are not public definition fields.
 
 ## Placement rules
 
-`Runtime/DoorPlacement.lua` owns world-space validity shared by current 1x1 families:
+`Runtime/DoorPlacement.lua` owns shared world-space validity for door edges.
+
+Common checks include:
 
 ```text
 square exists
--> facing N/W
--> no vehicle intersection
--> no door already occupies that orientation
+facing is N or W
+no vehicle intersection
+no door already occupies the same orientation
 ```
 
-Family-specific final condition:
+Family-specific support rules:
 
 ```text
-Simple    -> matching standard frame
-Paired    -> matching paired frame member
-FenceGate -> no frame
-Sliding   -> no frame
+Simple    -> matching standard frame required
+Paired    -> matching paired frame member required
+FenceGate -> no frame required, target edge must be free
+Sliding   -> no frame required, target edge must be free
+LargeGate -> no frame required, every Build/placement edge must be free
+Garage    -> no frame required, every Build/placement edge must be free
 ```
 
-It exposes separate rule functions and stable failure reasons. It does not check inventory skills/tools.
+For unframed openings, `none` means no supporting frame is required. It does not authorize overlapping an already occupied N/W edge.
 
-`Services/Moveables/SingleTileDoorPlacement.lua` selects the appropriate rule from one internal runtime profile. It does not scan the world itself.
+The current blocking-edge rule rejects incompatible structures such as walls, fences/hoppable walls, standard or paired frames, windows/window frames and existing door/garage-door edges.
+
+FenceGate and Sliding use the rule directly through `Services/Moveables/SingleTileDoorPlacement.lua` and the single-tile Build hook.
+
+LargeGate and Garage are multi-square and therefore apply the same rule through `ISBuildIsoEntity.isValidPerSquare`, validating each physical square of the current Build footprint.
+
+PZ stores barriers as N/W edges owned by specific squares. Perpendicular structures meeting at a corner are therefore not perfectly symmetric from opposite approach directions. LMION accepts that engine-native edge model and does not add an artificial corner-contact prohibition.
 
 ## Single-tile Moveables profiles
 
 Current common profile fields are derived from effective definitions rather than hard-coded in hooks.
 
-`Services/Moveables/SingleTileProfileFields.lua` owns reusable field conversion:
+`Services/Moveables/SingleTileProfileFields.lua` owns reusable field conversion such as governing skill, Moveables tool, transport item type and package weight.
 
-- one governing skill level;
-- one Moveables tool name;
-- transport item type from GameEntity identity;
-- package weight;
-- script-item existence.
-
-It maps MetalWelding transport tools to LMION-specific Moveables tool definitions so metal objects do not accidentally inherit a Woodwork tool perk.
-
-`Services/Moveables/SingleEntityDoorProfiles.lua` owns the shared single-entity geometry shape used by:
+`Services/Moveables/SingleEntityDoorProfiles.lua` owns the shared single-entity geometry used by:
 
 ```text
 Simple
@@ -95,27 +84,15 @@ FenceGate
 Sliding
 ```
 
-A definition becomes runtime-active through this provider only when its corresponding transport script item exists.
+`Services/Moveables/PairedDoorProfiles.lua` owns Paired-specific multi-entity/left-right geometry.
 
-`Services/Moveables/PairedDoorProfiles.lua` owns Paired-specific multi-entity/left-right geometry. The first Paired pilot is explicitly limited to `Doors.Wood.BlueChurchDoubleDoor`.
+`Services/Moveables/SingleTileDoorProfiles.lua` resolves supported 1x1 profiles by sprite.
 
-`Services/Moveables/SingleTileDoorProfiles.lua` resolves one supported 1x1 profile by sprite across those specialized providers.
-
-`Services/Moveables/SingleTileDoorMoveProps.lua` applies one resolved profile to vanilla `ISMoveableSpriteProps` and resolves its N/W face.
+`Services/Moveables/SingleTileDoorMoveProps.lua` applies the resolved profile to vanilla `ISMoveableSpriteProps` and resolves N/W faces.
 
 ## Moveables engine lifecycle
 
-`Runtime/Moveables/SingleTileDoorSprites.lua` marks only currently active profile sprites with `IsMoveAble` at `OnLoadedTileDefinitions`.
-
-`Runtime/Moveables/ToolDefinitions.lua` registers the LMION MetalWelding Moveables tool definitions recovered from Legacy:
-
-```text
-LMIONMetalScrewdriver
-LMIONMetalCrowbar
-LMIONMetalHammer
-```
-
-`Hooks/Moveables/SingleTileDoor.lua` is the **single owner** of the shared `ISMoveableSpriteProps` wrappers:
+`Hooks/Moveables/SingleTileDoor.lua` is the shared owner of the relevant `ISMoveableSpriteProps` wrappers:
 
 ```text
 new
@@ -126,70 +103,83 @@ canPlaceMoveableInternal
 placeMoveableInternal
 ```
 
-Unknown/non-LMION objects always return to the previous vanilla implementation. The hook delegates profile derivation, placement rules, durability transport and finalization.
+Unknown/non-LMION objects fall back to the previous vanilla implementation.
 
-`Services/Moveables/SingleTileDoorPlacementFinalizer.lua` finds the placed object when necessary, canonicalizes it to `IsoDoor`, restores transported durability and logs one stable success/failure boundary.
-
-`Bootstrap/Moveables.lua` installs the tool definitions and the single hook owner, then registers the tile-definition sprite configuration callback.
+LargeGate and Garage add family-specific planning/finalization services while preserving the same ownership rule: one identifiable vanilla boundary has one identifiable hook owner.
 
 ## Single-tile Build lifecycle
 
-`Services/Build/SingleTileDoorBuildProfile.lua` resolves the currently supported Build pilot from one GameEntity through `EntityIndex`.
+`Services/Build/SingleTileDoorBuildProfile.lua` resolves supported Build definitions from GameEntity identity.
 
-Current Build pilots:
-
-```text
-Doors.Wood.WhitePanelDoor
-Doors.Wood.BlueChurchDoubleDoor
-FenceGates.Wood.SmallWhiteWoodenGate
-SlidingDoors.BrownSlidingGlassDoor
-```
-
-`server/LMION/Hooks/Build/SingleTileDoor.lua` is the **single owner** of the intercepted Build boundaries:
+`server/LMION/Hooks/Build/SingleTileDoor.lua` owns the single-tile placement validation wrappers:
 
 ```text
 ISBuildIsoEntity.isValid
 ISBuildIsoEntity.isValidPerSquare
-ISBuildIsoEntity.setInfo
 ```
 
-Vanilla still owns menu/cursor/timed action/material/tool execution and initial object creation. LMION adds its family placement contract and final canonicalization.
+The hook delegates all semantic placement logic to `SingleTileDoorPlacement` / `DoorPlacement`.
 
-`Services/Build/SingleTileDoorFinalizer.lua` finds the exact built GameEntity, converges it to `IsoDoor`, computes definition-owned construction durability and clears fresh lock state.
+`Hooks/Build/DoorFrameRequirement.lua` separately owns the definition-to-vanilla frame boolean translation at `ISBuildIsoEntity.new`:
+
+```text
+effective definition
+-> doorType
+-> internal frame requirement
+-> buildObject.dontNeedFrame
+```
+
+This keeps public definitions semantic while satisfying vanilla Build behavior.
+
+`Hooks/Build/DoorSetInfo.lua` is the centralized post-build `ISBuildIsoEntity.setInfo` owner and dispatches finalization to the appropriate family service.
+
+Vanilla still owns menu/cursor/timed action/base material/tool execution and initial object creation.
+
+## LargeGate toggle lifecycle
+
+LargeGate A/B leaves are independent runtime units.
+
+PZ recreates internal double-door members during `ToggleDoor()`, so `Runtime/LargeGateToggleState.lua` captures/restores one leaf at a time around that transition:
+
+```text
+leaf A -> 2 members
+leaf B -> 2 members
+```
+
+The partner leaf may be absent. This is validated in game for HP preservation on A alone, B alone and a complete A+B gate.
+
+`DoorState`, `DoorDurability`, `LargeGateMembers` and `LargeGateTopology` remain the sources of truth for state, durability, identity and geometry respectively. The toggle runtime owns timing only.
 
 ## Engine scripts
 
-One file per pilot opening/family contains the strict PZ script-time bridge:
+PZ script files contain only parse-time data the engine still needs before Lua, such as:
 
 ```text
-WhitePanelDoor.txt
-BlueChurchDoubleDoor.txt
-SmallWhiteWoodenGate.txt
-BrownSlidingGlassDoor.txt
+transport item declarations
+XUI data
+CraftRecipe data
+SpriteConfig geometry
 ```
 
-A file may contain several item/entity declarations when the opening itself has several independent members (Paired). This avoids Legacy's separate `_Item`, `_Build` and entity files while keeping parse-time engine declarations together.
+Definition data remains authoritative for semantic type, durability, geometry ownership and gameplay policy where V3 can safely apply it at runtime.
 
-Definition data remains authoritative for semantic type, durability, geometry, construction/pickup/replacement facts. Script-time values are duplicated only where PZ requires them before Lua (CraftRecipe, SpriteConfig, XUI and transport item declaration).
+Static scripts must not duplicate derived frame policy merely as documentation.
 
 ## Validation status
 
-**VALIDÉ EN JEU**:
+Validated in game across the current pilots and tested multi-square families:
 
 ```text
-White Panel Simple
-Build -> canonical IsoDoor -> Pickup -> replacement
-standard frame enforced
-HP/max HP preserved
+Simple standard-frame requirement
+Paired frame-member behavior
+FenceGate no-frame behavior
+Sliding no-frame behavior
+LargeGate A/B no-frame Build behavior
+Garage no-frame Build behavior
+occupied-edge rejection for unframed families
+LargeGate HP preservation on complete and independent leaves
+pickup/replacement HP preservation on tested families
+canonical final IsoDoor representation
 ```
 
-**HYPOTHÈSE / NON VALIDÉ** after the current single-tile expansion:
-
-```text
-White Panel regression through the renamed shared hook owner
-Blue Church Paired left/right frame behavior
-Small White Wooden FenceGate no-frame behavior
-Brown Sliding Glass Door no-frame + MetalWelding Moveables tools
-```
-
-The current expansion changes hook topology and adds `media/scripts`, so the next meaningful checkpoint requires one cold restart rather than Lua reload.
+The project still distinguishes targeted validated scenarios from an exhaustive all-family/all-resource matrix. Full strict public-schema validation remains deferred until the API shape is complete.
