@@ -1,17 +1,17 @@
 # LargeGate Build A/B
 
-Status: PARTIELLEMENT VALIDÉ EN JEU.
+Status: PARTIALLY VALIDATED IN GAME.
 
-The LargeGate Build pipeline is implemented. The frame/no-frame integration has now been validated in game, but the complete LargeGate Build matrix (resource consumption, all families/orientations and final object state) is still not considered fully validated.
+The LargeGate Build pipeline is implemented. Frame/no-frame behavior, A/B Build availability and occupied-edge placement rejection are validated in game. The complete resource/family/orientation matrix is still not considered exhaustively validated.
 
 ## Contract
 
-LMION exposes LargeGate construction per leaf. A supported large gate is never built as one four-tile action:
+LMION exposes LargeGate construction per leaf:
 
 ```text
 LargeGate
-├─ leaf A -> physical members 1 + 2
-└─ leaf B -> physical members 1 + 2
+├─ leaf A -> 2 physical members
+└─ leaf B -> 2 physical members
 ```
 
 Each completed physical member must finish as an `IsoDoor`.
@@ -23,45 +23,43 @@ GameEntity CraftRecipe
 -> vanilla Build menu / cursor
 -> SpriteConfig two-tile leaf
 -> timed construction
--> ISBuildIsoEntity.setInfo for each produced tile
+-> ISBuildIsoEntity.setInfo
 -> LMION post-build finalization
 ```
 
-Vanilla remains responsible for the menu, ghost, facing, timed action, skills, tools/material consumption and creation of the initial world object.
+Vanilla remains responsible for menu/cursor/timed action/material/tool execution and initial object creation.
 
-LMION intervenes only where its effective definition owns behavior that vanilla cannot infer from the static script, and to enforce the final LMION object/durability contract.
+LMION intervenes only where the effective definition owns behavior that vanilla cannot infer from static script data.
 
 ## Engine topology rewrite
 
-The three vanilla entities below initially own both leaves in one four-tile SpriteConfig:
+The vanilla entities:
 
-- `Base.DoubleDoor`
-- `Base.DoubleWireGate`
-- `Base.DoubleFenceGate`
+```text
+Base.DoubleDoor
+Base.DoubleWireGate
+Base.DoubleFenceGate
+```
 
-At `OnGameBoot`, `Runtime/Build/VanillaLargeGateLeafPreparation.lua` first verifies their exact vanilla closed-tile set, then narrows that SpriteConfig to leaf A. Leaf B is supplied by an explicit `...B` GameEntity.
+initially own both leaves in one four-tile SpriteConfig. At `OnGameBoot`, `Runtime/Build/VanillaLargeGateLeafPreparation.lua` verifies the expected vanilla tiles and narrows the base entity to leaf A. Leaf B uses an explicit derived GameEntity.
 
-The other LargeGate definitions use explicit `...A` and `...B` GameEntities directly.
-
-This is the same control point used by the validated Legacy architecture. The V3 implementation deliberately refuses the rewrite if the expected vanilla SpriteConfig no longer matches.
-
-This topology rewrite is a special LargeGate engine adaptation. It is not the generic mechanism by which LMION definitions become authoritative.
+This is a special LargeGate engine adaptation, not a generic definition-replacement mechanism.
 
 ## Static script policy
 
-There is one `media/scripts/*.txt` file per LargeGate definition. These files contain engine-facing Build data that PZ currently needs at script/load time:
+PZ script files contain only engine-facing Build data still required at parse/load time:
 
-- A/B XUI presentation;
-- the two-tile closed SpriteConfig required by vanilla Build;
-- CraftRecipe fields currently used by PZ's Build recipe path.
+```text
+XUI presentation
+closed SpriteConfig geometry
+CraftRecipe data
+```
 
-Durability and semantic frame policy are not owned by these script files. V3 definitions remain authoritative for construction health and `doorType` consequences.
-
-The recipe for one leaf is half of the definition's full LargeGate construction cost/time/XP. A and B use the same leaf recipe.
+Durability and semantic frame policy remain definition-owned.
 
 ## Frame policy — VALIDATED
 
-LMION definitions are authoritative for frame semantics:
+Internal consequence:
 
 ```text
 Simple    -> standard
@@ -72,94 +70,101 @@ LargeGate -> none
 Garage    -> none
 ```
 
-Removing `dontNeedFrame` from static LMION SpriteConfigs exposed an integration gap: vanilla Build copied `SpriteConfig.dontNeedFrame` into each `ISBuildIsoEntity`, so no-frame LMION constructions became valid only when placed in a frame.
+A failed experiment attempted to inject scalar-only `dontNeedFrame` metadata into already-loaded GameEntity/SpriteConfig objects. In-game testing failed and the experiment was reverted.
 
-### Failed experiment — late GameEntityScript projection
+Do not reintroduce that projection.
 
-An experiment attempted to project only `dontNeedFrame` into already-loaded GameEntity scripts at `OnGameBoot` by calling `GameEntityScript:Load()` with a minimal `SpriteConfig` fragment. In-game testing failed: Garage, Sliding/FenceGate and both LargeGate leaves still behaved as frame-required, while removing the hardcoded property from the vanilla A rewrite also broke A.
-
-Inspection of the PZ 42.20.3 bytecode explains why that minimal fragment did not work. `SpriteConfigScript.load()` processes component scalar values such as `dontNeedFrame` from inside its child-block loop. A component fragment containing only:
-
-```text
-component SpriteConfig
-{
-    dontNeedFrame = true,
-}
-```
-
-has no child block, so the scalar value is never applied.
-
-**FAILED APPROACH / DO NOT REINTRODUCE:** minimal late `GameEntityScript:Load()` projection of scalar-only SpriteConfig metadata.
-
-### Active V3 integration
-
-V3 now keeps the static scripts free from duplicated frame policy. `Hooks/Build/DoorFrameRequirement.lua` owns the narrow vanilla Build boundary:
+The active V3 boundary is `Hooks/Build/DoorFrameRequirement.lua`:
 
 ```text
 ISBuildIsoEntity.new(...)
--> vanilla object created normally
--> resolve effective LMION definition for that Build entity
+-> resolve effective LMION definition
 -> doorType
--> DoorTypes.getFrameRequirement(...)
--> set buildObject.dontNeedFrame
+-> DoorTypes frame requirement
+-> buildObject.dontNeedFrame
 ```
 
-For LargeGate A/B, the Build profile resolves the derived leaf GameEntity back to the owning LargeGate definition.
-
-In-game validation on 2026-09-12 confirmed:
+Validated in game:
 
 ```text
-White Panel / framed doors still require their proper frame
-Sliding / FenceGate can build without a frame
-Garage can build without a frame
-LargeGate A and B can build without a frame
+framed doors still require their proper frame
+FenceGate / Sliding build without a frame
+Garage builds without a frame
+LargeGate A and B build without a frame
 ```
 
-This validates the frame-policy integration only. It does not by itself validate every other LargeGate Build behavior.
+## Unframed placement — VALIDATED
 
-Commit introducing the active hook:
+`dontNeedFrame` means that no supporting frame is required. It does not mean the target world edge may already be occupied.
+
+`Runtime/DoorPlacement.lua` now owns the shared unframed edge rule. Placement is rejected when the same N/W edge already contains an incompatible structure such as:
 
 ```text
-f8cf884e6e3dcb162a5bee797f8c6d1b76f36968  Derive Build frame requirement from LMION door type
+wall / thumpable wall
+hoppable wall / fence
+standard or paired door frame
+window / window frame
+existing door / garage door
+vehicle intersection
 ```
 
-## Placement permissiveness observation
+FenceGate and Sliding already use this shared rule directly.
 
-With `dontNeedFrame` correctly derived, unframed constructions can currently be accepted in locations that are semantically questionable, including overlapping/aligned with existing wall/frame structures. This was observed during the frame-policy test.
+LargeGate and Garage use multi-square Build cursors, so they require the same rule at the `ISBuildIsoEntity.isValidPerSquare` boundary. Every physical Build square is checked independently.
 
-This is not attributed to the `dontNeedFrame` hook itself. Existing LMION unframed placement validation is permissive and currently focuses mainly on door/vehicle conflicts. Treat stricter wall/frame/structure compatibility as a separate placement-validation task.
+Relevant commits:
 
-Do not fold that problem back into static `SpriteConfig.dontNeedFrame`; frame requirement and placement collision/compatibility are separate concerns.
+```text
+7655d41cc88aec1252ddb26f12f58e33dcd1753a  Require an empty edge for unframed door placement
+9c5714a8ba5432812dcdbfbb8d1be6fb608f721a  Validate LargeGate Build edges
+bac3b741d700ce2de3483a30173d0036ede547f5  Validate Garage Build edges
+```
 
-## Post-build hook
+User validation confirmed:
+
+```text
+FenceGate / Sliding reject occupied wall/frame edges
+LargeGate rejects overlapping wall/frame edges
+Garage rejects overlapping wall/frame edges across its footprint
+normal free-edge placement still works
+no placement regression was observed afterward
+```
+
+Perpendicular structures meeting at one corner can still be accepted on one side and rejected on the other because PZ owns world barriers as N/W edges attached to specific squares. This is accepted behavior; LMION does not add an artificial rule forbidding corner contact.
+
+## Post-build finalization
 
 `Hooks/Build/DoorSetInfo.lua` is the centralized `ISBuildIsoEntity.setInfo` owner and dispatches LargeGate finalization through `LargeGateFinalizer`.
 
-For the tile just created:
+For each created tile:
 
 ```text
 GameEntity -> LargeGate definition + A/B leaf
 sprite -> facing + physical member
-source door -> CanonicalDoor.ensure(... preserveLockState=false)
+CanonicalDoor.ensure(...)
 -> install closed/open geometry
--> construction max health from Lua definition
+-> apply definition-owned construction max health
 -> final health = max health
 -> square recalc / server transmit
 ```
 
-The finalizer does not replace vanilla placement or base resource consumption.
+## Validation status
 
-## Lifecycle
+Validated in game:
 
-`media/scripts` is parsed before Lua. The three vanilla base SpriteConfigs are narrowed at `OnGameBoot`. Build frame policy is applied later at the narrow `ISBuildIsoEntity.new` boundary from the effective LMION definition.
+```text
+frame/no-frame distinction
+LargeGate A and B Build availability
+occupied-edge rejection
+free-edge placement
+no observed regression after placement/topology fixes
+```
 
-Changes to script topology still require a cold restart. Pure Lua hook changes should also be tested from a clean game startup while V3 remains under active development.
+Still not claimed as exhaustive:
 
-## Evidence
-
-- A/B topology and recipes: `OBSERVÉ DANS LEGACY / SOURCE`.
-- `GameEntityScript:Load` component reload behavior: `OBSERVÉ DANS PZ 42.20.3 JAR`.
-- `SpriteConfigScript.dontNeedFrame` parser/getter: `OBSERVÉ DANS PZ 42.20.3 JAR`.
-- minimal late `dontNeedFrame` projection without child blocks: `ÉCHEC VALIDÉ EN JEU`, explained by bytecode inspection.
-- definition-owned `ISBuildIsoEntity.dontNeedFrame` hook: `VALIDÉ EN JEU` for framed vs no-frame distinction across Simple/unframed single-tile/Garage/LargeGate A+B examples.
-- complete LargeGate Build matrix beyond frame policy: `NON ENCORE VALIDÉE`.
+```text
+all LargeGate families
+all resource-consumption combinations
+all orientation/family combinations
+all final lock/state combinations
+```
