@@ -1,0 +1,167 @@
+module Base
+{
+    item LMION_BlackTwoPaneDoubleDoorLeft
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 21.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_BlackTwoPaneDoubleDoorRight
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 21.0,
+        Tags = base:usedisplayname,
+    }
+
+    xuiSkin default
+    {
+        entity ES_LMION_BlackTwoPaneDoubleDoorLeft
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_BlackTwoPaneDoubleDoorLeft,
+            Icon = LMION/doors/BlackTwoPaneDoubleDoorLeft,
+        }
+
+        entity ES_LMION_BlackTwoPaneDoubleDoorRight
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_BlackTwoPaneDoubleDoorRight,
+            Icon = LMION/doors/BlackTwoPaneDoubleDoorRight,
+        }
+    }
+
+    entity BlackTwoPaneDoubleDoorLeft
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_BlackTwoPaneDoubleDoorLeft,
+            uiEnabled = false,
+        }
+
+        component CraftRecipe
+        {
+            timedAction = BuildWallMetal,
+            time = 190,
+            category = LMION,
+            SkillRequired = MetalWelding:5,
+            xpAward = MetalWelding:35,
+
+            inputs
+            {
+                item 1 [Base.WeldingMask] mode:keep,
+                item 4 [Base.BlowTorch] flags[DontRecordInput],
+                item 1 [Base.SheetMetal],
+                item 2 [Base.MetalBar;Base.IronBar],
+                item 2 [Base.Hinge],
+                item 4 [Base.WeldingRods] flags[DontRecordInput],
+                item 1 [Base.Doorknob],
+                item 2 [Base.GlassPanel],
+            }
+        }
+
+        component SpriteConfig
+        {
+            face W
+            {
+                layer
+                {
+                    row = fixtures_doors_02_44,
+                }
+            }
+
+            face N
+            {
+                layer
+                {
+                    row = fixtures_doors_02_41,
+                }
+            }
+
+            face W_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_02_46,
+                }
+            }
+
+            face N_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_02_43,
+                }
+            }
+        }
+    }
+
+    entity BlackTwoPaneDoubleDoorRight
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_BlackTwoPaneDoubleDoorRight,
+            uiEnabled = false,
+        }
+
+        component CraftRecipe
+        {
+            timedAction = BuildWallMetal,
+            time = 190,
+            category = LMION,
+            SkillRequired = MetalWelding:5,
+            xpAward = MetalWelding:35,
+
+            inputs
+            {
+                item 1 [Base.WeldingMask] mode:keep,
+                item 4 [Base.BlowTorch] flags[DontRecordInput],
+                item 1 [Base.SheetMetal],
+                item 2 [Base.MetalBar;Base.IronBar],
+                item 2 [Base.Hinge],
+                item 4 [Base.WeldingRods] flags[DontRecordInput],
+                item 1 [Base.Doorknob],
+                item 2 [Base.GlassPanel],
+            }
+        }
+
+        component SpriteConfig
+        {
+            face W
+            {
+                layer
+                {
+                    row = fixtures_doors_02_40,
+                }
+            }
+
+            face N
+            {
+                layer
+                {
+                    row = fixtures_doors_02_45,
+                }
+            }
+
+            face W_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_02_42,
+                }
+            }
+
+            face N_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_02_47,
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,165 @@
+module Base
+{
+    item LMION_BrownChurchDoubleDoorLeft
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 17.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_BrownChurchDoubleDoorRight
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 17.0,
+        Tags = base:usedisplayname,
+    }
+
+    xuiSkin default
+    {
+        entity ES_LMION_BrownChurchDoubleDoorLeft
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_BrownChurchDoubleDoorLeft,
+            Icon = LMION/doors/BrownChurchDoubleDoorLeft,
+        }
+
+        entity ES_LMION_BrownChurchDoubleDoorRight
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_BrownChurchDoubleDoorRight,
+            Icon = LMION/doors/BrownChurchDoubleDoorRight,
+        }
+    }
+
+    entity BrownChurchDoubleDoorLeft
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_BrownChurchDoubleDoorLeft,
+            uiEnabled = false,
+        }
+
+        component CraftRecipe
+        {
+            timedAction = BuildWallHammer,
+            time = 150,
+            category = LMION,
+            SkillRequired = Woodwork:6,
+            xpAward = Woodwork:35,
+
+            inputs
+            {
+                item 1 tags[base:hammer] mode:keep flags[Prop1;MayDegradeVeryLight],
+                item 1 [Base.Screwdriver] mode:keep,
+                item 4 [Base.Plank],
+                item 4 [Base.Nails],
+                item 2 [Base.Hinge],
+                item 4 [Base.Screws],
+                item 1 [Base.Doorknob],
+            }
+        }
+
+        component SpriteConfig
+        {
+            face W
+            {
+                layer
+                {
+                    row = location_community_church_small_01_68,
+                }
+            }
+
+            face N
+            {
+                layer
+                {
+                    row = location_community_church_small_01_65,
+                }
+            }
+
+            face W_OPEN
+            {
+                layer
+                {
+                    row = location_community_church_small_01_70,
+                }
+            }
+
+            face N_OPEN
+            {
+                layer
+                {
+                    row = location_community_church_small_01_67,
+                }
+            }
+        }
+    }
+
+    entity BrownChurchDoubleDoorRight
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_BrownChurchDoubleDoorRight,
+            uiEnabled = false,
+        }
+
+        component CraftRecipe
+        {
+            timedAction = BuildWallHammer,
+            time = 150,
+            category = LMION,
+            SkillRequired = Woodwork:6,
+            xpAward = Woodwork:35,
+
+            inputs
+            {
+                item 1 tags[base:hammer] mode:keep flags[Prop1;MayDegradeVeryLight],
+                item 1 [Base.Screwdriver] mode:keep,
+                item 4 [Base.Plank],
+                item 4 [Base.Nails],
+                item 2 [Base.Hinge],
+                item 4 [Base.Screws],
+                item 1 [Base.Doorknob],
+            }
+        }
+
+        component SpriteConfig
+        {
+            face W
+            {
+                layer
+                {
+                    row = location_community_church_small_01_64,
+                }
+            }
+
+            face N
+            {
+                layer
+                {
+                    row = location_community_church_small_01_69,
+                }
+            }
+
+            face W_OPEN
+            {
+                layer
+                {
+                    row = location_community_church_small_01_66,
+                }
+            }
+
+            face N_OPEN
+            {
+                layer
+                {
+                    row = location_community_church_small_01_71,
+                }
+            }
+        }
+    }
+}

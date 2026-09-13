@@ -1,0 +1,165 @@
+module Base
+{
+    item LMION_GreyMetalDoubleDoorLeft
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 24.0,
+        Tags = base:usedisplayname,
+    }
+
+    item LMION_GreyMetalDoubleDoorRight
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 24.0,
+        Tags = base:usedisplayname,
+    }
+
+    xuiSkin default
+    {
+        entity ES_LMION_GreyMetalDoubleDoorLeft
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_GreyMetalDoubleDoorLeft,
+            Icon = LMION/doors/GreyMetalDoubleDoorLeft,
+        }
+
+        entity ES_LMION_GreyMetalDoubleDoorRight
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_GreyMetalDoubleDoorRight,
+            Icon = LMION/doors/GreyMetalDoubleDoorRight,
+        }
+    }
+
+    entity GreyMetalDoubleDoorLeft
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_GreyMetalDoubleDoorLeft,
+            uiEnabled = false,
+        }
+
+        component CraftRecipe
+        {
+            timedAction = BuildWallMetal,
+            time = 160,
+            category = LMION,
+            SkillRequired = MetalWelding:4,
+            xpAward = MetalWelding:30,
+
+            inputs
+            {
+                item 1 [Base.WeldingMask] mode:keep,
+                item 4 [Base.BlowTorch] flags[DontRecordInput],
+                item 1 [Base.SheetMetal],
+                item 2 [Base.MetalBar;Base.IronBar],
+                item 2 [Base.Hinge],
+                item 4 [Base.WeldingRods] flags[DontRecordInput],
+                item 1 [Base.Doorknob],
+            }
+        }
+
+        component SpriteConfig
+        {
+            face W
+            {
+                layer
+                {
+                    row = fixtures_doors_02_52,
+                }
+            }
+
+            face N
+            {
+                layer
+                {
+                    row = fixtures_doors_02_49,
+                }
+            }
+
+            face W_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_02_54,
+                }
+            }
+
+            face N_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_02_51,
+                }
+            }
+        }
+    }
+
+    entity GreyMetalDoubleDoorRight
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_GreyMetalDoubleDoorRight,
+            uiEnabled = false,
+        }
+
+        component CraftRecipe
+        {
+            timedAction = BuildWallMetal,
+            time = 160,
+            category = LMION,
+            SkillRequired = MetalWelding:4,
+            xpAward = MetalWelding:30,
+
+            inputs
+            {
+                item 1 [Base.WeldingMask] mode:keep,
+                item 4 [Base.BlowTorch] flags[DontRecordInput],
+                item 1 [Base.SheetMetal],
+                item 2 [Base.MetalBar;Base.IronBar],
+                item 2 [Base.Hinge],
+                item 4 [Base.WeldingRods] flags[DontRecordInput],
+                item 1 [Base.Doorknob],
+            }
+        }
+
+        component SpriteConfig
+        {
+            face W
+            {
+                layer
+                {
+                    row = fixtures_doors_02_48,
+                }
+            }
+
+            face N
+            {
+                layer
+                {
+                    row = fixtures_doors_02_53,
+                }
+            }
+
+            face W_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_02_50,
+                }
+            }
+
+            face N_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_02_55,
+                }
+            }
+        }
+    }
+}
