@@ -23,6 +23,30 @@ item Example { ItemType=base:moveable, Icon=Flatpack, Weight=20.0, }
 
 Use normal block formatting instead.
 
+## Script directory organization
+
+Project Zomboid recursively loads `.txt` files below `media/scripts`, so LMION keeps engine-facing script declarations grouped by opening family instead of leaving every file at the root.
+
+Current layout:
+
+```text
+media/scripts/
+├─ Doors/
+│  ├─ Single/
+│  └─ Paired/
+├─ FenceGates/
+├─ SlidingDoors/
+│  └─ Single/
+├─ LargeGates/
+└─ GarageDoors/
+```
+
+Keep this hierarchy intentionally shallow. Do not mirror material categories such as Wooden/Metal in `media/scripts` unless a future engine-facing distinction genuinely requires it.
+
+`SlidingDoors/Single` is intentionally one level deeper so future structural variants such as `SlidingDoors/Paired` or `SlidingDoors/Double` can be added without reorganizing the existing single sliding-door scripts.
+
+Moving a script file between these directories does not change its PZ module/entity/item identifiers. File paths are repository organization only; declarations such as `Base.DoubleDoor` remain unchanged.
+
 ## Script metadata ownership
 
 PZ script files contain only parse-time facts that the engine actually needs.
