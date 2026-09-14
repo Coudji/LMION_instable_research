@@ -1,7 +1,7 @@
 local GarageBuild = require "LMION/Services/Build/Garage/GarageBuild"
 local GarageBuildRequirements = require "LMION/Services/Build/Garage/GarageBuildRequirements"
 local GarageLengthState = require "LMION/Services/Build/Garage/GarageLengthState"
-local SingleTileDoorFinalizer = require "LMION/Services/Build/SingleTileDoorFinalizer"
+local SingleTileDoorFinalizer = require "LMION/Services/Build/SingleTileDoor/Finalizer"
 
 local GarageBuildFinalizer = {}
 
