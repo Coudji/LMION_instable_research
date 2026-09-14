@@ -1,10 +1,10 @@
 require "Moveables/ISMoveableSpriteProps"
 
-local LargeGateMoveProps = require "LMION/Services/Moveables/LargeGateMoveProps"
-local LargeGateParcelConsumption = require "LMION/Services/Moveables/LargeGateParcelConsumption"
-local LargeGateParcelLookup = require "LMION/Services/Moveables/LargeGateParcelLookup"
-local LargeGatePlacementFinalizer = require "LMION/Services/Moveables/LargeGatePlacementFinalizer"
-local LargeGatePlacementPlan = require "LMION/Services/Moveables/LargeGatePlacementPlan"
+local LargeGateMoveProps = require "LMION/Services/Moveables/LargeGate/MoveProps"
+local LargeGateParcelConsumption = require "LMION/Services/Moveables/LargeGate/ParcelConsumption"
+local LargeGateParcelLookup = require "LMION/Services/Moveables/LargeGate/ParcelLookup"
+local LargeGatePlacementFinalizer = require "LMION/Services/Moveables/LargeGate/PlacementFinalizer"
+local LargeGatePlacementPlan = require "LMION/Services/Moveables/LargeGate/PlacementPlan"
 
 local LargeGatePlacementHook = {}
 
