@@ -2,27 +2,21 @@ require "BuildingObjects/ISBuildingObject"
 require "Moveables/ISMoveablesAction"
 require "Moveables/ISMoveableSpriteProps"
 
-local LargeGateMoveProps = require "LMION/Services/Moveables/LargeGate/MoveProps"
+local LargeGateParcel = require "LMION/Runtime/Moveables/LargeGateParcel"
 local LargeGatePlacementPlan = require "LMION/Services/Moveables/LargeGate/PlacementPlan"
+local LargeGateProfiles = require "LMION/Services/Moveables/LargeGate/Profiles"
 local SingleTileDoorMoveProps = require "LMION/Services/Moveables/SingleTileDoor/MoveProps"
 
+LMIONDoorInventoryPlacementAction = ISMoveablesAction:derive(
+    "LMIONDoorInventoryPlacementAction"
+)
 LMIONDoorInventoryCursor = ISBuildingObject:derive("LMIONDoorInventoryCursor")
 
-local function getCanonicalSpriteName(item)
+local function getItemSpriteName(item)
     local spriteName = item and item.getWorldSprite and item:getWorldSprite() or nil
-    if spriteName == nil or spriteName == "" then
+    if type(spriteName) ~= "string" or spriteName == "" then
         return nil
     end
-
-    local sprite = getSprite(spriteName)
-    local grid = sprite and sprite:getSpriteGrid() or nil
-    if grid ~= nil then
-        local anchor = grid:getSprite(0, 0)
-        if anchor ~= nil then
-            return anchor:getName()
-        end
-    end
-
     return spriteName
 end
 
@@ -65,6 +59,25 @@ local function renderSprite(spriteName, square, yOffset, valid)
     )
 end
 
+function LMIONDoorInventoryPlacementAction:new(
+    character,
+    square,
+    moveProps,
+    origSpriteName,
+    item
+)
+    local o = ISBaseTimedAction.new(self, character)
+    o.playerNum = character:getPlayerNum()
+    o.square = square
+    o.mode = "place"
+    o.moveProps = moveProps
+    o.origMoveProps = moveProps
+    o.origSpriteName = origSpriteName
+    o.item = item
+    o.maxTime = o:getDuration()
+    return o
+end
+
 function LMIONDoorInventoryCursor:getMoveProps()
     local spriteName = nil
 
@@ -79,7 +92,7 @@ function LMIONDoorInventoryCursor:getMoveProps()
             and self.profile.geometry[self.facing]
             and self.profile.geometry[self.facing][self.leaf]
             or nil
-        local part = parts and parts[1] or nil
+        local part = parts and parts[self.selectedPart] or nil
         spriteName = part and part.closed or nil
     end
 
@@ -101,7 +114,7 @@ function LMIONDoorInventoryCursor:getLargeGatePlan(square)
         self.profile.definitionId,
         self.facing,
         self.leaf,
-        1
+        self.selectedPart
     )
 end
 
@@ -110,12 +123,14 @@ function LMIONDoorInventoryCursor:isValid(square)
         return false
     end
 
-    local moveProps = self:getMoveProps()
-    if moveProps == nil then
-        return false
+    if self.kind == "largeGate" then
+        local plan = self:getLargeGatePlan(square)
+        return plan ~= nil and plan.valid == true
     end
 
-    return moveProps:canPlaceMoveable(self.character, square, self.item)
+    local moveProps = self:getMoveProps()
+    return moveProps ~= nil
+        and moveProps:canPlaceMoveable(self.character, square, self.item)
 end
 
 function LMIONDoorInventoryCursor:render(x, y, z, square)
@@ -146,7 +161,11 @@ function LMIONDoorInventoryCursor:render(x, y, z, square)
         return
     end
 
-    local valid = moveProps:canPlaceMoveable(self.character, square, self.item)
+    local valid = moveProps:canPlaceMoveable(
+        self.character,
+        square,
+        self.item
+    )
     floorGhost(square)
     renderSprite(
         moveProps.spriteName,
@@ -187,21 +206,27 @@ function LMIONDoorInventoryCursor:create(x, y, z, north, sprite)
             self.origSpriteName
         ) then
         ISTimedActionQueue.add(
-            ISMoveablesAction:new(
+            LMIONDoorInventoryPlacementAction:new(
                 self.character,
                 square,
-                "place",
+                moveProps,
                 self.origSpriteName,
-                nil,
-                self.facing,
-                self.item,
-                nil
+                self.item
             )
         )
     end
 end
 
-function LMIONDoorInventoryCursor:new(character, item, origSpriteName, kind, profile, facing, leaf)
+function LMIONDoorInventoryCursor:new(
+    character,
+    item,
+    origSpriteName,
+    kind,
+    profile,
+    facing,
+    leaf,
+    selectedPart
+)
     local o = ISBuildingObject.new(self)
     o:init()
     o.character = character
@@ -212,9 +237,69 @@ function LMIONDoorInventoryCursor:new(character, item, origSpriteName, kind, pro
     o.profile = profile
     o.facing = facing == "W" and "W" or "N"
     o.leaf = leaf
+    o.selectedPart = selectedPart
     o:setDragNilAfterPlace(true)
     o.noNeedHammer = true
     return o
+end
+
+local function openLargeGateCursor(item, character, spriteName)
+    local identity = LargeGateParcel.readIdentity(item)
+    if identity == nil then
+        return false
+    end
+
+    local profile = LargeGateProfiles.getByDefinitionId(identity.definitionId)
+    if profile == nil then
+        return false
+    end
+
+    local segment = LargeGateProfiles.getSegmentBySprite(spriteName)
+    local facing = segment and segment.facing or "N"
+
+    local cursor = LMIONDoorInventoryCursor:new(
+        character,
+        item,
+        spriteName,
+        "largeGate",
+        profile,
+        facing,
+        identity.leaf,
+        identity.partIndex
+    )
+    getCell():setDrag(cursor, cursor.player)
+    return true
+end
+
+local function openSingleTileCursor(item, character, spriteName)
+    local moveProps = ISMoveableSpriteProps.new(spriteName)
+    if moveProps == nil then
+        return false
+    end
+
+    local profile = SingleTileDoorMoveProps.getProfile(moveProps)
+    if profile == nil then
+        return false
+    end
+
+    local facing = SingleTileDoorMoveProps.getFacing(
+        moveProps,
+        profile,
+        spriteName
+    ) or "N"
+
+    local cursor = LMIONDoorInventoryCursor:new(
+        character,
+        item,
+        spriteName,
+        "single",
+        profile,
+        facing,
+        nil,
+        nil
+    )
+    getCell():setDrag(cursor, cursor.player)
+    return true
 end
 
 function LMIONOpenDoorInventoryPlacementCursor(item, character)
@@ -222,47 +307,14 @@ function LMIONOpenDoorInventoryPlacementCursor(item, character)
         return false
     end
 
-    local spriteName = getCanonicalSpriteName(item)
-    local moveProps = spriteName and ISMoveableSpriteProps.new(spriteName) or nil
-    if moveProps == nil then
+    local spriteName = getItemSpriteName(item)
+    if spriteName == nil then
         return false
     end
 
-    local singleProfile = SingleTileDoorMoveProps.getProfile(moveProps)
-    if singleProfile ~= nil then
-        local facing = SingleTileDoorMoveProps.getFacing(
-            moveProps,
-            singleProfile,
-            spriteName
-        ) or "N"
-
-        local cursor = LMIONDoorInventoryCursor:new(
-            character,
-            item,
-            spriteName,
-            "single",
-            singleProfile,
-            facing,
-            nil
-        )
-        getCell():setDrag(cursor, cursor.player)
+    if openLargeGateCursor(item, character, spriteName) then
         return true
     end
 
-    local largeGateSegment = LargeGateMoveProps.getSegment(moveProps)
-    if largeGateSegment ~= nil then
-        local cursor = LMIONDoorInventoryCursor:new(
-            character,
-            item,
-            spriteName,
-            "largeGate",
-            largeGateSegment.profile,
-            largeGateSegment.facing,
-            largeGateSegment.leaf
-        )
-        getCell():setDrag(cursor, cursor.player)
-        return true
-    end
-
-    return false
+    return openSingleTileCursor(item, character, spriteName)
 end
