@@ -1,4 +1,4 @@
-local GarageProfiles = require "LMION/Services/Moveables/GarageProfiles"
+local GarageProfiles = require "LMION/Services/Moveables/Garage/Profiles"
 
 local GarageSpriteGrids = {}
 
