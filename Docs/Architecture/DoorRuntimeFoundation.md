@@ -18,6 +18,21 @@ Every LMION-managed final opening is an `IsoDoor`.
 
 Moveables transport state remains separate from normal world-toggle state. In particular, LargeGate open/close preservation uses `DoorState` around PZ's internal recreation boundary rather than parcel transport.
 
+## Neutral shared services
+
+`Services/Common` contains only knowledge that multiple gameplay subsystems genuinely share.
+
+Current shared boundaries include:
+
+```text
+GarageDefinitionProfiles.lua
+LargeGateDefinitionProfiles.lua
+LargeGateMembers.lua
+SingleTileDoorPlacement.lua
+```
+
+Build and Moveables consume these neutral services independently. Build does not depend on Moveables profiles merely to identify a Garage or LargeGate, and Runtime does not depend on pickup/transport services merely to understand LargeGate members.
+
 ## Frame adapters
 
 `PZ/DoorFrame.lua` classifies/query frames on one square/orientation.
@@ -64,19 +79,19 @@ For unframed openings, `none` means no supporting frame is required. It does not
 
 The current blocking-edge rule rejects incompatible structures such as walls, fences/hoppable walls, standard or paired frames, windows/window frames and existing door/garage-door edges.
 
-FenceGate and Sliding use the rule directly through `Services/Moveables/SingleTileDoorPlacement.lua` and the single-tile Build hook.
+Single-tile Build and Moveables use the same neutral rule through `Services/Common/SingleTileDoorPlacement.lua`.
 
-LargeGate and Garage are multi-square and therefore apply the same rule through `ISBuildIsoEntity.isValidPerSquare`, validating each physical square of the current Build footprint.
+LargeGate and Garage are multi-square and therefore apply compatible edge validation across every physical square of the planned opening.
 
 PZ stores barriers as N/W edges owned by specific squares. Perpendicular structures meeting at a corner are therefore not perfectly symmetric from opposite approach directions. LMION accepts that engine-native edge model and does not add an artificial corner-contact prohibition.
 
 ## Single-tile Moveables profiles
 
-Current common profile fields are derived from effective definitions rather than hard-coded in hooks.
+Current Moveables profile fields are derived from effective definitions rather than hard-coded in hooks.
 
-`Services/Moveables/SingleTileProfileFields.lua` owns reusable field conversion such as governing skill, Moveables tool, transport item type and package weight.
+`Services/Moveables/MoveableProfileFields.lua` owns reusable Moveables-only conversion such as governing skill, Moveables tool, transport item type and package weight.
 
-`Services/Moveables/SingleEntityDoorProfiles.lua` owns the shared single-entity geometry used by:
+`Services/Moveables/SingleTileDoor/SingleEntityProfiles.lua` owns the single-entity profiles used by:
 
 ```text
 Simple
@@ -84,11 +99,11 @@ FenceGate
 Sliding
 ```
 
-`Services/Moveables/PairedDoorProfiles.lua` owns Paired-specific multi-entity/left-right geometry.
+`Services/Moveables/SingleTileDoor/PairedProfiles.lua` owns Paired-specific multi-entity/left-right profiles.
 
-`Services/Moveables/SingleTileDoorProfiles.lua` resolves supported 1x1 profiles by sprite.
+`Services/Moveables/SingleTileDoor/Profiles.lua` resolves supported 1x1 profiles by sprite.
 
-`Services/Moveables/SingleTileDoorMoveProps.lua` applies the resolved profile to vanilla `ISMoveableSpriteProps` and resolves N/W faces.
+`Services/Moveables/SingleTileDoor/MoveProps.lua` applies the resolved profile to vanilla `ISMoveableSpriteProps` and resolves N/W faces.
 
 ## Moveables engine lifecycle
 
@@ -105,11 +120,18 @@ placeMoveableInternal
 
 Unknown/non-LMION objects fall back to the previous vanilla implementation.
 
-LargeGate and Garage add family-specific planning/finalization services while preserving the same ownership rule: one identifiable vanilla boundary has one identifiable hook owner.
+LargeGate and Garage keep family-specific transport/planning/finalization services under:
+
+```text
+Services/Moveables/LargeGate/
+Services/Moveables/Garage/
+```
+
+The shared hook owns the vanilla boundary; family services own family behavior.
 
 ## Single-tile Build lifecycle
 
-`Services/Build/SingleTileDoorBuildProfile.lua` resolves supported Build definitions from GameEntity identity.
+`Services/Build/SingleTileDoor/Profile.lua` resolves supported Build definitions from GameEntity identity.
 
 `server/LMION/Hooks/Build/SingleTileDoor.lua` owns the single-tile placement validation wrappers:
 
@@ -118,9 +140,9 @@ ISBuildIsoEntity.isValid
 ISBuildIsoEntity.isValidPerSquare
 ```
 
-The hook delegates all semantic placement logic to `SingleTileDoorPlacement` / `DoorPlacement`.
+The hook delegates semantic placement logic to `Services/Common/SingleTileDoorPlacement.lua` and `Runtime/DoorPlacement.lua`.
 
-`Hooks/Build/DoorFrameRequirement.lua` separately owns the definition-to-vanilla frame boolean translation at `ISBuildIsoEntity.new`:
+`server/LMION/Hooks/Build/DoorFrameRequirement.lua` separately owns the definition-to-vanilla frame boolean translation at `ISBuildIsoEntity.new`:
 
 ```text
 effective definition
@@ -131,22 +153,57 @@ effective definition
 
 This keeps public definitions semantic while satisfying vanilla Build behavior.
 
-`Hooks/Build/DoorSetInfo.lua` is the centralized post-build `ISBuildIsoEntity.setInfo` owner and dispatches finalization to the appropriate family service.
+`server/LMION/Hooks/Build/DoorSetInfo.lua` is the centralized post-build `ISBuildIsoEntity.setInfo` owner and dispatches finalization to the appropriate family service.
 
 Vanilla still owns menu/cursor/timed action/base material/tool execution and initial object creation.
+
+## LargeGate Build lifecycle
+
+LargeGate Build-specific services are grouped under `Services/Build/LargeGate/`.
+
+`Profile.lua` resolves the build leaf profile. `BuiltPart.lua` performs the post-build world lookup needed by the LargeGate finalizer, and `Finalizer.lua` canonicalizes/configures the resulting member.
+
+The Build-specific `BuiltPart` lookup intentionally does not live under `PZ`: low-level PZ adapters must not depend on a higher-level gameplay workflow.
+
+## Garage Build lifecycle
+
+Garage Build services are grouped under `Services/Build/Garage/` and split by responsibility rather than accumulated in one large module.
+
+Current responsibilities include:
+
+```text
+GarageBuild.lua             build/profile context and length normalization
+GarageLengthState.lua       selected length + variable input synchronization
+GarageBuildRequirements.lua resource requirements/stock/consumption
+GarageBuildFaceProxy.lua    dynamic SpriteConfig face adaptation
+GarageBuildFinalizer.lua    pre/post setInfo Garage finalization
+```
+
+The client UI widget and its vanilla UI integration are also separate:
+
+```text
+client/LMION/UI/Build/GarageLengthSelector.lua
+client/LMION/Hooks/Build/GarageBuildUI.lua
+```
+
+## Dedicated Moveables cursors
+
+Garage and multipart cursor implementations remain in their original server realm, but they are no longer classified as hooks:
+
+```text
+server/LMION/Moveables/GarageCursor.lua
+server/LMION/Moveables/LargeGateCursor.lua
+```
+
+Their realm was deliberately not changed during the organization pass.
 
 ## LargeGate toggle lifecycle
 
 LargeGate A/B leaves are independent runtime units.
 
-PZ recreates internal double-door members during `ToggleDoor()`, so `Runtime/LargeGateToggleState.lua` captures/restores one leaf at a time around that transition:
+PZ recreates internal double-door members during `ToggleDoor()`, so `Runtime/LargeGateToggleState.lua` captures/restores one leaf at a time around that transition.
 
-```text
-leaf A -> 2 members
-leaf B -> 2 members
-```
-
-The partner leaf may be absent. This is validated in game for HP preservation on A alone, B alone and a complete A+B gate.
+Neutral member lookup comes from `Services/Common/LargeGateMembers.lua`, not from Moveables transport services.
 
 `DoorState`, `DoorDurability`, `LargeGateMembers` and `LargeGateTopology` remain the sources of truth for state, durability, identity and geometry respectively. The toggle runtime owns timing only.
 
@@ -177,7 +234,6 @@ Sliding no-frame behavior
 LargeGate A/B no-frame Build behavior
 Garage no-frame Build behavior
 occupied-edge rejection for unframed families
-LargeGate HP preservation on complete and independent leaves
 pickup/replacement HP preservation on tested families
 canonical final IsoDoor representation
 ```
