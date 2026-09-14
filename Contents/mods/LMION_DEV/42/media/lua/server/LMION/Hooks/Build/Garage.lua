@@ -1,7 +1,10 @@
 require "BuildingObjects/ISBuildIsoEntity"
 
 local DoorPlacement = require "LMION/Runtime/DoorPlacement"
-local GarageBuild = require "LMION/Services/Build/GarageLengthState"
+local GarageBuild = require "LMION/Services/Build/Garage/GarageBuild"
+local GarageBuildFaceProxy = require "LMION/Services/Build/Garage/GarageBuildFaceProxy"
+local GarageBuildRequirements = require "LMION/Services/Build/Garage/GarageBuildRequirements"
+local GarageLengthState = require "LMION/Services/Build/Garage/GarageLengthState"
 
 local function getProfile(buildObject)
     if buildObject == nil or buildObject.objectInfo == nil then
@@ -18,7 +21,9 @@ local function getLength(buildObject)
     end
 
     local logic = buildObject and buildObject.buildPanelLogic or nil
-    return GarageBuild.normalizeLength(GarageBuild.getLengthFromLogic(logic))
+    return GarageBuild.normalizeLength(
+        GarageLengthState.getLengthFromLogic(logic)
+    )
 end
 
 local function getContainers(buildObject)
@@ -71,7 +76,7 @@ if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
         if profile ~= nil then
             buildObject.lmionGarageLength = GarageBuild.normalizeLength(
                 lmionGarageLength
-                    or (logic and GarageBuild.getLengthFromLogic(logic))
+                    or (logic and GarageLengthState.getLengthFromLogic(logic))
                     or GarageBuild.DefaultLength
             )
         end
@@ -90,7 +95,7 @@ if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
             or self._lmionGarageFaceLength ~= length then
             self._lmionGarageFaceSource = face
             self._lmionGarageFaceLength = length
-            self._lmionGarageFaceProxy = GarageBuild.createFaceProxy(face, length)
+            self._lmionGarageFaceProxy = GarageBuildFaceProxy.create(face, length)
         end
 
         return self._lmionGarageFaceProxy
@@ -107,7 +112,7 @@ if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
             return true
         end
 
-        return GarageBuild.hasRequirements(
+        return GarageBuildRequirements.hasRequirements(
             self.character,
             profile,
             getLength(self),
@@ -138,7 +143,7 @@ if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
 
         if profile ~= nil
             and not self.character:isBuildCheat()
-            and not GarageBuild.hasRequirements(
+            and not GarageBuildRequirements.hasRequirements(
                 self.character,
                 profile,
                 getLength(self),
