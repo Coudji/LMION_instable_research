@@ -1,0 +1,84 @@
+module Base
+{
+    item LMION_WhiteSlidingGlassDoor
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 20.0,
+        Tags = base:usedisplayname,
+    }
+
+    xuiSkin default
+    {
+        entity ES_LMION_WhiteSlidingGlassDoor
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_WhiteSlidingGlassDoor,
+            Icon = LMION/doors/WhiteSlidingGlassDoor,
+        }
+    }
+
+    entity WhiteSlidingGlassDoor
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_WhiteSlidingGlassDoor,
+            uiEnabled = false,
+        }
+
+        component CraftRecipe
+        {
+            timedAction = BuildWallMetal,
+            time = 100,
+            category = LMION,
+            SkillRequired = MetalWelding:3,
+            xpAward = MetalWelding:15,
+
+            inputs
+            {
+                item 1 [Base.WeldingMask] mode:keep,
+                item 4 [Base.BlowTorch] flags[DontRecordInput],
+                item 2 [Base.SmallSheetMetal],
+                item 2 [Base.MetalBar;Base.IronBar],
+                item 2 [Base.GlassPanel],
+                item 4 [Base.WeldingRods] flags[DontRecordInput],
+            }
+        }
+
+        component SpriteConfig
+        {
+            face W
+            {
+                layer
+                {
+                    row = fixtures_doors_01_116,
+                }
+            }
+
+            face N
+            {
+                layer
+                {
+                    row = fixtures_doors_01_117,
+                }
+            }
+
+            face W_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_01_118,
+                }
+            }
+
+            face N_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_01_119,
+                }
+            }
+        }
+    }
+}
