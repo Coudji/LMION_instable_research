@@ -1,4 +1,4 @@
-local LargeGateMembers = require "LMION/Services/Moveables/LargeGateMembers"
+local LargeGateMembers = require "LMION/Services/Common/LargeGateMembers"
 local LargeGateTopology = require "LMION/Domain/LargeGateTopology"
 
 local LargeGateWorldState = {}
