@@ -1,0 +1,84 @@
+module Base
+{
+    item LMION_SmallWroughtIronGate
+    {
+        ItemType = base:moveable,
+        Icon = default,
+        Weight = 12.0,
+        Tags = base:usedisplayname,
+    }
+
+    xuiSkin default
+    {
+        entity ES_LMION_SmallWroughtIronGate
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_SmallWroughtIronGate,
+            Icon = LMION/doors/SmallWroughtIronGate,
+        }
+    }
+
+    entity SmallWroughtIronGate
+    {
+        component UiConfig
+        {
+            xuiSkin = default,
+            entityStyle = ES_LMION_SmallWroughtIronGate,
+            uiEnabled = false,
+        }
+
+        component CraftRecipe
+        {
+            timedAction = BuildWallMetal,
+            time = 100,
+            category = LMION,
+            SkillRequired = MetalWelding:3,
+            xpAward = MetalWelding:20,
+
+            inputs
+            {
+                item 1 [Base.WeldingMask] mode:keep,
+                item 3 [Base.BlowTorch] flags[DontRecordInput],
+                item 2 [Base.MetalBar;Base.IronBar],
+                item 1 [Base.MetalPipe],
+                item 2 [Base.Hinge],
+                item 2 [Base.WeldingRods] flags[DontRecordInput],
+            }
+        }
+
+        component SpriteConfig
+        {
+            face W
+            {
+                layer
+                {
+                    row = fixtures_doors_fences_01_0,
+                }
+            }
+
+            face N
+            {
+                layer
+                {
+                    row = fixtures_doors_fences_01_1,
+                }
+            }
+
+            face W_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_fences_01_2,
+                }
+            }
+
+            face N_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_fences_01_3,
+                }
+            }
+        }
+    }
+}
