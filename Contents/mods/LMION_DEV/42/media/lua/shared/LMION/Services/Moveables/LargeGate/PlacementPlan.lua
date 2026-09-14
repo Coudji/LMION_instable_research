@@ -52,10 +52,11 @@ function LargeGatePlacementPlan.build(character, square, definitionId, facing, l
     end
 
     local partnerState = LargeGateWorldState.getPartnerState(profile, anchor, facing, leaf)
-    if partnerState == "incoherent" then
-        return nil
-    end
 
+    -- A partial partner near the candidate anchor is a real placement conflict,
+    -- but it is still a valid preview situation. Keep an inspectable plan so
+    -- cursors can render the attempted leaf in red instead of making the ghost
+    -- disappear completely. Placement remains forbidden through plan.valid.
     local targetState = partnerState == "open" and "open" or "closed"
     local isOpen = targetState == "open"
     local plan = {
@@ -68,7 +69,7 @@ function LargeGatePlacementPlan.build(character, square, definitionId, facing, l
         partnerState = partnerState,
         targetState = targetState,
         isOpen = isOpen,
-        valid = true,
+        valid = partnerState ~= "incoherent",
     }
 
     for partIndex = 1, 2 do
