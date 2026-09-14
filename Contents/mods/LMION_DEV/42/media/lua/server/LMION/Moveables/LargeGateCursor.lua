@@ -1,9 +1,9 @@
 require "BuildingObjects/ISMoveableCursor"
 
-local GarageMembers = require "LMION/Services/Moveables/GarageMembers"
-local GarageMoveProps = require "LMION/Services/Moveables/GarageMoveProps"
-local LargeGateProfiles = require "LMION/Services/Moveables/LargeGateProfiles"
-local LargeGateGhostParts = require "LMION/Services/Moveables/LargeGateGhostParts"
+local GarageMembers = require "LMION/Services/Moveables/Garage/Members"
+local GarageMoveProps = require "LMION/Services/Moveables/Garage/MoveProps"
+local LargeGateProfiles = require "LMION/Services/Moveables/LargeGate/Profiles"
+local LargeGateGhostParts = require "LMION/Services/Moveables/LargeGate/GhostParts"
 
 local function getLargeGateSegment(moveProps)
     local sprite = moveProps and moveProps.sprite or nil
