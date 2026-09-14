@@ -3,7 +3,7 @@ require "Moveables/ISMoveableSpriteProps"
 local GarageLengthPolicy = require "LMION/Domain/GarageLengthPolicy"
 local GarageParcelLookup = require "LMION/Services/Moveables/Garage/ParcelLookup"
 local GarageProfiles = require "LMION/Services/Moveables/Garage/Profiles"
-local SingleTileDoorPlacementFinalizer = require "LMION/Services/Moveables/SingleTileDoorPlacementFinalizer"
+local SingleTileDoorPlacementFinalizer = require "LMION/Services/Moveables/SingleTileDoor/PlacementFinalizer"
 
 local GaragePlacement = {}
 
