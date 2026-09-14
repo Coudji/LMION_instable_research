@@ -1,6 +1,6 @@
 require "Moveables/ISMoveableSpriteProps"
 
-local LargeGateMoveProps = require "LMION/Services/Moveables/LargeGateMoveProps"
+local LargeGateMoveProps = require "LMION/Services/Moveables/LargeGate/MoveProps"
 
 local LargeGateFacingHook = {}
 
