@@ -1,7 +1,7 @@
 require "Moveables/ISMoveableSpriteProps"
 
 local LargeGateMembers = require "LMION/Services/Common/LargeGateMembers"
-local LargeGateMoveProps = require "LMION/Services/Moveables/LargeGateMoveProps"
+local LargeGateMoveProps = require "LMION/Services/Moveables/LargeGate/MoveProps"
 
 local LargeGatePickupHook = {}
 
