@@ -1,8 +1,8 @@
 require "BuildingObjects/ISBuildingObject"
 require "Moveables/ISMoveablesAction"
 
-local GaragePlacement = require "LMION/Services/Moveables/GaragePlacement"
-local GarageProfiles = require "LMION/Services/Moveables/GarageProfiles"
+local GaragePlacement = require "LMION/Services/Moveables/Garage/Placement"
+local GarageProfiles = require "LMION/Services/Moveables/Garage/Profiles"
 
 local function getPlacementMoveProps(definitionId, facing)
     local profile = GarageProfiles.getByDefinitionId(definitionId)
