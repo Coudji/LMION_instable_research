@@ -2,7 +2,7 @@ require "BuildingObjects/ISBuildIsoEntity"
 
 local DoorTypes = require "LMION/Domain/DoorTypes"
 local DefinitionLookup = require "LMION/Services/DefinitionLookup"
-local LargeGateBuildProfile = require "LMION/Services/Build/LargeGateBuildProfile"
+local LargeGateBuildProfile = require "LMION/Services/Build/LargeGate/Profile"
 
 local function getGameScript(objectInfo)
     local spriteConfig = objectInfo
