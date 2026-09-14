@@ -8,7 +8,6 @@ return {
     durability = {
         worldHealth = 575,
         health = 425,
-        skillBaseHealth = 250,
     },
 
     construction = {
@@ -18,7 +17,7 @@ return {
     },
 
     pickup = {
-        packages = { count = 1, weight = 17 },
+        packages = { weight = 17 },
     },
 
     geometry = {

@@ -26,7 +26,7 @@ return {
 
     pickup = {
         skill = { MetalWelding = 1 },
-        packages = { count = 1, weight = 12 },
+        packages = { weight = 12 },
     },
 
     geometry = {

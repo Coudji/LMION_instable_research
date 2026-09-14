@@ -26,7 +26,7 @@ return {
     },
 
     pickup = {
-        packages = { count = 1, weight = 17 },
+        packages = { weight = 17 },
     },
 
     geometry = {

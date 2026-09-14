@@ -17,7 +17,6 @@ return {
 
     pickup = {
         skill = { Woodwork = 1 },
-        packages = { count = 1, weight = 15 },
     },
 
     geometry = {

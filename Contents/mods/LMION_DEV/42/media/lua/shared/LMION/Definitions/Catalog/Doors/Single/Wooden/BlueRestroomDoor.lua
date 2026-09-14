@@ -10,11 +10,10 @@ return {
     durability = {
         worldHealth = 200,
         health = 200,
-        skillBaseHealth = 0,
     },
 
     pickup = {
-        packages = { count = 1, weight = 10 },
+        packages = { weight = 10 },
     },
 
     geometry = {
