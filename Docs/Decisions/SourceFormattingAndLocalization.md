@@ -115,7 +115,15 @@ Technical identifiers that come from Project Zomboid remain recognizable. In par
 
 User-facing names follow the target language rather than word-for-word source order. Adjective and complement order should be idiomatic in EN and FR, and the same opening must keep the same base display name between `Entity.json` and `ItemName.json`.
 
-French size wording should avoid redundant qualifiers when the noun already conveys the distinction. Use `portillon` for the smaller form and `portail` for the larger form without mechanically adding `petit` or `grand`.
+French gate terminology expresses the physical class rather than translating English size words mechanically:
+
+- a normal one-tile gate is a `Portillon`;
+- an English `Small ... Gate` is a `Portillon bas ...`;
+- a LargeGate is normally a `Portail ...`;
+- do not add `Petit` before `portillon` or `Grand` before `portail`;
+- use a more specific French noun when the object clearly calls for it. `Large Farm Gate`, for example, is displayed as `Barrière de ferme`, while its technical identifier remains `LargeFarmGate`.
+
+`Hardened` is translated as `durci` for LMION wooden gates (`Portillon en bois durci`, `Portail en bois durci`).
 
 Paired door display names use only `Left` / `Right` in EN and `Gauche` / `Droite` in FR. Do not add `Leaf` or `Vantail` to inventory or construction names.
 
