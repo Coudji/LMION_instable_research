@@ -1,5 +1,5 @@
 local DoorObject = require "LMION/PZ/DoorObject"
-local LargeGateProfiles = require "LMION/Services/Moveables/LargeGateProfiles"
+local LargeGateDefinitionProfiles = require "LMION/Services/Common/LargeGateDefinitionProfiles"
 local WorldObjectIdentity = require "LMION/PZ/WorldObjectIdentity"
 
 local BuiltLargeGatePart = {}
@@ -15,7 +15,7 @@ function BuiltLargeGatePart.find(square, entityId, leaf)
         if DoorObject.isDoor(object)
             and WorldObjectIdentity.getEntityId(object) == entityId then
             local sprite = object:getSprite()
-            local segment = LargeGateProfiles.getSegmentBySprite(sprite)
+            local segment = LargeGateDefinitionProfiles.getSegmentBySprite(sprite)
             if segment ~= nil and segment.leaf == leaf then
                 return object, segment
             end
