@@ -1,4 +1,4 @@
-local BuiltLargeGatePart = require "LMION/PZ/BuiltLargeGatePart"
+local BuiltLargeGatePart = require "LMION/Services/Build/LargeGate/BuiltPart"
 local CanonicalDoor = require "LMION/Runtime/CanonicalDoor"
 local ConstructionDurability = require "LMION/Services/Build/ConstructionDurability"
 local DoorDurability = require "LMION/Runtime/DoorDurability"
