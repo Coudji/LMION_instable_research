@@ -7,6 +7,7 @@ module Base
         Weight = 17.0,
         Tags = base:usedisplayname,
     }
+
     xuiSkin default
     {
         entity ES_LMION_BrownPanelDoor
@@ -16,6 +17,7 @@ module Base
             Icon = LMION/doors/BrownPanelDoor,
         }
     }
+
     entity BrownPanelDoor
     {
         component UiConfig
@@ -24,6 +26,7 @@ module Base
             entityStyle = ES_LMION_BrownPanelDoor,
             uiEnabled = false,
         }
+
         component CraftRecipe
         {
             timedAction = BuildWallHammer,
@@ -31,6 +34,7 @@ module Base
             category = LMION,
             SkillRequired = Woodwork:6,
             xpAward = Woodwork:35,
+
             inputs
             {
                 item 1 tags[base:hammer] mode:keep flags[Prop1;MayDegradeVeryLight],
@@ -42,12 +46,40 @@ module Base
                 item 1 [Base.Doorknob],
             }
         }
+
         component SpriteConfig
         {
-            face W { layer { row = fixtures_doors_01_4, } }
-            face N { layer { row = fixtures_doors_01_5, } }
-            face W_OPEN { layer { row = fixtures_doors_01_6, } }
-            face N_OPEN { layer { row = fixtures_doors_01_7, } }
+            face W
+            {
+                layer
+                {
+                    row = fixtures_doors_01_4,
+                }
+            }
+
+            face N
+            {
+                layer
+                {
+                    row = fixtures_doors_01_5,
+                }
+            }
+
+            face W_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_01_6,
+                }
+            }
+
+            face N_OPEN
+            {
+                layer
+                {
+                    row = fixtures_doors_01_7,
+                }
+            }
         }
     }
 }

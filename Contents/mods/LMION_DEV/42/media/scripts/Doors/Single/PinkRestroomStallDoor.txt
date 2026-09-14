@@ -7,6 +7,7 @@ module Base
         Weight = 8.0,
         Tags = base:usedisplayname,
     }
+
     xuiSkin default
     {
         entity ES_LMION_PinkRestroomStallDoor
@@ -16,6 +17,7 @@ module Base
             Icon = LMION/doors/PinkRestroomStallDoor,
         }
     }
+
     entity PinkRestroomStallDoor
     {
         component UiConfig
@@ -24,6 +26,7 @@ module Base
             entityStyle = ES_LMION_PinkRestroomStallDoor,
             uiEnabled = false,
         }
+
         component CraftRecipe
         {
             timedAction = BuildWallHammer,
@@ -31,6 +34,7 @@ module Base
             category = LMION,
             SkillRequired = Woodwork:1,
             xpAward = Woodwork:5,
+
             inputs
             {
                 item 1 [Base.Screwdriver] mode:keep,
@@ -39,12 +43,40 @@ module Base
                 item 2 [Base.Hinge],
             }
         }
+
         component SpriteConfig
         {
-            face W { layer { row = fixtures_bathroom_01_64, } }
-            face N { layer { row = fixtures_bathroom_01_65, } }
-            face W_OPEN { layer { row = fixtures_bathroom_01_66, } }
-            face N_OPEN { layer { row = fixtures_bathroom_01_67, } }
+            face W
+            {
+                layer
+                {
+                    row = fixtures_bathroom_01_64,
+                }
+            }
+
+            face N
+            {
+                layer
+                {
+                    row = fixtures_bathroom_01_65,
+                }
+            }
+
+            face W_OPEN
+            {
+                layer
+                {
+                    row = fixtures_bathroom_01_66,
+                }
+            }
+
+            face N_OPEN
+            {
+                layer
+                {
+                    row = fixtures_bathroom_01_67,
+                }
+            }
         }
     }
 }

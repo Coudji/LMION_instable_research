@@ -7,6 +7,7 @@ module Base
         Weight = 25.0,
         Tags = base:usedisplayname,
     }
+
     xuiSkin default
     {
         entity ES_LMION_LogDoor
@@ -16,6 +17,7 @@ module Base
             Icon = LMION/doors/LogDoor,
         }
     }
+
     entity LogDoor
     {
         component UiConfig
@@ -24,24 +26,54 @@ module Base
             entityStyle = ES_LMION_LogDoor,
             uiEnabled = false,
         }
+
         component CraftRecipe
         {
             timedAction = BuildWallHammer,
             time = 80,
             category = LMION,
             xpAward = Woodwork:5,
+
             inputs
             {
                 item 4 [Base.Log],
                 item 4 [Base.RippedSheets;Base.RippedSheetsDirty;Base.Twine;Base.Rope;Base.SheetRope],
             }
         }
+
         component SpriteConfig
         {
-            face W { layer { row = walls_logs_40, } }
-            face N { layer { row = walls_logs_41, } }
-            face W_OPEN { layer { row = walls_logs_42, } }
-            face N_OPEN { layer { row = walls_logs_43, } }
+            face W
+            {
+                layer
+                {
+                    row = walls_logs_40,
+                }
+            }
+
+            face N
+            {
+                layer
+                {
+                    row = walls_logs_41,
+                }
+            }
+
+            face W_OPEN
+            {
+                layer
+                {
+                    row = walls_logs_42,
+                }
+            }
+
+            face N_OPEN
+            {
+                layer
+                {
+                    row = walls_logs_43,
+                }
+            }
         }
     }
 }
