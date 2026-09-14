@@ -1,6 +1,4 @@
-local Registry = require "LMION/Definitions/Registry"
-local Resolver = require "LMION/Definitions/Resolver"
-local LargeGateTopology = require "LMION/Domain/LargeGateTopology"
+local LargeGateDefinitionProfiles = require "LMION/Services/Common/LargeGateDefinitionProfiles"
 local MoveableProfileFields = require "LMION/Services/Moveables/MoveableProfileFields"
 
 local LargeGateProfiles = {}
@@ -10,41 +8,6 @@ local LEAVES = { "A", "B" }
 
 local profilesByDefinitionId = nil
 local segmentsBySpriteName = nil
-
-local function isPart(part)
-    return type(part) == "table"
-        and type(part.closed) == "string"
-        and part.closed ~= ""
-        and type(part.open) == "string"
-        and part.open ~= ""
-end
-
-local function hasValidGeometry(definition)
-    local geometry = definition.geometry
-    if type(geometry) ~= "table" then
-        return false
-    end
-
-    for facingIndex = 1, #FACINGS do
-        local facing = FACINGS[facingIndex]
-        local face = geometry[facing]
-        if type(face) ~= "table" then
-            return false
-        end
-
-        for leafIndex = 1, #LEAVES do
-            local leaf = LEAVES[leafIndex]
-            local parts = face[leaf]
-            if type(parts) ~= "table"
-                or not isPart(parts[1])
-                or not isPart(parts[2]) then
-                return false
-            end
-        end
-    end
-
-    return true
-end
 
 local function getPackageWeight(pickup)
     local packages = type(pickup) == "table" and pickup.packages or nil
@@ -93,15 +56,14 @@ local function getSegmentItemType(entityId, leaf, partIndex)
     return baseItemType .. leaf .. "_Part" .. tostring(partIndex)
 end
 
-local function getSegmentItemTypes(definition)
+local function getSegmentItemTypes(commonProfile)
     local itemTypes = {}
 
-    for leafIndex = 1, #LEAVES do
-        local leaf = LEAVES[leafIndex]
+    for _, leaf in ipairs(LEAVES) do
         itemTypes[leaf] = {}
 
         for partIndex = 1, 2 do
-            local itemType = getSegmentItemType(definition.entity, leaf, partIndex)
+            local itemType = getSegmentItemType(commonProfile.entityId, leaf, partIndex)
             if not MoveableProfileFields.hasScriptItem(itemType) then
                 return nil
             end
@@ -112,28 +74,20 @@ local function getSegmentItemTypes(definition)
     return itemTypes
 end
 
-local function buildProfile(definition)
-    if type(definition) ~= "table"
-        or definition.doorType ~= "LargeGate"
-        or type(definition.definitionId) ~= "string"
-        or definition.definitionId == ""
-        or not hasValidGeometry(definition) then
-        return nil
-    end
-
-    local requirements = getTransportRequirements(definition)
-    local itemTypes = getSegmentItemTypes(definition)
+local function buildProfile(commonProfile)
+    local requirements = getTransportRequirements(commonProfile.definition)
+    local itemTypes = getSegmentItemTypes(commonProfile)
     if requirements == nil or itemTypes == nil then
         return nil
     end
 
     return {
-        definitionId = definition.definitionId,
-        displayName = definition.displayName,
-        entityId = definition.entity,
-        doorType = definition.doorType,
-        definition = definition,
-        geometry = definition.geometry,
+        definitionId = commonProfile.definitionId,
+        displayName = commonProfile.displayName,
+        entityId = commonProfile.entityId,
+        doorType = commonProfile.doorType,
+        definition = commonProfile.definition,
+        geometry = commonProfile.geometry,
         itemTypes = itemTypes,
         pickUpTool = requirements.pickUpTool,
         placeTool = requirements.placeTool,
@@ -148,14 +102,14 @@ local function addSegment(index, profile, facing, leaf, partIndex, isOpen, sprit
         error("LMION: duplicate LargeGate sprite " .. tostring(spriteName), 3)
     end
 
-    local indices = LargeGateTopology.getLeafIndices(facing, leaf)
+    local commonSegment = LargeGateDefinitionProfiles.getSegmentBySprite(spriteName)
     index[spriteName] = {
         profile = profile,
         definitionId = profile.definitionId,
         facing = facing,
         leaf = leaf,
         partIndex = partIndex,
-        logicalIndex = indices and indices[partIndex] or nil,
+        logicalIndex = commonSegment and commonSegment.logicalIndex or nil,
         isOpen = isOpen,
         spriteName = spriteName,
         itemType = profile.itemTypes[leaf][partIndex],
@@ -163,10 +117,8 @@ local function addSegment(index, profile, facing, leaf, partIndex, isOpen, sprit
 end
 
 local function indexProfileSprites(index, profile)
-    for facingIndex = 1, #FACINGS do
-        local facing = FACINGS[facingIndex]
-        for leafIndex = 1, #LEAVES do
-            local leaf = LEAVES[leafIndex]
+    for _, facing in ipairs(FACINGS) do
+        for _, leaf in ipairs(LEAVES) do
             local parts = profile.geometry[facing][leaf]
             for partIndex = 1, 2 do
                 local part = parts[partIndex]
@@ -180,11 +132,10 @@ end
 local function buildIndexes()
     local nextProfiles = {}
     local nextSegments = {}
-    local definitionIds = Registry.getDefinitionIds()
 
-    for index = 1, #definitionIds do
-        local definition = Resolver.resolveDefinition(definitionIds[index])
-        local profile = buildProfile(definition)
+    for _, definitionId in ipairs(LargeGateDefinitionProfiles.getDefinitionIds()) do
+        local commonProfile = LargeGateDefinitionProfiles.getByDefinitionId(definitionId)
+        local profile = buildProfile(commonProfile)
         if profile ~= nil then
             nextProfiles[profile.definitionId] = profile
             indexProfileSprites(nextSegments, profile)
@@ -204,6 +155,7 @@ end
 function LargeGateProfiles.invalidate()
     profilesByDefinitionId = nil
     segmentsBySpriteName = nil
+    LargeGateDefinitionProfiles.invalidate()
 end
 
 function LargeGateProfiles.getByDefinitionId(definitionId)
@@ -216,11 +168,7 @@ function LargeGateProfiles.getSegmentBySprite(sprite)
         return nil
     end
 
-    local spriteName = sprite
-    if type(sprite) ~= "string" then
-        spriteName = sprite:getName()
-    end
-
+    local spriteName = type(sprite) == "string" and sprite or sprite:getName()
     ensureBuilt()
     return spriteName and segmentsBySpriteName[spriteName] or nil
 end
