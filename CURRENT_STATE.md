@@ -1,6 +1,6 @@
 # LMION V3 current state / conversation handoff
 
-Last updated: 2026-09-12
+Last updated: 2026-09-14
 
 This file is the canonical handoff for active V3 development in `Coudji/LMION_instable_research`.
 
@@ -172,6 +172,77 @@ Script files contain only parse-time facts PZ actually needs, such as transport 
 
 Source must remain human-readable. Baseline localization is EN + FR. `Entity.json` owns Construction/GameEntity display labels, while `ItemName.json` owns inventory item labels.
 
+## 2026-09-14 architecture organization checkpoint — STATIC ONLY
+
+A structural cleanup was completed on `main` after creating the backup branch:
+
+```text
+backup-2026-09-14-pre-reorganization
+```
+
+The catalog, DefinitionDefaults and PZ script hierarchy were deliberately left untouched.
+
+The core dependency rule is now:
+
+```text
+                 Services/Common
+                /               \
+             Build             Moveables
+              |                    |
+     family-specific code   family-specific code
+```
+
+Neutral cross-subsystem knowledge now lives in `Services/Common`:
+
+```text
+GarageDefinitionProfiles.lua
+LargeGateDefinitionProfiles.lua
+LargeGateMembers.lua
+SingleTileDoorPlacement.lua
+```
+
+Build-specific services are grouped under:
+
+```text
+Services/Build/Garage/
+Services/Build/LargeGate/
+Services/Build/SingleTileDoor/
+```
+
+Moveables-specific services are grouped under:
+
+```text
+Services/Moveables/Garage/
+Services/Moveables/LargeGate/
+Services/Moveables/SingleTileDoor/
+```
+
+`Services/Build` no longer imports `Services/Moveables` to identify Garage/LargeGate or apply shared placement rules. `Runtime/LargeGateToggleState.lua` and the low-level `PZ` layer likewise no longer depend on Moveables-specific LargeGate knowledge.
+
+The former `PZ/BuiltLargeGatePart.lua` lookup moved to `Services/Build/LargeGate/BuiltPart.lua`, where its Build-specific ownership is explicit.
+
+Client responsibilities were split without changing realm:
+
+```text
+client/LMION/UI/Build/GarageLengthSelector.lua
+client/LMION/Hooks/Build/GarageBuildUI.lua
+client/LMION/Keybinds/GaragePlacement.lua
+client/LMION/Hooks/Moveables/GarageContextMenu.lua
+```
+
+Dedicated Garage/LargeGate cursor implementations were moved out of the Hooks namespace but remain server-side:
+
+```text
+server/LMION/Moveables/GarageCursor.lua
+server/LMION/Moveables/LargeGateCursor.lua
+```
+
+No file was moved between `client`, `server` and `shared` during this cleanup.
+
+Temporary compatibility relay files used during the migration were removed after consumers were switched to the final paths. Static path checks found no remaining references to the removed flat Build/Moveables paths, and no `Services/Build -> Services/Moveables` dependency.
+
+This checkpoint has **not** yet been revalidated in game. The next phase is a complete regression-oriented code analysis, followed by targeted in-game tests.
+
 ## Build frame policy — VALIDATED IN GAME
 
 Static LMION SpriteConfigs no longer own `dontNeedFrame`. The semantic source of truth is the effective Lua definition through `doorType` / `DoorTypes`.
@@ -204,7 +275,7 @@ Garage builds without a frame
 
 A previous attempt to patch already-loaded `GameEntityScript` / `SpriteConfig` with a minimal scalar-only `GameEntityScript:Load()` fragment failed in game and was reverted. Do not repeat that approach.
 
-Separate observation: unframed Build placement is currently permissive enough to allow semantically odd placements against/inside walls or frame structures. This predates/is independent from the definition-owned `dontNeedFrame` hook. Treat stricter wall/frame compatibility as a separate placement-validation task.
+Unframed placement is now also guarded by `DoorPlacement` edge validation. `none` means no supporting frame is required; it does not authorize placement through an occupied wall/frame/window/door edge. Keep frame policy and spatial compatibility as separate responsibilities even though both participate in Build validity.
 
 Research: `Docs/Research/Build/LargeGateBuild.md`.
 
@@ -561,6 +632,6 @@ General rule: inspect vanilla Lua/JAR before changing an engine boundary and rec
 
 ## Immediate next work
 
-Current immediate checkpoint is the in-game retest of LargeGate HP/state preservation across normal open -> close after `709d1ae...`.
+Before any new feature work, perform a complete regression-oriented code analysis of the 2026-09-14 organization pass: dependency direction, require paths, hook ownership, realm placement, duplicated responsibilities and behavior-preserving moves/splits.
 
-After that, address the separately observed permissive placement rules for unframed Build objects without conflating them with `dontNeedFrame`. Garage broader validation remains queued after these focused regressions are closed.
+After the static analysis is clean, run targeted in-game smoke tests across the previously validated Single/Paired/FenceGate/Sliding pilots plus LargeGate and Garage. Then resume the still-pending LargeGate toggle/Build and broader Garage validation matrix.
