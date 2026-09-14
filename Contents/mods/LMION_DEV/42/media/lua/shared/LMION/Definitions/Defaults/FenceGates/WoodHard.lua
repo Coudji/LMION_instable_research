@@ -9,10 +9,16 @@ return {
 
         engineMaterials = { "Wood", "Nails", "Screws" },
 
-        durability = { worldHealth = 600, health = 400, skillBaseHealth = 275 },
+        durability = {
+            worldHealth = 600,
+            health = 400,
+            skillBaseHealth = 275,
+        },
 
         construction = {
-            skill = { Woodwork = 5 }, time = 150, xp = 30,
+            skill = { Woodwork = 5 },
+            time = 150,
+            xp = 30,
             tools = { { tag = "base:hammer" }, { tag = "base:screwdriver" } },
             materials = {
                 { item = "Base.Plank", amount = 5 },

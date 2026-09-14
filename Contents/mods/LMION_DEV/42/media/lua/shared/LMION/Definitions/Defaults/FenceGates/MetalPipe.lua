@@ -9,10 +9,16 @@ return {
 
         engineMaterials = { "MetalPipe", "MetalScrap" },
 
-        durability = { worldHealth = 600, health = 300, skillBaseHealth = 225 },
+        durability = {
+            worldHealth = 600,
+            health = 300,
+            skillBaseHealth = 225,
+        },
 
         construction = {
-            skill = { MetalWelding = 3 }, time = 120, xp = 15,
+            skill = { MetalWelding = 3 },
+            time = 120,
+            xp = 15,
             tools = { { tag = "base:weldingmask" } },
             materials = {
                 { item = "Base.BlowTorch", uses = 5 },

@@ -7,17 +7,38 @@ return {
         doorSound = "MetalGate",
         thumpSound = "ZombieThumpChainlinkFence",
         engineMaterials = { "MetalPipe", "MetalScrap" },
-        durability = { worldHealth = 850, health = 400, skillBaseHealth = 275 },
+
+        durability = {
+            worldHealth = 850,
+            health = 400,
+            skillBaseHealth = 275,
+        },
+
         construction = {
-            skill = { MetalWelding = 5 }, time = 240, xp = 40,
+            skill = { MetalWelding = 5 },
+            time = 240,
+            xp = 40,
             tools = { { tag = "base:weldingmask" } },
             materials = {
-                { item = "Base.BlowTorch", uses = 10 }, { item = "Base.MetalPipe", amount = 10 },
-                { item = "Base.Hinge", amount = 4 }, { item = "Base.ScrapMetal", amount = 4 },
+                { item = "Base.BlowTorch", uses = 10 },
+                { item = "Base.MetalPipe", amount = 10 },
+                { item = "Base.Hinge", amount = 4 },
+                { item = "Base.ScrapMetal", amount = 4 },
                 { item = "Base.WeldingRods", uses = 10 },
             },
         },
-        pickup = { skill = { MetalWelding = 2 }, tools = { { tag = "base:crowbar" } }, breakChance = 0, packages = { count = 2, weight = 20 } },
-        replacement = { packages = 2, tools = { { tag = "base:hammer" } }, materials = {} },
+
+        pickup = {
+            skill = { MetalWelding = 2 },
+            tools = { { tag = "base:crowbar" } },
+            breakChance = 0,
+            packages = { count = 2, weight = 20 },
+        },
+
+        replacement = {
+            packages = 2,
+            tools = { { tag = "base:hammer" } },
+            materials = {},
+        },
     },
 }
