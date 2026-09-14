@@ -1,7 +1,7 @@
 require "Moveables/ISMoveableSpriteProps"
 
-local GarageMembers = require "LMION/Services/Moveables/GarageMembers"
-local GarageMoveProps = require "LMION/Services/Moveables/GarageMoveProps"
+local GarageMembers = require "LMION/Services/Moveables/Garage/Members"
+local GarageMoveProps = require "LMION/Services/Moveables/Garage/MoveProps"
 
 local GaragePickup = {}
 
