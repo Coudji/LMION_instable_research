@@ -1,5 +1,5 @@
 local Registry = require "LMION/Definitions/Registry"
-local Resolver = require "LMION/Definitions/Resolver"
+local GarageDefinitionProfiles = require "LMION/Services/Common/GarageDefinitionProfiles"
 local MoveableProfileFields = require "LMION/Services/Moveables/MoveableProfileFields"
 
 local GarageProfiles = {}
@@ -19,15 +19,14 @@ local function shortName(entityId)
     return string.match(entityId, "^[^.]+%.(.+)$") or entityId
 end
 
-local function buildProfile(definition)
-    if type(definition) ~= "table"
-        or definition.doorType ~= "Garage"
-        or type(definition.geometry) ~= "table" then
+local function buildProfile(commonProfile)
+    if type(commonProfile) ~= "table" then
         return nil
     end
 
-    local pickup = definition.pickup
-    local replacement = definition.replacement
+    local definition = commonProfile.definition
+    local pickup = definition and definition.pickup or nil
+    local replacement = definition and definition.replacement or nil
     local weight = MoveableProfileFields.getPackageWeight(pickup)
     local pickUpTool = MoveableProfileFields.getSingleToolName(
         pickup and pickup.tools,
@@ -40,7 +39,7 @@ local function buildProfile(definition)
     local pickUpLevel = MoveableProfileFields.getSingleSkillLevel(
         pickup and pickup.skill
     )
-    local entityName = shortName(definition.entity)
+    local entityName = shortName(commonProfile.entityId)
 
     if entityName == nil
         or weight == nil
@@ -64,24 +63,12 @@ local function buildProfile(definition)
         itemTypes[index] = fullType
     end
 
-    for _, facing in ipairs(FACINGS) do
-        for _, role in ipairs(ROLES) do
-            local face = definition.geometry[facing]
-            local part = face and face[role] or nil
-
-            if type(part) ~= "table"
-                or type(part.closed) ~= "string"
-                or type(part.open) ~= "string" then
-                return nil
-            end
-        end
-    end
-
     return {
-        definitionId = definition.definitionId,
-        entityId = definition.entity,
+        definitionId = commonProfile.definitionId,
+        entityId = commonProfile.entityId,
+        doorType = commonProfile.doorType,
         definition = definition,
-        geometry = definition.geometry,
+        geometry = commonProfile.geometry,
         itemTypes = itemTypes,
         pickUpTool = pickUpTool,
         placeTool = placeTool,
@@ -95,9 +82,9 @@ local function rebuild()
     local profiles = {}
     local segments = {}
 
-    for _, definitionId in ipairs(Registry.getDefinitionIds()) do
-        local definition = Resolver.resolveDefinition(definitionId)
-        local profile = buildProfile(definition)
+    for _, definitionId in ipairs(GarageDefinitionProfiles.getDefinitionIds()) do
+        local commonProfile = GarageDefinitionProfiles.getByDefinitionId(definitionId)
+        local profile = buildProfile(commonProfile)
 
         if profile ~= nil then
             profiles[definitionId] = profile
@@ -138,6 +125,12 @@ local function ensureBuilt()
     if builtRevision ~= Registry.getRevision() then
         rebuild()
     end
+end
+
+function GarageProfiles.invalidate()
+    profilesByDefinitionId = nil
+    segmentsBySpriteName = nil
+    builtRevision = nil
 end
 
 function GarageProfiles.getByDefinitionId(definitionId)
