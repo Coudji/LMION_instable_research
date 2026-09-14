@@ -1,4 +1,4 @@
-local LargeGateProfiles = require "LMION/Services/Moveables/LargeGateProfiles"
+local LargeGateProfiles = require "LMION/Services/Moveables/LargeGate/Profiles"
 
 local LargeGateSpriteGrids = {}
 
