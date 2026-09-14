@@ -1,7 +1,7 @@
 require "BuildingObjects/ISBuildIsoEntity"
 
 local DoorPlacement = require "LMION/Runtime/DoorPlacement"
-local LargeGateBuildProfile = require "LMION/Services/Build/LargeGateBuildProfile"
+local LargeGateBuildProfile = require "LMION/Services/Build/LargeGate/Profile"
 
 local function getProfile(buildObject)
     if buildObject == nil or buildObject.objectInfo == nil then
