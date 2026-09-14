@@ -1,8 +1,8 @@
 require "Moveables/ISMoveableSpriteProps"
 
-local GarageMoveProps = require "LMION/Services/Moveables/GarageMoveProps"
-local GarageParcelLookup = require "LMION/Services/Moveables/GarageParcelLookup"
-local GaragePlacement = require "LMION/Services/Moveables/GaragePlacement"
+local GarageMoveProps = require "LMION/Services/Moveables/Garage/MoveProps"
+local GarageParcelLookup = require "LMION/Services/Moveables/Garage/ParcelLookup"
+local GaragePlacement = require "LMION/Services/Moveables/Garage/Placement"
 
 local GaragePlacementHook = {}
 
