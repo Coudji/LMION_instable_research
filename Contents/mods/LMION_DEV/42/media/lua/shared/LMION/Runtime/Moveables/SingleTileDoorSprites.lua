@@ -1,4 +1,4 @@
-local SingleTileDoorProfiles = require "LMION/Services/Moveables/SingleTileDoorProfiles"
+local SingleTileDoorProfiles = require "LMION/Services/Moveables/SingleTileDoor/Profiles"
 
 local SingleTileDoorSprites = {}
 
