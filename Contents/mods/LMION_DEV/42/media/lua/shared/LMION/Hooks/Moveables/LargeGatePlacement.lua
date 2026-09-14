@@ -93,11 +93,10 @@ local function placePlan(plan)
     end
 
     print(string.format(
-        "[LMION:DEV] LargeGate placement completed: definition=%s leaf=%s facing=%s open=%s",
+        "[LMION:DEV] LargeGate placement completed: definition=%s leaf=%s facing=%s",
         tostring(plan.definitionId),
         tostring(plan.leaf),
-        tostring(plan.facing),
-        tostring(plan.isOpen)
+        tostring(plan.facing)
     ))
 
     return placed
@@ -151,11 +150,10 @@ function LargeGatePlacementHook.install()
         local plan = buildPlan(self, character, square)
 
         print(string.format(
-            "[LMION:DEV] LargeGate placement started: definition=%s leaf=%s facing=%s partner=%s",
+            "[LMION:DEV] LargeGate placement started: definition=%s leaf=%s facing=%s",
             tostring(segment.definitionId),
             tostring(self.lmionLargeGateLeaf),
-            tostring(self.lmionLargeGateFacing),
-            tostring(plan and plan.partnerState or nil)
+            tostring(self.lmionLargeGateFacing)
         ))
 
         return placePlan(plan)
