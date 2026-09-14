@@ -1,7 +1,7 @@
 local DoorPlacement = require "LMION/Runtime/DoorPlacement"
 local LargeGateParcelLookup = require "LMION/Services/Moveables/LargeGate/ParcelLookup"
+local LargeGatePlacementSpace = require "LMION/Services/Common/LargeGatePlacementSpace"
 local LargeGateProfiles = require "LMION/Services/Moveables/LargeGate/Profiles"
-local LargeGateWorldState = require "LMION/Services/Moveables/LargeGate/WorldState"
 
 local LargeGatePlacementPlan = {}
 
@@ -10,7 +10,7 @@ local function getPartSprite(profile, facing, leaf, partIndex, isOpen)
     return isOpen and part.open or part.closed
 end
 
-local function isPartPlacementValid(character, square, item, closedSprite, facing, isOpen)
+local function isPartPlacementValid(character, square, item, closedSprite, facing)
     if square == nil or item == nil or closedSprite == nil then
         return false
     end
@@ -29,10 +29,6 @@ local function isPartPlacementValid(character, square, item, closedSprite, facin
         return false
     end
 
-    if isOpen and not moveProps:isFreeTile(square) then
-        return false
-    end
-
     return DoorPlacement.canPlaceUnframedAt(square, facing)
 end
 
@@ -46,19 +42,24 @@ function LargeGatePlacementPlan.build(character, square, definitionId, facing, l
         return nil
     end
 
-    local anchor = LargeGateWorldState.getAnchor(square, facing, leaf, selectedPart)
+    local anchor = LargeGatePlacementSpace.getAnchor(
+        square,
+        facing,
+        leaf,
+        selectedPart,
+        "closed"
+    )
     if anchor == nil then
         return nil
     end
 
-    local partnerState = LargeGateWorldState.getPartnerState(profile, anchor, facing, leaf)
+    local operationallyValid = LargeGatePlacementSpace.validate(
+        definitionId,
+        anchor,
+        facing,
+        leaf
+    )
 
-    -- A partial partner near the candidate anchor is a real placement conflict,
-    -- but it is still a valid preview situation. Keep an inspectable plan so
-    -- cursors can render the attempted leaf in red instead of making the ghost
-    -- disappear completely. Placement remains forbidden through plan.valid.
-    local targetState = partnerState == "open" and "open" or "closed"
-    local isOpen = targetState == "open"
     local plan = {
         profile = profile,
         definitionId = definitionId,
@@ -66,10 +67,9 @@ function LargeGatePlacementPlan.build(character, square, definitionId, facing, l
         leaf = leaf,
         selectedPart = selectedPart,
         anchor = anchor,
-        partnerState = partnerState,
-        targetState = targetState,
-        isOpen = isOpen,
-        valid = partnerState ~= "incoherent",
+        targetState = "closed",
+        isOpen = false,
+        valid = operationallyValid == true,
     }
 
     for partIndex = 1, 2 do
@@ -79,22 +79,20 @@ function LargeGatePlacementPlan.build(character, square, definitionId, facing, l
             leaf,
             partIndex
         )
-        local targetSquare = LargeGateWorldState.getPartSquare(
+        local targetSquare = LargeGatePlacementSpace.getPartSquare(
             anchor,
             facing,
             leaf,
             partIndex,
-            targetState
+            "closed"
         )
         local closedSprite = getPartSprite(profile, facing, leaf, partIndex, false)
-        local displaySprite = getPartSprite(profile, facing, leaf, partIndex, isOpen)
         local valid = isPartPlacementValid(
             character,
             targetSquare,
             parcel,
             closedSprite,
-            facing,
-            isOpen
+            facing
         )
 
         plan[partIndex] = {
@@ -103,7 +101,7 @@ function LargeGatePlacementPlan.build(character, square, definitionId, facing, l
             worldItem = worldItem,
             square = targetSquare,
             closedSprite = closedSprite,
-            displaySprite = displaySprite,
+            displaySprite = closedSprite,
             valid = valid,
         }
 
