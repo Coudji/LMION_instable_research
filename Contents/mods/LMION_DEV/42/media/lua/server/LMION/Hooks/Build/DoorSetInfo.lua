@@ -1,10 +1,10 @@
 require "BuildingObjects/ISBuildIsoEntity"
 
 local GarageBuildFinalizer = require "LMION/Services/Build/Garage/GarageBuildFinalizer"
-local LargeGateBuildProfile = require "LMION/Services/Build/LargeGateBuildProfile"
-local LargeGateFinalizer = require "LMION/Services/Build/LargeGateFinalizer"
-local SingleTileDoorBuildProfile = require "LMION/Services/Build/SingleTileDoorBuildProfile"
-local SingleTileDoorFinalizer = require "LMION/Services/Build/SingleTileDoorFinalizer"
+local LargeGateBuildProfile = require "LMION/Services/Build/LargeGate/Profile"
+local LargeGateFinalizer = require "LMION/Services/Build/LargeGate/Finalizer"
+local SingleTileDoorBuildProfile = require "LMION/Services/Build/SingleTileDoor/Profile"
+local SingleTileDoorFinalizer = require "LMION/Services/Build/SingleTileDoor/Finalizer"
 
 local function getGameScript(buildObject)
     local spriteScript = buildObject
