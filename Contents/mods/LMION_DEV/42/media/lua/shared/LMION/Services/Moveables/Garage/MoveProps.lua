@@ -34,6 +34,7 @@ function GarageMoveProps.applyProfile(moveProps, sprite)
     moveProps.canBreak = false
     moveProps.facing = segment.facing
 
+    moveProps.lmionDefinitionId = profile.definitionId
     moveProps.lmionGarageSegment = segment
     moveProps.lmionGarageDefinitionId = profile.definitionId
     moveProps.lmionGaragePart = segment.roleIndex
