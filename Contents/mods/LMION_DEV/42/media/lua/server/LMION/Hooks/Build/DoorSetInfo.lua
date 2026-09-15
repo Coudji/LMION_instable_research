@@ -1,6 +1,6 @@
 require "BuildingObjects/ISBuildIsoEntity"
 
-local GarageBuildFinalizer = require "LMION/Services/Build/Garage/GarageBuildFinalizer"
+local GarageFinalizer = require "LMION/Services/Build/Garage/Finalizer"
 local LargeGateBuildProfile = require "LMION/Services/Build/LargeGate/Profile"
 local LargeGateFinalizer = require "LMION/Services/Build/LargeGate/Finalizer"
 local SingleTileDoorBuildProfile = require "LMION/Services/Build/SingleTileDoor/Profile"
@@ -24,10 +24,10 @@ if not ISBuildIsoEntity._lmionV3DoorSetInfoInstalled then
         local gameScript = getGameScript(self)
         local singleProfile = SingleTileDoorBuildProfile.getByGameScript(gameScript)
         local largeGateProfile = LargeGateBuildProfile.getByGameScript(gameScript)
-        local garageProfile = GarageBuildFinalizer.getProfile(self)
+        local garageProfile = GarageFinalizer.getProfile(self)
 
         if garageProfile ~= nil
-            and not GarageBuildFinalizer.beforeSetInfo(self, garageProfile) then
+            and not GarageFinalizer.beforeSetInfo(self, garageProfile) then
             error("LMION Garage extra-resource consumption failed")
         end
 
@@ -48,7 +48,7 @@ if not ISBuildIsoEntity._lmionV3DoorSetInfoInstalled then
                 self.character
             )
         elseif garageProfile ~= nil then
-            GarageBuildFinalizer.finalize(self, square, garageProfile)
+            GarageFinalizer.finalize(self, square, garageProfile)
         end
 
         return result
