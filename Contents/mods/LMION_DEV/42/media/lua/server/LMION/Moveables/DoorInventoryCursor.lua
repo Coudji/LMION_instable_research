@@ -240,6 +240,11 @@ function LMIONDoorInventoryCursor:new(
     o.selectedPart = selectedPart
     o:setDragNilAfterPlace(true)
     o.noNeedHammer = true
+    -- Placement is owned by the dedicated LMION Moveables action. Do not let
+    -- ISBuildingObject queue a vanilla ISBuildAction first, and do not queue a
+    -- second generic walk before moveProps:walkToAndEquip() below.
+    o.skipBuildAction = true
+    o.skipWalk2 = true
     return o
 end
 
