@@ -1,4 +1,4 @@
-local LargeGateDefinitionProfiles = require "LMION/Services/Common/LargeGateDefinitionProfiles"
+local CommonLargeGateProfiles = require "LMION/Services/Common/LargeGate/Profiles"
 local MoveableProfileFields = require "LMION/Services/Moveables/MoveableProfileFields"
 
 local LargeGateProfiles = {}
@@ -102,7 +102,7 @@ local function addSegment(index, profile, facing, leaf, partIndex, isOpen, sprit
         error("LMION: duplicate LargeGate sprite " .. tostring(spriteName), 3)
     end
 
-    local commonSegment = LargeGateDefinitionProfiles.getSegmentBySprite(spriteName)
+    local commonSegment = CommonLargeGateProfiles.getSegmentBySprite(spriteName)
     index[spriteName] = {
         profile = profile,
         definitionId = profile.definitionId,
@@ -133,8 +133,8 @@ local function buildIndexes()
     local nextProfiles = {}
     local nextSegments = {}
 
-    for _, definitionId in ipairs(LargeGateDefinitionProfiles.getDefinitionIds()) do
-        local commonProfile = LargeGateDefinitionProfiles.getByDefinitionId(definitionId)
+    for _, definitionId in ipairs(CommonLargeGateProfiles.getDefinitionIds()) do
+        local commonProfile = CommonLargeGateProfiles.getByDefinitionId(definitionId)
         local profile = buildProfile(commonProfile)
         if profile ~= nil then
             nextProfiles[profile.definitionId] = profile
@@ -155,7 +155,7 @@ end
 function LargeGateProfiles.invalidate()
     profilesByDefinitionId = nil
     segmentsBySpriteName = nil
-    LargeGateDefinitionProfiles.invalidate()
+    CommonLargeGateProfiles.invalidate()
 end
 
 function LargeGateProfiles.getByDefinitionId(definitionId)
