@@ -1,10 +1,10 @@
 VERSION = 1,
 
-option LMION.GarageMaxLength
+option LMION.GarageMaxWidth
 {
     type = integer, default = 6, min = 6, max = 12,
     page = LMION,
-    translation = LMION_GarageMaxLength,
+    translation = LMION_GarageMaxWidth,
 }
 
 option LMION.UnlimitedGarageWidth

@@ -1,7 +1,7 @@
 local GarageBuild = require "LMION/Services/Build/Garage/Build"
 
-local GarageLengthState = {}
-local lengthByLogic = setmetatable({}, { __mode = "k" })
+local GarageWidthState = {}
+local widthByLogic = setmetatable({}, { __mode = "k" })
 
 local function getRecipeData(logic)
     if logic == nil or logic.getRecipeData == nil then
@@ -52,16 +52,16 @@ local function getBarInputData(logic)
     return nil
 end
 
-local function syncLength(logic, length)
+local function syncWidth(logic, width)
     if logic ~= nil and logic.setTargetVariableInputRatio ~= nil then
-        logic:setTargetVariableInputRatio(length / GarageBuild.MinLength)
+        logic:setTargetVariableInputRatio(width / GarageBuild.MinWidth)
     end
 
     local inputData = getBarInputData(logic)
     local recipeData = getRecipeData(logic)
 
     if inputData ~= nil and recipeData ~= nil then
-        while inputData:getInputItemCount() > length
+        while inputData:getInputItemCount() > width
             and inputData:getLastInputItem() ~= nil do
             recipeData:removeInputItem(inputData:getLastInputItem())
         end
@@ -73,11 +73,11 @@ local function syncLength(logic, length)
         or nil
 
     if modData ~= nil then
-        modData[GarageBuild.LengthModDataKey] = length
+        modData[GarageBuild.WidthModDataKey] = width
     end
 end
 
-function GarageLengthState.getSelectedBarCount(logic)
+function GarageWidthState.getSelectedBarCount(logic)
     local inputData = getBarInputData(logic)
 
     if inputData == nil or inputData.getInputItemCount == nil then
@@ -87,59 +87,59 @@ function GarageLengthState.getSelectedBarCount(logic)
     return inputData:getInputItemCount()
 end
 
-function GarageLengthState.hasSelectedBars(logic, length)
+function GarageWidthState.hasSelectedBars(logic, width)
     if GarageBuild.getProfileFromLogic(logic) == nil then
         return true
     end
 
-    return GarageLengthState.getSelectedBarCount(logic)
-        >= GarageBuild.normalizeLength(length)
+    return GarageWidthState.getSelectedBarCount(logic)
+        >= GarageBuild.normalizeWidth(width)
 end
 
-function GarageLengthState.getLengthFromLogic(logic)
+function GarageWidthState.getWidthFromLogic(logic)
     if logic == nil then
-        return GarageBuild.DefaultLength
+        return GarageBuild.DefaultWidth
     end
 
-    local length = tonumber(lengthByLogic[logic])
+    local width = tonumber(widthByLogic[logic])
 
-    if length == nil then
+    if width == nil then
         local recipeData = getRecipeData(logic)
         local modData = recipeData
             and recipeData.getModData
             and recipeData:getModData()
             or nil
 
-        length = modData
-            and tonumber(modData[GarageBuild.LengthModDataKey])
-            or GarageBuild.DefaultLength
+        width = modData
+            and tonumber(modData[GarageBuild.WidthModDataKey])
+            or GarageBuild.DefaultWidth
     end
 
-    length = GarageBuild.normalizeLength(length)
-    lengthByLogic[logic] = length
-    syncLength(logic, length)
+    width = GarageBuild.normalizeWidth(width)
+    widthByLogic[logic] = width
+    syncWidth(logic, width)
 
-    return length
+    return width
 end
 
-function GarageLengthState.setLengthOnLogic(logic, length)
+function GarageWidthState.setWidthOnLogic(logic, width)
     if GarageBuild.getProfileFromLogic(logic) == nil then
         return nil
     end
 
-    length = GarageBuild.normalizeLength(length)
-    lengthByLogic[logic] = length
-    syncLength(logic, length)
+    width = GarageBuild.normalizeWidth(width)
+    widthByLogic[logic] = width
+    syncWidth(logic, width)
 
-    return length
+    return width
 end
 
-function GarageLengthState.ensureLengthOnLogic(logic)
+function GarageWidthState.ensureWidthOnLogic(logic)
     if GarageBuild.getProfileFromLogic(logic) == nil then
         return nil
     end
 
-    return GarageLengthState.getLengthFromLogic(logic)
+    return GarageWidthState.getWidthFromLogic(logic)
 end
 
-return GarageLengthState
+return GarageWidthState

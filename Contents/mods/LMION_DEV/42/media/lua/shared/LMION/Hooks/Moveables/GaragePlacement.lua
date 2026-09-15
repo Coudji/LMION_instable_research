@@ -55,7 +55,7 @@ local function getStartSquare(segment, square)
     )
 end
 
-local function buildFixedLengthPlan(moveProps, character, square)
+local function buildFixedWidthPlan(moveProps, character, square)
     local segment = GarageMoveProps.getSegment(moveProps)
     if segment == nil then
         return nil
@@ -145,7 +145,7 @@ function GaragePlacementHook.install()
             return previousCanPlace(self, character, square, item)
         end
 
-        local plan = buildFixedLengthPlan(self, character, square)
+        local plan = buildFixedWidthPlan(self, character, square)
         return plan ~= nil and GaragePlacement.validate(character, plan)
     end
 
@@ -166,7 +166,7 @@ function GaragePlacementHook.install()
             )
         end
 
-        local plan = buildFixedLengthPlan(self, character, square)
+        local plan = buildFixedWidthPlan(self, character, square)
         local placed = GaragePlacement.place(character, plan)
 
         if placed ~= nil
@@ -185,7 +185,7 @@ function GaragePlacementHook.install()
         return placed
     end
 
-    print("[LMION:DEV] Garage fixed-L3 toolbar placement hooks installed")
+    print("[LMION:DEV] Garage fixed-width-3 toolbar placement hooks installed")
     return true
 end
 

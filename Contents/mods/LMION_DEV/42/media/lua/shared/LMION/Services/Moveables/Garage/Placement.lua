@@ -1,6 +1,6 @@
 require "Moveables/ISMoveableSpriteProps"
 
-local GarageLengthPolicy = require "LMION/Domain/GarageLengthPolicy"
+local GarageWidthPolicy = require "LMION/Domain/GarageWidthPolicy"
 local GarageParcelLookup = require "LMION/Services/Moveables/Garage/ParcelLookup"
 local GarageProfiles = require "LMION/Services/Moveables/Garage/Profiles"
 local SingleTileDoorPlacementFinalizer = require "LMION/Services/Moveables/SingleTileDoor/PlacementFinalizer"
@@ -15,7 +15,7 @@ local function collectAvailableParcels(character, profile)
     }
 end
 
-local function getMaximumLength(parts)
+local function getMaximumWidth(parts)
     if parts == nil
         or #parts.START < 1
         or #parts.END < 1 then
@@ -23,7 +23,7 @@ local function getMaximumLength(parts)
     end
 
     local maximum = 2 + #parts.MIDDLE
-    local policyMaximum = GarageLengthPolicy.getMaximumLength()
+    local policyMaximum = GarageWidthPolicy.getMaximumWidth()
 
     if policyMaximum ~= nil then
         maximum = math.min(maximum, policyMaximum)
@@ -32,24 +32,24 @@ local function getMaximumLength(parts)
     return maximum
 end
 
-function GaragePlacement.getMaximumAvailableLength(character, definitionId)
+function GaragePlacement.getMaximumAvailableWidth(character, definitionId)
     local profile = GarageProfiles.getByDefinitionId(definitionId)
     if profile == nil then
         return nil
     end
 
-    return getMaximumLength(collectAvailableParcels(character, profile))
+    return getMaximumWidth(collectAvailableParcels(character, profile))
 end
 
 function GaragePlacement.buildPlan(
     character,
     definitionId,
-    length,
+    width,
     facing,
     startSquare
 )
     local profile = GarageProfiles.getByDefinitionId(definitionId)
-    length = tonumber(length)
+    width = tonumber(width)
 
     if profile == nil
         or startSquare == nil
@@ -58,19 +58,19 @@ function GaragePlacement.buildPlan(
     end
 
     local parts = collectAvailableParcels(character, profile)
-    local maximum = getMaximumLength(parts)
+    local maximum = getMaximumWidth(parts)
 
     if maximum == nil
-        or length == nil
-        or length ~= math.floor(length)
-        or length < 2
-        or length > maximum
-        or not GarageLengthPolicy.isLengthAllowed(length) then
+        or width == nil
+        or width ~= math.floor(width)
+        or width < 2
+        or width > maximum
+        or not GarageWidthPolicy.isWidthAllowed(width) then
         return nil
     end
 
     local plan = {
-        length = length,
+        width = width,
         definitionId = definitionId,
         facing = facing,
         profile = profile,
@@ -78,14 +78,14 @@ function GaragePlacement.buildPlan(
 
     local middleIndex = 1
 
-    for position = 1, length do
+    for position = 1, width do
         local role = nil
         local parcel = nil
 
         if position == 1 then
             role = "START"
             parcel = parts.START[1]
-        elseif position == length then
+        elseif position == width then
             role = "END"
             parcel = parts.END[1]
         else
@@ -149,7 +149,7 @@ function GaragePlacement.validate(character, plan)
         return false
     end
 
-    for index = 1, plan.length do
+    for index = 1, plan.width do
         local entry = plan[index]
         local moveProps = getMoveProps(entry)
 
@@ -215,7 +215,7 @@ function GaragePlacement.place(character, plan)
 
     local placed = {}
 
-    for index = 1, plan.length do
+    for index = 1, plan.width do
         local entry = plan[index]
         local moveProps = getMoveProps(entry)
         local rawObject = moveProps and moveProps:placeMoveableInternal(
@@ -245,7 +245,7 @@ function GaragePlacement.place(character, plan)
         placed[index] = finalObject
     end
 
-    for index = 1, plan.length do
+    for index = 1, plan.width do
         if not consumeParcel(plan[index]) then
             print("[LMION:DEV] Garage parcel consumption failed after completed placement")
         end

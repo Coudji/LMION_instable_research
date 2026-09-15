@@ -3,11 +3,11 @@ require "Entity/ISUI/BuildRecipe/ISWidgetBuildControl"
 require "Entity/ISUI/CraftRecipe/ISWidgetInput"
 require "Entity/ISUI/BuildRecipe/ISBuildPanel"
 require "Entity/ISUI/Controls/ISWidgetTitleHeader"
-require "LMION/UI/Build/GarageLengthSelector"
+require "LMION/UI/Build/GarageWidthSelector"
 
 local GarageBuild = require "LMION/Services/Build/Garage/Build"
 local GarageRequirements = require "LMION/Services/Build/Garage/Requirements"
-local GarageLengthState = require "LMION/Services/Build/Garage/LengthState"
+local GarageWidthState = require "LMION/Services/Build/Garage/WidthState"
 
 local function getGarageContext(logic)
     local profile = GarageBuild.getProfileFromLogic(logic)
@@ -15,7 +15,7 @@ local function getGarageContext(logic)
         return nil, nil
     end
 
-    return profile, GarageLengthState.ensureLengthOnLogic(logic)
+    return profile, GarageWidthState.ensureWidthOnLogic(logic)
 end
 
 local function getContainers(logic)
@@ -33,11 +33,11 @@ ISBuildRecipePanel.createDynamicChildren = function(self)
 
     local profile = getGarageContext(self.logic)
     if profile == nil or self.rootTable == nil then
-        self.lmionGarageLengthSelector = nil
+        self.lmionGarageWidthSelector = nil
         return
     end
 
-    local selector = LMIONGarageLengthSelector:new(
+    local selector = LMIONGarageWidthSelector:new(
         self.player,
         self.logic,
         self
@@ -45,7 +45,7 @@ ISBuildRecipePanel.createDynamicChildren = function(self)
     selector:initialise()
     selector:instantiate()
 
-    self.lmionGarageLengthSelector = selector
+    self.lmionGarageWidthSelector = selector
     self.rootTable:setElement(0, 1, selector)
     self:xuiRecalculateLayout()
 end
@@ -69,7 +69,7 @@ local previousInputUpdateValues = ISWidgetInput.updateValues
 ISWidgetInput.updateValues = function(self)
     previousInputUpdateValues(self)
 
-    local profile, length = getGarageContext(self.logic)
+    local profile, width = getGarageContext(self.logic)
     if profile == nil
         or self.primary == nil
         or self.primary.label == nil then
@@ -79,7 +79,7 @@ ISWidgetInput.updateValues = function(self)
     local fullType = getInputFullType(self)
     local requirement, key = GarageRequirements.getRequirement(
         profile,
-        length,
+        width,
         fullType
     )
 
@@ -129,7 +129,7 @@ local previousTitleUpdateLabels = ISWidgetTitleHeader.updateLabels
 ISWidgetTitleHeader.updateLabels = function(self)
     previousTitleUpdateLabels(self)
 
-    local profile, length = getGarageContext(self.logic)
+    local profile, width = getGarageContext(self.logic)
     if profile == nil
         or self.errorLabel == nil
         or self.player:isBuildCheat() then
@@ -139,10 +139,10 @@ ISWidgetTitleHeader.updateLabels = function(self)
     local hasRequirements = GarageRequirements.hasRequirements(
         self.player,
         profile,
-        length,
+        width,
         getContainers(self.logic)
     )
-    local hasSelectedBars = GarageLengthState.hasSelectedBars(self.logic, length)
+    local hasSelectedBars = GarageWidthState.hasSelectedBars(self.logic, width)
 
     if not hasRequirements or not hasSelectedBars then
         local text = getText("IGUI_CraftingWindow_Error_NotAvailable")
@@ -159,7 +159,7 @@ local previousBuildControlPrerender = ISWidgetBuildControl.prerender
 ISWidgetBuildControl.prerender = function(self)
     previousBuildControlPrerender(self)
 
-    local profile, length = getGarageContext(self.logic)
+    local profile, width = getGarageContext(self.logic)
     if profile == nil
         or self.buttonCraft == nil
         or self.player:isBuildCheat() then
@@ -170,25 +170,25 @@ ISWidgetBuildControl.prerender = function(self)
         and GarageRequirements.hasRequirements(
             self.player,
             profile,
-            length,
+            width,
             getContainers(self.logic)
         )
-        and GarageLengthState.hasSelectedBars(self.logic, length)
+        and GarageWidthState.hasSelectedBars(self.logic, width)
 end
 
 local previousCreateBuildIsoEntity = ISBuildPanel.createBuildIsoEntity
 
 ISBuildPanel.createBuildIsoEntity = function(self, dontSetDrag)
-    local profile, length = getGarageContext(self.logic)
+    local profile, width = getGarageContext(self.logic)
 
-    if profile ~= nil and self._lmionGarageRepeatLength ~= nil then
-        length = GarageBuild.normalizeLength(self._lmionGarageRepeatLength)
+    if profile ~= nil and self._lmionGarageRepeatWidth ~= nil then
+        width = GarageBuild.normalizeWidth(self._lmionGarageRepeatWidth)
     end
 
     local result = previousCreateBuildIsoEntity(self, dontSetDrag)
 
     if profile ~= nil and self.buildEntity ~= nil then
-        self.buildEntity.lmionGarageLength = length
+        self.buildEntity.lmionGarageWidth = width
         self.buildEntity.lmionGarageDefinitionId = profile.definitionId
 
         if not self.player:isBuildCheat() then
@@ -196,10 +196,10 @@ ISBuildPanel.createBuildIsoEntity = function(self, dontSetDrag)
                 or not GarageRequirements.hasRequirements(
                     self.player,
                     profile,
-                    length,
+                    width,
                     getContainers(self.logic)
                 )
-                or not GarageLengthState.hasSelectedBars(self.logic, length)
+                or not GarageWidthState.hasSelectedBars(self.logic, width)
         end
     end
 
@@ -209,23 +209,23 @@ end
 local previousOnStopCraft = ISBuildPanel.onStopCraft
 
 ISBuildPanel.onStopCraft = function(self)
-    local profile, length = getGarageContext(self.logic)
+    local profile, width = getGarageContext(self.logic)
     if profile == nil then
         return previousOnStopCraft(self)
     end
 
-    self._lmionGarageRepeatLength = length
+    self._lmionGarageRepeatWidth = width
     local ok, result = pcall(previousOnStopCraft, self)
-    self._lmionGarageRepeatLength = nil
+    self._lmionGarageRepeatWidth = nil
 
-    GarageLengthState.setLengthOnLogic(self.logic, length)
+    GarageWidthState.setWidthOnLogic(self.logic, width)
 
     if self.buildEntity ~= nil then
-        self.buildEntity.lmionGarageLength = length
+        self.buildEntity.lmionGarageWidth = width
     end
 
     local selector = self.craftRecipePanel
-        and self.craftRecipePanel.lmionGarageLengthSelector
+        and self.craftRecipePanel.lmionGarageWidthSelector
         or nil
 
     if selector ~= nil then

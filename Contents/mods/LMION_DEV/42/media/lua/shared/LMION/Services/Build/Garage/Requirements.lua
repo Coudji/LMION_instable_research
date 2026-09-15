@@ -65,13 +65,13 @@ local function isGlazed(profile)
     return false
 end
 
-function GarageRequirements.getRequirements(profile, length)
+function GarageRequirements.getRequirements(profile, width)
     if profile == nil then
         return nil
     end
 
-    length = GarageBuild.normalizeLength(length)
-    local steps = math.ceil(length / 3)
+    width = GarageBuild.normalizeWidth(width)
+    local steps = math.ceil(width / 3)
 
     local requirements = {
         BlowTorch = {
@@ -79,10 +79,10 @@ function GarageRequirements.getRequirements(profile, length)
             uses = true,
         },
         Bars = {
-            amount = length,
+            amount = width,
         },
         Hinge = {
-            amount = length * 2,
+            amount = width * 2,
         },
         WeldingRods = {
             amount = math.min(steps * 2, 20),
@@ -92,14 +92,14 @@ function GarageRequirements.getRequirements(profile, length)
 
     if isGlazed(profile) then
         requirements.SmallSheetMetal = {
-            amount = length * 2,
+            amount = width * 2,
         }
         requirements.GlassPanel = {
-            amount = length,
+            amount = width,
         }
     else
         requirements.SmallSheetMetal = {
-            amount = length * 3,
+            amount = width * 3,
         }
     end
 
@@ -200,8 +200,8 @@ local function getAvailableAmount(stock, key, uses)
     return uses and entry.uses or entry.count
 end
 
-function GarageRequirements.hasRequirements(character, profile, length, containers)
-    local requirements = GarageRequirements.getRequirements(profile, length)
+function GarageRequirements.hasRequirements(character, profile, width, containers)
+    local requirements = GarageRequirements.getRequirements(profile, width)
     if requirements == nil then
         return true
     end
@@ -222,9 +222,9 @@ function GarageRequirements.getAvailable(character, key, uses, containers)
     return getAvailableAmount(stock, key, uses)
 end
 
-function GarageRequirements.getRequirement(profile, length, fullType)
+function GarageRequirements.getRequirement(profile, width, fullType)
     local key = TYPE_TO_KEY[fullType]
-    local requirements = GarageRequirements.getRequirements(profile, length)
+    local requirements = GarageRequirements.getRequirements(profile, width)
 
     if key == nil or requirements == nil then
         return nil, key
@@ -280,11 +280,11 @@ end
 function GarageRequirements.consumeExtras(
     character,
     profile,
-    length,
+    width,
     containers,
     vanillaBarCount
 )
-    local requirements = GarageRequirements.getRequirements(profile, length)
+    local requirements = GarageRequirements.getRequirements(profile, width)
     if requirements == nil then
         return true
     end
@@ -301,7 +301,7 @@ function GarageRequirements.consumeExtras(
         if key == "Bars" then
             amount = math.max(
                 0,
-                length - math.max(0, tonumber(vanillaBarCount) or 0)
+                width - math.max(0, tonumber(vanillaBarCount) or 0)
             )
         else
             amount = math.max(

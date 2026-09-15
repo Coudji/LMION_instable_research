@@ -1,6 +1,6 @@
 local GarageBuild = require "LMION/Services/Build/Garage/Build"
 local GarageRequirements = require "LMION/Services/Build/Garage/Requirements"
-local GarageLengthState = require "LMION/Services/Build/Garage/LengthState"
+local GarageWidthState = require "LMION/Services/Build/Garage/WidthState"
 local SingleTileDoorFinalizer = require "LMION/Services/Build/SingleTileDoor/Finalizer"
 
 local GarageFinalizer = {}
@@ -14,15 +14,15 @@ local function getContainers(buildObject)
     return buildObject and buildObject.containers or nil
 end
 
-local function getLength(buildObject)
-    local selected = buildObject and buildObject.lmionGarageLength or nil
+local function getWidth(buildObject)
+    local selected = buildObject and buildObject.lmionGarageWidth or nil
     if selected ~= nil then
-        return GarageBuild.normalizeLength(tonumber(selected))
+        return GarageBuild.normalizeWidth(tonumber(selected))
     end
 
     local logic = buildObject and buildObject.buildPanelLogic or nil
-    return GarageBuild.normalizeLength(
-        GarageLengthState.getLengthFromLogic(logic)
+    return GarageBuild.normalizeWidth(
+        GarageWidthState.getWidthFromLogic(logic)
     )
 end
 
@@ -49,7 +49,7 @@ function GarageFinalizer.beforeSetInfo(buildObject, profile)
     if not GarageRequirements.consumeExtras(
         buildObject.character,
         profile,
-        getLength(buildObject),
+        getWidth(buildObject),
         getContainers(buildObject),
         getVanillaBarCount(buildObject)
     ) then

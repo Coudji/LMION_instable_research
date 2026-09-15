@@ -4,7 +4,7 @@ local DoorPlacement = require "LMION/Runtime/DoorPlacement"
 local GarageBuild = require "LMION/Services/Build/Garage/Build"
 local GarageFaceProxy = require "LMION/Services/Build/Garage/FaceProxy"
 local GarageRequirements = require "LMION/Services/Build/Garage/Requirements"
-local GarageLengthState = require "LMION/Services/Build/Garage/LengthState"
+local GarageWidthState = require "LMION/Services/Build/Garage/WidthState"
 
 local function getProfile(buildObject)
     if buildObject == nil or buildObject.objectInfo == nil then
@@ -14,15 +14,15 @@ local function getProfile(buildObject)
     return GarageBuild.getProfileFromObjectInfo(buildObject.objectInfo)
 end
 
-local function getLength(buildObject)
-    local selected = buildObject and buildObject.lmionGarageLength or nil
+local function getWidth(buildObject)
+    local selected = buildObject and buildObject.lmionGarageWidth or nil
     if selected ~= nil then
-        return GarageBuild.normalizeLength(tonumber(selected))
+        return GarageBuild.normalizeWidth(tonumber(selected))
     end
 
     local logic = buildObject and buildObject.buildPanelLogic or nil
-    return GarageBuild.normalizeLength(
-        GarageLengthState.getLengthFromLogic(logic)
+    return GarageBuild.normalizeWidth(
+        GarageWidthState.getWidthFromLogic(logic)
     )
 end
 
@@ -61,7 +61,7 @@ if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
         nSprite,
         containersArg,
         logic,
-        lmionGarageLength
+        lmionGarageWidth
     )
         local buildObject = previousNew(
             self,
@@ -74,10 +74,10 @@ if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
 
         local profile = GarageBuild.getProfileFromObjectInfo(objectInfo)
         if profile ~= nil then
-            buildObject.lmionGarageLength = GarageBuild.normalizeLength(
-                lmionGarageLength
-                    or (logic and GarageLengthState.getLengthFromLogic(logic))
-                    or GarageBuild.DefaultLength
+            buildObject.lmionGarageWidth = GarageBuild.normalizeWidth(
+                lmionGarageWidth
+                    or (logic and GarageWidthState.getWidthFromLogic(logic))
+                    or GarageBuild.DefaultWidth
             )
         end
 
@@ -90,12 +90,12 @@ if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
             return face
         end
 
-        local length = getLength(self)
+        local width = getWidth(self)
         if self._lmionGarageFaceSource ~= face
-            or self._lmionGarageFaceLength ~= length then
+            or self._lmionGarageFaceWidth ~= width then
             self._lmionGarageFaceSource = face
-            self._lmionGarageFaceLength = length
-            self._lmionGarageFaceProxy = GarageFaceProxy.create(face, length)
+            self._lmionGarageFaceWidth = width
+            self._lmionGarageFaceProxy = GarageFaceProxy.create(face, width)
         end
 
         return self._lmionGarageFaceProxy
@@ -115,7 +115,7 @@ if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
         return GarageRequirements.hasRequirements(
             self.character,
             profile,
-            getLength(self),
+            getWidth(self),
             getContainers(self)
         )
     end
@@ -146,7 +146,7 @@ if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
             and not GarageRequirements.hasRequirements(
                 self.character,
                 profile,
-                getLength(self),
+                getWidth(self),
                 getContainers(self)
             ) then
             return false
@@ -156,5 +156,5 @@ if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
         return previousCreate(self, x, y, z, north, sprite)
     end
 
-    print("[LMION:DEV] variable Garage Build cursor hook installed")
+    print("[LMION:DEV] variable-width Garage Build cursor hook installed")
 end

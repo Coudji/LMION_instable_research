@@ -14,7 +14,7 @@ local function getPlacementMoveProps(definitionId, facing)
     if moveProps ~= nil then
         -- The dedicated variable-width cursor owns the complete Garage plan.
         -- ISMoveablesAction only needs one physical member here for its normal
-        -- tool/sound/duration context, never the synthetic L3 SpriteGrid.
+        -- tool/sound/duration context, never the synthetic width-3 SpriteGrid.
         moveProps.isMultiSprite = false
     end
 
@@ -34,7 +34,7 @@ function LMIONGaragePlacementAction:isValid()
     local plan = GaragePlacement.buildPlan(
         self.character,
         self.definitionId,
-        self.length,
+        self.width,
         self.facing,
         self.square
     )
@@ -44,7 +44,7 @@ function LMIONGaragePlacementAction:isValid()
 
     if not ISMoveableDefinitions.cheat and not self.character:isMovablesCheat() then
         local adjacent = false
-        for position = 1, plan.length do
+        for position = 1, plan.width do
             local targetSquare = plan[position].square
             if targetSquare == playerSquare or playerSquare:isAdjacentTo(targetSquare) then
                 adjacent = true
@@ -70,7 +70,7 @@ function LMIONGaragePlacementAction:complete()
     local plan = GaragePlacement.buildPlan(
         self.character,
         self.definitionId,
-        self.length,
+        self.width,
         self.facing,
         self.square
     )
@@ -84,7 +84,7 @@ function LMIONGaragePlacementAction:complete()
     end
 
     if buildUtil ~= nil and buildUtil.setHaveConstruction ~= nil then
-        for position = 1, plan.length do
+        for position = 1, plan.width do
             buildUtil.setHaveConstruction(plan[position].square, true)
         end
     end
@@ -92,12 +92,12 @@ function LMIONGaragePlacementAction:complete()
     return true
 end
 
-function LMIONGaragePlacementAction:new(character, square, definitionId, length, facing)
+function LMIONGaragePlacementAction:new(character, square, definitionId, width, facing)
     local o = ISBaseTimedAction.new(self, character)
     o.playerNum = character:getPlayerNum()
     o.square = square
     o.definitionId = definitionId
-    o.length = length
+    o.width = width
     o.facing = facing
     o.mode = "place"
 
@@ -131,26 +131,26 @@ function LMIONGaragePlacementCursor:getPlan(square)
     return GaragePlacement.buildPlan(
         self.character,
         self.definitionId,
-        self.selectedLength,
+        self.selectedWidth,
         self.facing,
         square
     )
 end
 
-function LMIONGaragePlacementCursor:getMaximumLength()
-    return GaragePlacement.getMaximumAvailableLength(
+function LMIONGaragePlacementCursor:getMaximumWidth()
+    return GaragePlacement.getMaximumAvailableWidth(
         self.character,
         self.definitionId
     )
 end
 
 function LMIONGaragePlacementCursor:isValid(square)
-    local maximum = self:getMaximumLength()
+    local maximum = self:getMaximumWidth()
     if maximum == nil then
         return false
     end
 
-    self.selectedLength = math.max(2, math.min(self.selectedLength, maximum))
+    self.selectedWidth = math.max(2, math.min(self.selectedWidth, maximum))
     local plan = self:getPlan(square)
     return plan ~= nil and GaragePlacement.validate(self.character, plan)
 end
@@ -182,7 +182,7 @@ function LMIONGaragePlacementCursor:render(x, y, z, square)
     local g = valid and 1.0 or 0.0
     local b = valid and 0.5 or 0.0
 
-    for position = 1, plan.length do
+    for position = 1, plan.width do
         local entry = plan[position]
         floorGhost(entry.square)
 
@@ -211,20 +211,20 @@ function LMIONGaragePlacementCursor:rotateKey(key)
     local increaseKey = widthKey("GarageWidthIncrease", Keyboard.KEY_ADD)
 
     if key == decreaseKey then
-        local previous = self.selectedLength
-        self.selectedLength = math.max(2, self.selectedLength - 1)
-        if previous ~= self.selectedLength then
+        local previous = self.selectedWidth
+        self.selectedWidth = math.max(2, self.selectedWidth - 1)
+        if previous ~= self.selectedWidth then
             getSoundManager():playUISound("UIObjectMenuObjectRotateOutline")
         end
         return
     end
 
     if key == increaseKey then
-        local maximum = self:getMaximumLength()
+        local maximum = self:getMaximumWidth()
         if maximum ~= nil then
-            local previous = self.selectedLength
-            self.selectedLength = math.min(maximum, self.selectedLength + 1)
-            if previous ~= self.selectedLength then
+            local previous = self.selectedWidth
+            self.selectedWidth = math.min(maximum, self.selectedWidth + 1)
+            if previous ~= self.selectedWidth then
                 getSoundManager():playUISound("UIObjectMenuObjectRotateOutline")
             end
         end
@@ -261,7 +261,7 @@ function LMIONGaragePlacementCursor:create(x, y, z, north, sprite)
                 self.character,
                 square,
                 self.definitionId,
-                self.selectedLength,
+                self.selectedWidth,
                 self.facing
             )
         )
@@ -275,7 +275,7 @@ function LMIONGaragePlacementCursor:new(character, definitionId, facing)
     o.player = character:getPlayerNum()
     o.definitionId = definitionId
     o.facing = facing == "W" and "W" or "N"
-    o.selectedLength = GaragePlacement.getMaximumAvailableLength(
+    o.selectedWidth = GaragePlacement.getMaximumAvailableWidth(
         character,
         definitionId
     ) or 2
@@ -302,7 +302,7 @@ function LMIONOpenGaragePlacementCursor(item, character)
         facing = segment.facing
     end
 
-    if GaragePlacement.getMaximumAvailableLength(character, definitionId) == nil then
+    if GaragePlacement.getMaximumAvailableWidth(character, definitionId) == nil then
         return false
     end
 

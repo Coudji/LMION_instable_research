@@ -2,29 +2,29 @@ local GarageBuild = require "LMION/Services/Build/Garage/Build"
 
 local GarageFaceProxy = {}
 
-function GarageFaceProxy.create(face, length)
+function GarageFaceProxy.create(face, garageWidth)
     if face == nil then
         return nil
     end
 
-    length = GarageBuild.normalizeLength(length)
+    garageWidth = GarageBuild.normalizeWidth(garageWidth)
 
-    local width = face:getWidth()
-    local height = face:getHeight()
-    local horizontal = width > 1
+    local sourceWidth = face:getWidth()
+    local sourceHeight = face:getHeight()
+    local horizontal = sourceWidth > 1
 
-    if not horizontal and height <= 1 then
+    if not horizontal and sourceHeight <= 1 then
         return face
     end
 
     local function mapCoordinates(x, y)
         local axis = horizontal and x or y
-        local sourceSize = horizontal and width or height
+        local sourceSize = horizontal and sourceWidth or sourceHeight
         local mappedAxis = nil
 
         if axis <= 0 then
             mappedAxis = 0
-        elseif axis >= length - 1 then
+        elseif axis >= garageWidth - 1 then
             mappedAxis = sourceSize - 1
         else
             mappedAxis = math.min(1, sourceSize - 1)
@@ -44,11 +44,11 @@ function GarageFaceProxy.create(face, length)
     end
 
     function proxy:getWidth()
-        return horizontal and length or width
+        return horizontal and garageWidth or sourceWidth
     end
 
     function proxy:getHeight()
-        return horizontal and height or length
+        return horizontal and sourceHeight or garageWidth
     end
 
     function proxy:getzLayers()

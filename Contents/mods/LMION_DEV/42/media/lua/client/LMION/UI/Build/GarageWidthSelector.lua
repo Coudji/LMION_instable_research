@@ -3,25 +3,25 @@ require "ISUI/ISLabel"
 require "ISUI/ISButton"
 
 local GarageBuild = require "LMION/Services/Build/Garage/Build"
-local GarageLengthState = require "LMION/Services/Build/Garage/LengthState"
-local GarageLengthPolicy = require "LMION/Domain/GarageLengthPolicy"
+local GarageWidthState = require "LMION/Services/Build/Garage/WidthState"
+local GarageWidthPolicy = require "LMION/Domain/GarageWidthPolicy"
 
 local CONTROL_HEIGHT = getTextManager():getFontHeight(UIFont.Small) + 8
 
-LMIONGarageLengthSelector = ISPanel:derive("LMIONGarageLengthSelector")
+LMIONGarageWidthSelector = ISPanel:derive("LMIONGarageWidthSelector")
 
-function LMIONGarageLengthSelector:initialise()
+function LMIONGarageWidthSelector:initialise()
     ISPanel.initialise(self)
 end
 
-function LMIONGarageLengthSelector:createChildren()
+function LMIONGarageWidthSelector:createChildren()
     ISPanel.createChildren(self)
 
     self.label = ISLabel:new(
         0,
         0,
         CONTROL_HEIGHT,
-        getText("IGUI_LMION_GarageBuild_Length"),
+        getText("IGUI_LMION_GarageBuild_Width"),
         1,
         1,
         1,
@@ -40,7 +40,7 @@ function LMIONGarageLengthSelector:createChildren()
         CONTROL_HEIGHT,
         "-",
         self,
-        LMIONGarageLengthSelector.onClick
+        LMIONGarageWidthSelector.onClick
     )
     self.less:initialise()
     self.less:instantiate()
@@ -50,7 +50,7 @@ function LMIONGarageLengthSelector:createChildren()
         0,
         0,
         CONTROL_HEIGHT,
-        tostring(GarageBuild.DefaultLength),
+        tostring(GarageBuild.DefaultWidth),
         1,
         1,
         1,
@@ -69,7 +69,7 @@ function LMIONGarageLengthSelector:createChildren()
         CONTROL_HEIGHT,
         "+",
         self,
-        LMIONGarageLengthSelector.onClick
+        LMIONGarageWidthSelector.onClick
     )
     self.more:initialise()
     self.more:instantiate()
@@ -78,17 +78,17 @@ function LMIONGarageLengthSelector:createChildren()
     self:updateState()
 end
 
-function LMIONGarageLengthSelector:updateState()
-    local length = GarageLengthState.getLengthFromLogic(self.logic)
-    local maximum = GarageLengthPolicy.getMaximumLength()
+function LMIONGarageWidthSelector:updateState()
+    local width = GarageWidthState.getWidthFromLogic(self.logic)
+    local maximum = GarageWidthPolicy.getMaximumWidth()
 
-    self.value:setName(tostring(length))
-    self.less.enable = length > GarageBuild.MinLength
-    self.more.enable = maximum == nil or length < maximum
+    self.value:setName(tostring(width))
+    self.less.enable = width > GarageBuild.MinWidth
+    self.more.enable = maximum == nil or width < maximum
 end
 
-function LMIONGarageLengthSelector:setLength(length)
-    if GarageLengthState.setLengthOnLogic(self.logic, length) == nil then
+function LMIONGarageWidthSelector:setGarageWidth(width)
+    if GarageWidthState.setWidthOnLogic(self.logic, width) == nil then
         return
     end
 
@@ -99,16 +99,16 @@ function LMIONGarageLengthSelector:setLength(length)
     end
 end
 
-function LMIONGarageLengthSelector:onClick(button)
-    local length = GarageLengthState.getLengthFromLogic(self.logic)
+function LMIONGarageWidthSelector:onClick(button)
+    local width = GarageWidthState.getWidthFromLogic(self.logic)
     local delta = button == self.less and -1 or 1
 
-    self:setLength(length + delta)
+    self:setGarageWidth(width + delta)
 end
 
-function LMIONGarageLengthSelector:calculateLayout(width, height)
-    width = math.max(width or 0, 180)
-    height = math.max(height or 0, CONTROL_HEIGHT + 16)
+function LMIONGarageWidthSelector:calculateLayout(panelWidth, panelHeight)
+    panelWidth = math.max(panelWidth or 0, 180)
+    panelHeight = math.max(panelHeight or 0, CONTROL_HEIGHT + 16)
 
     local x = 8
     local y = 8
@@ -128,11 +128,11 @@ function LMIONGarageLengthSelector:calculateLayout(width, height)
     self.more:setX(x)
     self.more:setY(y)
 
-    self:setWidth(width)
-    self:setHeight(height)
+    self:setWidth(panelWidth)
+    self:setHeight(panelHeight)
 end
 
-function LMIONGarageLengthSelector:new(player, logic, panel)
+function LMIONGarageWidthSelector:new(player, logic, panel)
     local o = ISPanel:new(0, 0, 180, CONTROL_HEIGHT + 16)
     setmetatable(o, self)
     self.__index = self
@@ -145,4 +145,4 @@ function LMIONGarageLengthSelector:new(player, logic, panel)
     return o
 end
 
-return LMIONGarageLengthSelector
+return LMIONGarageWidthSelector

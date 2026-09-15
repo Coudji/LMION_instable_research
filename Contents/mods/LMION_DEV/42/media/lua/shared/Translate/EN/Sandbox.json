@@ -1,7 +1,7 @@
 {
     "Sandbox_LMION": "Let Me In... Or Not",
-    "Sandbox_LMION_GarageMaxLength": "Maximum garage door length",
-    "Sandbox_LMION_GarageMaxLength_tooltip": "Maximum garage door length players may place or build. Vanilla garages observed by LMION are at most 6 tiles long; values up to 12 are available for custom servers and maps.",
-    "Sandbox_LMION_UnlimitedGarageWidth": "Allow unlimited garage door length",
-    "Sandbox_LMION_UnlimitedGarageWidth_tooltip": "Removes LMION's configured garage length cap. The actual Project Zomboid engine limit is not defined by LMION."
+    "Sandbox_LMION_GarageMaxWidth": "Maximum garage door width",
+    "Sandbox_LMION_GarageMaxWidth_tooltip": "Maximum garage door width players may place or build. Vanilla garages observed by LMION are at most 6 tiles wide; values up to 12 are available for custom servers and maps.",
+    "Sandbox_LMION_UnlimitedGarageWidth": "Allow unlimited garage door width",
+    "Sandbox_LMION_UnlimitedGarageWidth_tooltip": "Removes LMION's configured garage width cap. The actual Project Zomboid engine limit is not defined by LMION."
 }
