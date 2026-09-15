@@ -69,6 +69,7 @@ function SingleTileDoorMoveProps.applyProfile(moveProps, sprite)
     moveProps.rawWeight = profile.rawWeight
     moveProps.weight = profile.weight
     moveProps.canBreak = false
+    moveProps.lmionDefinitionId = profile.definitionId
     moveProps.lmionSingleTileDoorProfile = profile
     moveProps.lmionSingleTileDoorFacing = SingleTileDoorMoveProps.getFacing(moveProps, profile, sprite)
 
