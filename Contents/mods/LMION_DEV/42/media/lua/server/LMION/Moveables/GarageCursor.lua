@@ -12,9 +12,6 @@ local function getPlacementMoveProps(definitionId, facing)
     local moveProps = spriteName and ISMoveableSpriteProps.new(spriteName) or nil
 
     if moveProps ~= nil then
-        -- The dedicated variable-width cursor owns the complete Garage plan.
-        -- ISMoveablesAction only needs one physical member here for its normal
-        -- tool/sound/duration context, never the synthetic width-3 SpriteGrid.
         moveProps.isMultiSprite = false
     end
 
@@ -100,15 +97,9 @@ function LMIONGaragePlacementAction:new(character, square, definitionId, width, 
     o.width = width
     o.facing = facing
     o.mode = "place"
-
-    -- ISMoveablesAction.start()/setActionSound() expects the normal Moveables
-    -- context to exist even though LMION owns the actual multi-member placement.
-    -- Legacy supplied these fields too; omitting them caused getSoundFromTool to
-    -- be indexed through a nil moveProps after an otherwise-successful placement.
     o.moveProps = getPlacementMoveProps(definitionId, facing)
     o.origMoveProps = o.moveProps
     o.origSpriteName = o.moveProps and o.moveProps.spriteName or nil
-
     o.maxTime = o:getDuration()
     return o
 end
@@ -123,7 +114,6 @@ local function widthKey(optionId, fallback)
             return option:getValue()
         end
     end
-
     return fallback
 end
 
@@ -160,13 +150,8 @@ local function floorGhost(square)
     local sprite = floor and floor:getSprite() or nil
     if sprite ~= nil then
         sprite:RenderGhostTileColor(
-            square:getX(),
-            square:getY(),
-            square:getZ(),
-            0.75,
-            1,
-            0.75,
-            0.25
+            square:getX(), square:getY(), square:getZ(),
+            0.75, 1, 0.75, 0.25
         )
     end
 end
@@ -189,15 +174,8 @@ function LMIONGaragePlacementCursor:render(x, y, z, square)
         local sprite = getSprite(entry.spriteName)
         if sprite ~= nil then
             sprite:RenderGhostTileColor(
-                entry.square:getX(),
-                entry.square:getY(),
-                entry.square:getZ(),
-                0,
-                0,
-                r,
-                g,
-                b,
-                0.8
+                entry.square:getX(), entry.square:getY(), entry.square:getZ(),
+                0, 0, r, g, b, 0.8
             )
         end
     end
@@ -281,6 +259,8 @@ function LMIONGaragePlacementCursor:new(character, definitionId, facing)
     ) or 2
     o:setDragNilAfterPlace(true)
     o.noNeedHammer = true
+    o.skipBuildAction = true
+    o.skipWalk2 = true
     return o
 end
 
