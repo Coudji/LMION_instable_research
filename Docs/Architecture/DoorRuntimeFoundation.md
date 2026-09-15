@@ -1,113 +1,78 @@
 # Door runtime foundation
 
-This layer sits between LMION definitions and the narrow Project Zomboid integration hooks. Shared door rules stay outside Pickup/Build-specific wrappers.
+This layer sits between LMION definitions and narrow Project Zomboid integration hooks. Shared rules live outside Build/Moveables-specific wrappers.
 
 ## Canonical world representation
 
 Every LMION-managed final opening is an `IsoDoor`.
 
-`PZ/DoorObject.lua` reads source door representations (`IsoDoor` or external/vanilla `IsoThumpable(isDoor)`) and preserves meaningful facing data.
+`PZ/DoorObject.lua` recognizes source `IsoDoor` and compatible external/vanilla `IsoThumpable(isDoor)` representations. `Runtime/CanonicalDoor.lua` converges LMION-owned results to the canonical `IsoDoor` representation.
 
-`Runtime/CanonicalDoor.lua` converges an LMION-owned source to `IsoDoor`. Build may use a fresh-state path; pickup/replacement restores transported state.
-
-## Durability/state
-
-`Runtime/DoorDurability.lua` owns logical health/max-health access and the `lmionDoorMaxHealth` compatibility key.
-
-`Runtime/DoorState.lua` owns normalized capture/restore semantics.
-
-Moveables transport state remains separate from normal world-toggle state. In particular, LargeGate open/close preservation uses `DoorState` around PZ's internal recreation boundary rather than parcel transport.
+`Runtime/DoorDurability.lua` owns logical health/max-health access. `Runtime/DoorState.lua` owns normalized capture/restore semantics. Moveables transport state remains separate from normal world-toggle state.
 
 ## Neutral shared services
 
-`Services/Common` contains only knowledge that multiple gameplay subsystems genuinely share.
-
-Current shared boundaries include:
+Current shared family structure:
 
 ```text
-GarageDefinitionProfiles.lua
-LargeGateDefinitionProfiles.lua
-LargeGateMembers.lua
-SingleTileDoorPlacement.lua
+Services/Common/Garage/Profiles.lua
+Services/Common/LargeGate/Profiles.lua
+Services/Common/LargeGate/Members.lua
+Services/Common/LargeGate/PlacementSpace.lua
+Services/Common/SingleTileDoor/Placement.lua
 ```
 
-Build and Moveables consume these neutral services independently. Build does not depend on Moveables profiles merely to identify a Garage or LargeGate, and Runtime does not depend on pickup/transport services merely to understand LargeGate members.
+Build and Moveables consume these independently. Build does not import Moveables profiles to identify or validate an opening.
 
-## Frame adapters
+## Frame and edge placement
 
-`PZ/DoorFrame.lua` classifies/query frames on one square/orientation.
+`Runtime/DoorPlacement.lua` owns shared N/W edge validity.
 
-Internal classes:
-
-```text
-standard
-paired-left
-paired-right
-```
-
-`PZ/StandardDoorFrame.lua` asks only for `standard`.
-
-`PZ/PairedDoorFrame.lua` maps semantic Paired members to the matching structural frame class.
-
-These implementation details are not public definition fields.
-
-## Placement rules
-
-`Runtime/DoorPlacement.lua` owns shared world-space validity for door edges.
-
-Common checks include:
-
-```text
-square exists
-facing is N or W
-no vehicle intersection
-no door already occupies the same orientation
-```
-
-Family-specific support rules:
+Internal support consequence:
 
 ```text
 Simple    -> matching standard frame required
 Paired    -> matching paired frame member required
-FenceGate -> no frame required, target edge must be free
-Sliding   -> no frame required, target edge must be free
-LargeGate -> no frame required, every Build/placement edge must be free
-Garage    -> no frame required, every Build/placement edge must be free
+FenceGate -> no frame; edge must be free
+Sliding   -> no frame; edge must be free
+LargeGate -> no frame; closed edges must be free
+Garage    -> no frame; planned edges must be free
 ```
 
-For unframed openings, `none` means no supporting frame is required. It does not authorize overlapping an already occupied N/W edge.
+`none` means no supporting frame is required; it never means that an existing wall, fence, frame, window, door or Garage edge may be overwritten.
 
-The current blocking-edge rule rejects incompatible structures such as walls, fences/hoppable walls, standard or paired frames, windows/window frames and existing door/garage-door edges.
+`Services/Common/SingleTileDoor/Placement.lua` dispatches the correct rule for the four 1x1 semantic families.
 
-Single-tile Build and Moveables use the same neutral rule through `Services/Common/SingleTileDoorPlacement.lua`.
+## LargeGate operational placement
 
-LargeGate and Garage are multi-square and therefore apply compatible edge validation across every physical square of the planned opening.
+LargeGate placement deliberately does **not** infer a partner leaf.
 
-PZ stores barriers as N/W edges owned by specific squares. Perpendicular structures meeting at a corner are therefore not perfectly symmetric from opposite approach directions. LMION accepts that engine-native edge model and does not add an artificial corner-contact prohibition.
+Each A/B leaf is validated independently from `LargeGateTopology` and is placed closed. PZ receives the correct native sprites/logical indices and owns normal double-door grouping afterwards.
 
-## Single-tile Moveables profiles
-
-Current Moveables profile fields are derived from effective definitions rather than hard-coded in hooks.
-
-`Services/Moveables/MoveableProfileFields.lua` owns reusable Moveables-only conversion such as governing skill, Moveables tool, transport item type and package weight.
-
-`Services/Moveables/SingleTileDoor/SingleEntityProfiles.lua` owns the single-entity profiles used by:
+`Services/Common/LargeGate/PlacementSpace.lua` derives the full native 2x2 swing square from the leaf's closed/open offsets. Validation rejects:
 
 ```text
-Simple
-FenceGate
-Sliding
+solid / solid-trans / tree / vehicle obstruction in the swing square
+walls, windows, doors or other barriers cutting through the swing path
+swing overlap with any existing LMION LargeGate leaf
 ```
 
-`Services/Moveables/SingleTileDoor/PairedProfiles.lua` owns Paired-specific multi-entity/left-right profiles.
+This rule is shared by:
 
-`Services/Moveables/SingleTileDoor/Profiles.lua` resolves supported 1x1 profiles by sprite.
+```text
+server/LMION/Hooks/Build/LargeGate.lua
+Services/Moveables/LargeGate/PlacementPlan.lua
+```
 
-`Services/Moveables/SingleTileDoor/MoveProps.lua` applies the resolved profile to vanilla `ISMoveableSpriteProps` and resolves N/W faces.
+The LargeGate-vs-LargeGate protection is symmetric: a new leaf cannot prevent an existing LargeGate from opening.
+
+The protection is intentionally **not global**. Garage, FenceGate or other constructions placed later are allowed to block an existing LargeGate; that may be player error or intentional defensive construction. See `Docs/Decisions/LargeGatePlacementSpace.md`.
+
+Invalid LargeGate inventory placements remain renderable as a red ghost rather than disappearing.
 
 ## Moveables engine lifecycle
 
-`Hooks/Moveables/SingleTileDoor.lua` is the shared owner of the relevant `ISMoveableSpriteProps` wrappers:
+`Hooks/Moveables/SpriteProps.lua` owns the shared `ISMoveableSpriteProps` wrappers used across LMION door families:
 
 ```text
 new
@@ -118,124 +83,92 @@ canPlaceMoveableInternal
 placeMoveableInternal
 ```
 
-Unknown/non-LMION objects fall back to the previous vanilla implementation.
+Unknown/non-LMION objects delegate to the previous vanilla implementation.
 
-LargeGate and Garage keep family-specific transport/planning/finalization services under:
+Family-specific transport/planning/finalization remains under:
 
 ```text
+Services/Moveables/SingleTileDoor/
 Services/Moveables/LargeGate/
 Services/Moveables/Garage/
 ```
 
-The shared hook owns the vanilla boundary; family services own family behavior.
+The old LargeGate partner-state `WorldState.lua` service is gone because partner inference is no longer part of placement.
 
-## Single-tile Build lifecycle
+## Inventory placement versus toolbar placement
 
-`Services/Build/SingleTileDoor/Profile.lua` resolves supported Build definitions from GameEntity identity.
-
-`server/LMION/Hooks/Build/SingleTileDoor.lua` owns the single-tile placement validation wrappers:
+Inventory/right-click placement has its own routing boundary:
 
 ```text
-ISBuildIsoEntity.isValid
-ISBuildIsoEntity.isValidPerSquare
+client/LMION/Hooks/Moveables/InventoryPlacement.lua
 ```
 
-The hook delegates semantic placement logic to `Services/Common/SingleTileDoorPlacement.lua` and `Runtime/DoorPlacement.lua`.
-
-`server/LMION/Hooks/Build/DoorFrameRequirement.lua` separately owns the definition-to-vanilla frame boolean translation at `ISBuildIsoEntity.new`:
+Current behavior:
 
 ```text
-effective definition
--> doorType
--> internal frame requirement
--> buildObject.dontNeedFrame
+single-tile door parcel -> DoorInventoryCursor
+LargeGate parcel        -> DoorInventoryCursor
+Garage parcel           -> GarageCursor (variable width)
+unknown Moveable        -> vanilla
 ```
 
-This keeps public definitions semantic while satisfying vanilla Build behavior.
+`DoorInventoryCursor` preserves inventory placement semantics, including `R` rotation, without activating the Moveables toolbar.
 
-`server/LMION/Hooks/Build/DoorSetInfo.lua` is the centralized post-build `ISBuildIsoEntity.setInfo` owner and dispatches finalization to the appropriate family service.
+Garage inventory placement keeps its validated variable-width `+/-` behavior. Vanilla toolbar Garage placement intentionally remains the fixed L3 path.
 
-Vanilla still owns menu/cursor/timed action/base material/tool execution and initial object creation.
+`server/LMION/Hooks/Moveables/MultipartGhost.lua` owns only the multipart `ISMoveableCursor` ghost-rendering boundary for Garage pickup and LargeGate SpriteGrid previews. It is not a cursor implementation.
 
-## LargeGate Build lifecycle
+## Build lifecycle
 
-LargeGate Build-specific services are grouped under `Services/Build/LargeGate/`.
+Single-tile Build profile/finalization lives under `Services/Build/SingleTileDoor/`.
 
-`Profile.lua` resolves the build leaf profile. `BuiltPart.lua` performs the post-build world lookup needed by the LargeGate finalizer, and `Finalizer.lua` canonicalizes/configures the resulting member.
+LargeGate Build profile, built-member lookup and finalization live under `Services/Build/LargeGate/`. Supported vanilla leaf-A GameEntities are narrowed at the validated runtime lifecycle boundary by `Runtime/Build/VanillaLargeGateLeafPreparation.lua`; LMION does not statically redeclare those vanilla entities.
 
-The Build-specific `BuiltPart` lookup intentionally does not live under `PZ`: low-level PZ adapters must not depend on a higher-level gameplay workflow.
-
-## Garage Build lifecycle
-
-Garage Build services are grouped under `Services/Build/Garage/` and split by responsibility rather than accumulated in one large module.
-
-Current responsibilities include:
+Garage Build services are:
 
 ```text
-GarageBuild.lua             build/profile context and length normalization
-GarageLengthState.lua       selected length + variable input synchronization
-GarageBuildRequirements.lua resource requirements/stock/consumption
-GarageBuildFaceProxy.lua    dynamic SpriteConfig face adaptation
-GarageBuildFinalizer.lua    pre/post setInfo Garage finalization
+Services/Build/Garage/Build.lua
+Services/Build/Garage/LengthState.lua
+Services/Build/Garage/Requirements.lua
+Services/Build/Garage/FaceProxy.lua
+Services/Build/Garage/Finalizer.lua
 ```
 
-The client UI widget and its vanilla UI integration are also separate:
+The family directory already supplies context, so redundant `GarageBuild*` filename prefixes were removed.
+
+Client Garage Build UI is split between:
 
 ```text
 client/LMION/UI/Build/GarageLengthSelector.lua
-client/LMION/Hooks/Build/GarageBuildUI.lua
+client/LMION/Hooks/Build/Garage.lua
 ```
-
-## Dedicated Moveables cursors
-
-Garage and multipart cursor implementations remain in their original server realm, but they are no longer classified as hooks:
-
-```text
-server/LMION/Moveables/GarageCursor.lua
-server/LMION/Moveables/LargeGateCursor.lua
-```
-
-Their realm was deliberately not changed during the organization pass.
 
 ## LargeGate toggle lifecycle
 
-LargeGate A/B leaves are independent runtime units.
+LargeGate A/B leaves are independent runtime units. PZ recreates internal double-door members during `ToggleDoor()`, so `Runtime/LargeGateToggleState.lua` captures/restores one leaf around that transition using `Services/Common/LargeGate/Members.lua` and `LargeGateTopology`.
 
-PZ recreates internal double-door members during `ToggleDoor()`, so `Runtime/LargeGateToggleState.lua` captures/restores one leaf at a time around that transition.
+This implementation exists, but HP preservation across normal open/close must not be described as runtime-validated until the dedicated in-game toggle test is completed.
 
-Neutral member lookup comes from `Services/Common/LargeGateMembers.lua`, not from Moveables transport services.
+## Static script ownership
 
-`DoorState`, `DoorDurability`, `LargeGateMembers` and `LargeGateTopology` remain the sources of truth for state, durability, identity and geometry respectively. The toggle runtime owns timing only.
+LMION static scripts may declare LMION transport items and custom LMION entities required by the engine.
 
-## Engine scripts
+They must not redeclare an existing vanilla GameEntity. The startup failure caused by duplicate vanilla `SpriteConfig` tiles established this as an explicit rule.
 
-PZ script files contain only parse-time data the engine still needs before Lua, such as:
+For the three vanilla LargeGate bases (`DoubleDoor`, `DoubleFenceGate`, `DoubleWireGate`), static LMION files retain the LMION parcel items and custom B entity only; vanilla A remains owned by PZ and is adapted at runtime.
 
-```text
-transport item declarations
-XUI data
-CraftRecipe data
-SpriteConfig geometry
-```
+## Current validation status
 
-Definition data remains authoritative for semantic type, durability, geometry ownership and gameplay policy where V3 can safely apply it at runtime.
-
-Static scripts must not duplicate derived frame policy merely as documentation.
-
-## Validation status
-
-Validated in game across the current pilots and tested multi-square families:
+Recent in-game stabilization confirmed:
 
 ```text
-Simple standard-frame requirement
-Paired frame-member behavior
-FenceGate no-frame behavior
-Sliding no-frame behavior
-LargeGate A/B no-frame Build behavior
-Garage no-frame Build behavior
-occupied-edge rejection for unframed families
-pickup/replacement HP preservation on tested families
-canonical final IsoDoor representation
+startup with 23 defaults / 72 definitions
+Simple / Paired / FenceGate representative 1x1 behavior
+inventory placement separated from toolbar with R rotation
+LargeGate inventory replacement and visible invalid ghosts
+LargeGate full 2x2 swing-space obstruction rules
+LargeGate-vs-LargeGate swing conflict prevention
+Garage inventory variable-width path remains functional
 ```
 
-The project still distinguishes targeted validated scenarios from an exhaustive all-family/all-resource matrix. Full strict public-schema validation remains deferred until the API shape is complete.
+The project still distinguishes representative validation from an exhaustive all-definition/all-resource matrix. LargeGate normal ToggleDoor HP preservation remains specifically pending.
