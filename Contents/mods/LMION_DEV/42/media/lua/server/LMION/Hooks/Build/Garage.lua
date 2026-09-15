@@ -1,10 +1,10 @@
 require "BuildingObjects/ISBuildIsoEntity"
 
 local DoorPlacement = require "LMION/Runtime/DoorPlacement"
-local GarageBuild = require "LMION/Services/Build/Garage/GarageBuild"
-local GarageBuildFaceProxy = require "LMION/Services/Build/Garage/GarageBuildFaceProxy"
-local GarageBuildRequirements = require "LMION/Services/Build/Garage/GarageBuildRequirements"
-local GarageLengthState = require "LMION/Services/Build/Garage/GarageLengthState"
+local GarageBuild = require "LMION/Services/Build/Garage/Build"
+local GarageFaceProxy = require "LMION/Services/Build/Garage/FaceProxy"
+local GarageRequirements = require "LMION/Services/Build/Garage/Requirements"
+local GarageLengthState = require "LMION/Services/Build/Garage/LengthState"
 
 local function getProfile(buildObject)
     if buildObject == nil or buildObject.objectInfo == nil then
@@ -95,7 +95,7 @@ if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
             or self._lmionGarageFaceLength ~= length then
             self._lmionGarageFaceSource = face
             self._lmionGarageFaceLength = length
-            self._lmionGarageFaceProxy = GarageBuildFaceProxy.create(face, length)
+            self._lmionGarageFaceProxy = GarageFaceProxy.create(face, length)
         end
 
         return self._lmionGarageFaceProxy
@@ -112,7 +112,7 @@ if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
             return true
         end
 
-        return GarageBuildRequirements.hasRequirements(
+        return GarageRequirements.hasRequirements(
             self.character,
             profile,
             getLength(self),
@@ -143,7 +143,7 @@ if not ISBuildIsoEntity._lmionV3GarageBuildInstalled then
 
         if profile ~= nil
             and not self.character:isBuildCheat()
-            and not GarageBuildRequirements.hasRequirements(
+            and not GarageRequirements.hasRequirements(
                 self.character,
                 profile,
                 getLength(self),
