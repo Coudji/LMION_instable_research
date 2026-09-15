@@ -79,6 +79,7 @@ function LargeGateMoveProps.applyProfile(moveProps, sprite)
     moveProps.canBreak = false
     moveProps.facing = segment.facing
 
+    moveProps.lmionDefinitionId = profile.definitionId
     moveProps.lmionLargeGateSegment = segment
     moveProps.lmionLargeGateDefinitionId = profile.definitionId
     moveProps.lmionLargeGateFacing = segment.facing
