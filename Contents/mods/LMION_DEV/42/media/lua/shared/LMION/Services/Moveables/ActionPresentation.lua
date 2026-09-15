@@ -88,7 +88,7 @@ local function getAnimation(toolKind, mode)
         return "LMION_CrowbarPickupLow"
     end
     if toolKind == "hammer" and mode == "place" then
-        return "Build"
+        return "LMION_HammerPlace"
     end
 
     return nil
