@@ -1,5 +1,5 @@
 local GarageLengthPolicy = require "LMION/Domain/GarageLengthPolicy"
-local GarageDefinitionProfiles = require "LMION/Services/Common/GarageDefinitionProfiles"
+local GarageProfiles = require "LMION/Services/Common/Garage/Profiles"
 
 local GarageBuild = {
     DefaultLength = 3,
@@ -31,7 +31,7 @@ local function getGameScript(objectInfo)
 end
 
 function GarageBuild.getProfileFromObjectInfo(objectInfo)
-    return GarageDefinitionProfiles.getByGameScript(getGameScript(objectInfo))
+    return GarageProfiles.getByGameScript(getGameScript(objectInfo))
 end
 
 function GarageBuild.getProfileFromLogic(logic)
