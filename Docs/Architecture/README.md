@@ -1,13 +1,12 @@
 # LMION V3 architecture
 
-This directory documents the **current** V3 architecture only.
-Historical V1/V2 architecture remains in `Coudji/LMION_Legacy`.
+This directory documents the **current** V3 architecture only. Historical V1/V2 architecture remains in `Coudji/LMION_Legacy` and detailed implementation archaeology belongs under `Docs/Research/`.
 
 ## Product shape
 
-LMION V3 is one gameplay mod. Official systems such as Pickup, Build and future Lock are internal domains of that one product, not independently enabled mods.
+LMION V3 is one gameplay mod. Pickup/Moveables, Build and future systems are internal subsystems of that product, not independently enabled mods.
 
-One installed mod does **not** mean one Lua file or one giant runtime layer.
+One installed mod does **not** mean one giant runtime layer.
 
 ## Code organization rules
 
@@ -17,40 +16,57 @@ One installed mod does **not** mean one Lua file or one giant runtime layer.
 - one owner per vanilla behavior boundary;
 - prefer delegating back to vanilla whenever vanilla still does the correct job;
 - family-specific mechanics stay family-specific when their contracts materially differ;
-- shared helpers exist only for genuinely shared mechanical contracts;
-- avoid universal routers/managers/bridges that accumulate family branches;
-- pure structural moves/refactors and behavior changes should be separate operations;
-- internal organization optimizes for human navigation first.
+- `Services/Common` exists only for facts/rules genuinely shared by independent subsystems;
+- Build and Moveables do not depend on each other;
+- avoid universal routers/managers/bridges that accumulate unrelated family behavior;
+- internal organization optimizes for human navigation first;
+- do not move a file between `client`, `server` and `shared` merely for naming neatness.
+
+## Current source shape
+
+```text
+LMION/
+├─ API.lua
+├─ Bootstrap/
+├─ Definitions/
+├─ Domain/
+├─ Hooks/
+├─ PZ/
+├─ Runtime/
+└─ Services/
+   ├─ Build/
+   │  ├─ Garage/
+   │  ├─ LargeGate/
+   │  └─ SingleTileDoor/
+   ├─ Common/
+   │  ├─ Garage/
+   │  ├─ LargeGate/
+   │  └─ SingleTileDoor/
+   └─ Moveables/
+      ├─ Garage/
+      ├─ LargeGate/
+      └─ SingleTileDoor/
+```
+
+See `FoundationFiles.md` for detailed ownership and `DoorRuntimeFoundation.md` for the active door/runtime boundaries.
 
 ## Public/private boundary
 
-Third-party addons should ultimately use:
+Third-party addons use:
 
 ```lua
 local LMION = require "LMION/API"
 ```
 
-Anything not deliberately exposed through the public API is internal and may change.
+Anything not deliberately exposed through that API is internal and may change. Public definitions remain small, data-first and semantic; Project Zomboid implementation details stay internal when they can be derived.
 
-The public API should remain small, data-first and versioned. Do not expose Project Zomboid implementation details merely because LMION internally needs them.
+## Active decisions
 
-## Initial source-map direction
-
-Exact folders will be created only as responsibilities become real, but the intended separation is approximately:
+Important current contracts include:
 
 ```text
-LMION/
-├─ API/
-├─ Definitions/
-├─ Domain/
-├─ Runtime/
-├─ Services/
-├─ Hooks/
-├─ UI/
-├─ PZ/
-└─ Persistence/
+Docs/Decisions/CanonicalDoorsAndLargeGates.md
+Docs/Decisions/LargeGatePlacementSpace.md
 ```
 
-Family-specific subfolders are preferred where they make ownership obvious.
-
-Do not create speculative empty abstractions for systems that do not exist yet.
+The LargeGate placement decision explicitly separates leaf placement validity from partner inference and documents the native 2x2 swing-space rule and its deliberate scope boundary.
