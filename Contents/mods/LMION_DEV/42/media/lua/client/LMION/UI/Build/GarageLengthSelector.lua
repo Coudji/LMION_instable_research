@@ -2,8 +2,8 @@ require "ISUI/ISPanel"
 require "ISUI/ISLabel"
 require "ISUI/ISButton"
 
-local GarageBuild = require "LMION/Services/Build/Garage/GarageBuild"
-local GarageLengthState = require "LMION/Services/Build/Garage/GarageLengthState"
+local GarageBuild = require "LMION/Services/Build/Garage/Build"
+local GarageLengthState = require "LMION/Services/Build/Garage/LengthState"
 local GarageLengthPolicy = require "LMION/Domain/GarageLengthPolicy"
 
 local CONTROL_HEIGHT = getTextManager():getFontHeight(UIFont.Small) + 8
