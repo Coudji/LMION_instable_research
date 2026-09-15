@@ -114,9 +114,56 @@ unknown Moveable        -> vanilla
 
 `DoorInventoryCursor` preserves inventory placement semantics, including `R` rotation, without activating the Moveables toolbar.
 
-Garage inventory placement keeps its validated variable-width `+/-` behavior. Vanilla toolbar Garage placement intentionally remains the fixed L3 path.
+Garage inventory placement keeps its validated variable-width `+/-` behavior. Vanilla toolbar Garage placement intentionally remains fixed width 3.
 
 `server/LMION/Hooks/Moveables/MultipartGhost.lua` owns only the multipart `ISMoveableCursor` ghost-rendering boundary for Garage pickup and LargeGate SpriteGrid previews. It is not a cursor implementation.
+
+## Garage width model
+
+The variable Garage span is called **width** everywhere in active V3 code, even though N/W rotation changes whether that width advances along the world X or Y axis.
+
+Shared policy:
+
+```text
+Domain/GarageWidthPolicy.lua
+MinimumWidth = 2
+default maximum width = 6
+configurable maximum width = 6..12
+UnlimitedGarageWidth -> no LMION cap
+```
+
+Build vocabulary:
+
+```text
+Services/Build/Garage/Build.lua
+Services/Build/Garage/WidthState.lua
+GarageBuild.DefaultWidth
+GarageBuild.MinWidth
+GarageBuild.normalizeWidth()
+lmionGarageWidth
+LMIONGarageBuildWidth
+```
+
+Moveables vocabulary:
+
+```text
+GaragePlacement.getMaximumAvailableWidth()
+plan.width
+GarageCursor.selectedWidth
+GarageWidthDecrease / GarageWidthIncrease
+```
+
+Resource formulas scale with width `W`:
+
+```text
+MetalBar/IronBar combined = W
+Hinge                     = 2W
+solid SmallSheetMetal      = 3W
+glazed SmallSheetMetal     = 2W
+glazed GlassPanel          = W
+BlowTorch uses             = min(ceil(W/3), 10)
+WeldingRods uses           = min(2*ceil(W/3), 20)
+```
 
 ## Build lifecycle
 
@@ -128,18 +175,16 @@ Garage Build services are:
 
 ```text
 Services/Build/Garage/Build.lua
-Services/Build/Garage/LengthState.lua
+Services/Build/Garage/WidthState.lua
 Services/Build/Garage/Requirements.lua
 Services/Build/Garage/FaceProxy.lua
 Services/Build/Garage/Finalizer.lua
 ```
 
-The family directory already supplies context, so redundant `GarageBuild*` filename prefixes were removed.
-
 Client Garage Build UI is split between:
 
 ```text
-client/LMION/UI/Build/GarageLengthSelector.lua
+client/LMION/UI/Build/GarageWidthSelector.lua
 client/LMION/Hooks/Build/Garage.lua
 ```
 

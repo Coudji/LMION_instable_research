@@ -63,6 +63,23 @@ Responsibilities:
 
 `Common` must not contain Moveables parcel/tool facts or Build workflow state.
 
+## `LMION/Domain/GarageWidthPolicy.lua`
+
+Responsibility: own the semantic width limits shared by Garage Build and variable Moveables placement.
+
+For Garage, **width** means the number of tiles occupied by the START/MIDDLE*/END chain. It remains width in both N and W orientations; axis direction is an engine geometry detail, not a reason to rename the measure to length.
+
+Current policy:
+
+```text
+MinimumWidth = 2
+DefaultMaximumWidth = 6
+configurable maximum = 6..12
+UnlimitedGarageWidth -> no LMION cap
+```
+
+The Sandbox option is `LMION.GarageMaxWidth`.
+
 ## `Services/Build`
 
 Build-specific code is grouped by family:
@@ -74,8 +91,8 @@ Services/Build/
 │  ├─ Build.lua
 │  ├─ FaceProxy.lua
 │  ├─ Finalizer.lua
-│  ├─ LengthState.lua
-│  └─ Requirements.lua
+│  ├─ Requirements.lua
+│  └─ WidthState.lua
 ├─ LargeGate/
 │  ├─ BuiltPart.lua
 │  ├─ Finalizer.lua
@@ -86,6 +103,8 @@ Services/Build/
 ```
 
 The family folder already supplies context, so filenames inside it avoid redundant prefixes such as `GarageBuildRequirements`.
+
+Garage `WidthState.lua` owns the selected Build width, the native variable-bar input synchronization and the transient recipe modData key `LMIONGarageBuildWidth`.
 
 Build may depend on `Domain`, narrow `PZ` adapters, runtime primitives and `Services/Common`. It must not depend on `Services/Moveables` merely to understand an opening.
 
@@ -102,6 +121,8 @@ Services/Moveables/
 ```
 
 These profiles enrich neutral definition information with transport-only facts such as item types, tools, skills and package weights.
+
+Garage variable placement uses `plan.width` and the same `GarageWidthPolicy` as Build. The vanilla toolbar path remains intentionally fixed width 3.
 
 LargeGate transport contains parcel lookup/consumption, placement planning/finalization and ghost-part selection. The former `LargeGate/WorldState.lua` partner-detection service was removed: placement no longer infers a partner and instead uses the shared swing-space rule.
 
@@ -145,12 +166,12 @@ Workflow-specific lookups live with their owner. For example, post-Build LargeGa
 Garage Build UI responsibilities remain split:
 
 ```text
-client/LMION/UI/Build/GarageLengthSelector.lua
+client/LMION/UI/Build/GarageWidthSelector.lua
 client/LMION/Hooks/Build/Garage.lua
 client/LMION/Keybinds/GaragePlacement.lua
 ```
 
-The UI widget owns the selector; the hook owns vanilla UI integration; keybind registration remains independent.
+The UI widget owns the width selector; the hook owns vanilla UI integration; keybind registration remains independent.
 
 ## Static PZ scripts
 

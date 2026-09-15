@@ -22,6 +22,10 @@ backup-2026-09-14-pre-reorganization
 backup-2026-09-15-pre-polish
     -> gameplay-stable state immediately before naming/documentation polish
     -> 69fc170f635aae4a9865ffbc35ea75c4a2aeed32
+
+backup-2026-09-15-pre-garage-width-rename
+    -> after architecture/naming polish, before Garage length->width terminology cleanup
+    -> 8578a2b0d3f03aadf5cbc18419a39fbb2e6ce224
 ```
 
 `Coudji/LMION_Legacy` remains the behavioral oracle when V3 behavior is uncertain. Do not modify Legacy unless explicitly requested.
@@ -158,7 +162,7 @@ other Moveable    -> vanilla
 
 The dedicated door inventory cursor preserves `R` rotation and does not activate the toolbar.
 
-Garage inventory placement remains variable-width with its +/- controls. Garage toolbar placement intentionally remains the fixed L3 behavior.
+Garage inventory placement remains variable-width with its +/- controls. Garage toolbar placement intentionally remains fixed width 3.
 
 ## Shared Moveables engine hook
 
@@ -215,24 +219,40 @@ Decision: `Docs/Decisions/LargeGatePlacementSpace.md`.
 
 Do not describe normal open/close HP preservation as validated until a dedicated current in-game test confirms damaged HP survives both opening and closing.
 
-## Garage Build / Moveables
+## Garage width contract
 
-Core Garage behavior previously validated in game includes variable Build length, pickup/replacement, N/W behavior, resource scaling, and variable inventory placement.
+For Garage, **width** is the canonical term for the variable number of occupied tiles, regardless of N/W facing. Do not use `length` for this concept in active code or documentation.
 
-Build services now use concise family-local names:
+Current width vocabulary:
+
+```text
+Domain/GarageWidthPolicy.lua
+Services/Build/Garage/WidthState.lua
+client/LMION/UI/Build/GarageWidthSelector.lua
+GarageBuild.DefaultWidth / MinWidth / normalizeWidth
+lmionGarageWidth
+plan.width
+SandboxVars.LMION.GarageMaxWidth
+SandboxVars.LMION.UnlimitedGarageWidth
+GarageWidthDecrease / GarageWidthIncrease
+```
+
+Core Garage behavior previously validated in game includes variable-width Build, pickup/replacement, N/W behavior, resource scaling, and variable inventory placement.
+
+Build services:
 
 ```text
 Services/Build/Garage/Build.lua
 Services/Build/Garage/FaceProxy.lua
 Services/Build/Garage/Finalizer.lua
-Services/Build/Garage/LengthState.lua
+Services/Build/Garage/WidthState.lua
 Services/Build/Garage/Requirements.lua
 ```
 
 Client UI ownership:
 
 ```text
-client/LMION/UI/Build/GarageLengthSelector.lua
+client/LMION/UI/Build/GarageWidthSelector.lua
 client/LMION/Hooks/Build/Garage.lua
 client/LMION/Keybinds/GaragePlacement.lua
 ```
@@ -241,7 +261,16 @@ The intentional frontend difference remains:
 
 ```text
 inventory context -> variable Garage width
-toolbar Moveables -> fixed L3
+toolbar Moveables -> fixed width 3
+```
+
+Width policy:
+
+```text
+minimum width = 2
+default maximum = 6
+configurable maximum = 6..12
+UnlimitedGarageWidth = no LMION width cap
 ```
 
 ## Static PZ script rule — validated by startup failure/fix
@@ -276,11 +305,7 @@ no LMION Lua startup error
 
 ## 2026-09-15 architecture/naming polish
 
-A behavior-neutral polish pass was started only after the gameplay paths above appeared stable. Backup branch:
-
-```text
-backup-2026-09-15-pre-polish
-```
+A behavior-neutral polish pass was performed only after the gameplay paths above appeared stable.
 
 Main changes:
 
@@ -291,10 +316,11 @@ inventory context hook named by responsibility
 multipart ghost hook moved from misleading cursor classification
 obsolete LargeGate partner-state service removed
 Garage Build filenames shortened inside their family folder
+Garage variable dimension standardized on width
 architecture/decision/current-state docs refreshed
 ```
 
-No Catalog/Defaults semantic data is part of this polish, and no realm changes are intended.
+No Catalog/Defaults semantic data was changed by this polish, and no file changed realm.
 
 After this naming pass, run a short cold-start smoke test rather than repeating the entire gameplay matrix immediately:
 
@@ -302,6 +328,7 @@ After this naming pass, run a short cold-start smoke test rather than repeating 
 startup
 one 1x1 inventory replacement + R
 one LargeGate replacement + blocked-swing preview
+one Garage Build width change
 one Garage variable inventory placement
 ```
 
