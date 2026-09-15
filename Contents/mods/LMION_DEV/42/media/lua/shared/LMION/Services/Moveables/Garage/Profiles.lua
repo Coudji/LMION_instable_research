@@ -1,5 +1,5 @@
 local Registry = require "LMION/Definitions/Registry"
-local GarageDefinitionProfiles = require "LMION/Services/Common/GarageDefinitionProfiles"
+local CommonGarageProfiles = require "LMION/Services/Common/Garage/Profiles"
 local MoveableProfileFields = require "LMION/Services/Moveables/MoveableProfileFields"
 
 local GarageProfiles = {}
@@ -82,8 +82,8 @@ local function rebuild()
     local profiles = {}
     local segments = {}
 
-    for _, definitionId in ipairs(GarageDefinitionProfiles.getDefinitionIds()) do
-        local commonProfile = GarageDefinitionProfiles.getByDefinitionId(definitionId)
+    for _, definitionId in ipairs(CommonGarageProfiles.getDefinitionIds()) do
+        local commonProfile = CommonGarageProfiles.getByDefinitionId(definitionId)
         local profile = buildProfile(commonProfile)
 
         if profile ~= nil then
