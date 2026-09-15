@@ -1,6 +1,6 @@
 local DoorPlacement = require "LMION/Runtime/DoorPlacement"
 local LargeGateParcelLookup = require "LMION/Services/Moveables/LargeGate/ParcelLookup"
-local LargeGatePlacementSpace = require "LMION/Services/Common/LargeGatePlacementSpace"
+local LargeGatePlacementSpace = require "LMION/Services/Common/LargeGate/PlacementSpace"
 local LargeGateProfiles = require "LMION/Services/Moveables/LargeGate/Profiles"
 
 local LargeGatePlacementPlan = {}
