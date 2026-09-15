@@ -1,5 +1,5 @@
 local DoorState = require "LMION/Runtime/DoorState"
-local LargeGateMembers = require "LMION/Services/Common/LargeGateMembers"
+local LargeGateMembers = require "LMION/Services/Common/LargeGate/Members"
 local LargeGateTopology = require "LMION/Domain/LargeGateTopology"
 
 local LargeGateToggleState = {}
