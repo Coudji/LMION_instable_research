@@ -1,53 +1,64 @@
 # LMION V3 current state / conversation handoff
 
-Last updated: 2026-09-14
+Last updated: 2026-09-15
 
-This file is the canonical handoff for active V3 development in `Coudji/LMION_instable_research`.
+This file is the canonical short handoff for active V3 development in `Coudji/LMION_instable_research`. Detailed archaeology and failed experiments remain in `Docs/Research/`; active architectural contracts live in `Docs/Architecture/` and `Docs/Decisions/`.
 
-## Repository roles
+## Repository and safety checkpoints
 
-- `Coudji/LMION_instable_research` — active V3 development repository.
-- `Coudji/LMION_Legacy` — **functional behavioral oracle**. Validated Legacy gameplay wins over refactor-era ideas.
-- `LMION_Legacy/Workshop` — failed/abandoned refactor attempt. Useful for archaeology only; not a behavioral oracle, except Garage resource/cost archaeology where it contains the refined model later confirmed by the user.
-- do not modify Legacy unless explicitly requested.
-
-Current dev mod:
+Active repository/branch:
 
 ```text
-Workshop title: Let Me In... Or Not [DEV]
-Mod id:         LMION_DEV
-Mod folder:     Contents/mods/LMION_DEV
+Coudji/LMION_instable_research
+main
 ```
 
-## Non-negotiable refactor rules
+Known-good backup points:
 
-V3 must reproduce known-good Legacy behavior with simpler, readable, maintainable code.
+```text
+backup-2026-09-14-pre-reorganization
+    -> before the major Build/Moveables/Common organization pass
 
-- one gameplay mod; no old Core/Pickup/Build split into separate mods;
-- simple functions and clear names;
-- one function = one identifiable responsibility;
-- one file = one identifiable responsibility;
-- split files before they become difficult to read;
-- hooks are thin adapters around real vanilla boundaries;
-- one vanilla boundary should have one owner;
-- no catch-all routers/managers/bridges;
-- no speculative abstractions before duplicate behavior is proven;
-- public definitions contain semantic/data facts, not derivable runtime implementation details;
-- addon authors must be able to understand the API without relying on internals;
-- keep research/handoff documents current;
-- record failed approaches so future conversations do not repeat them;
-- when engine behavior is uncertain, inspect B42 vanilla Lua and/or the supplied JAR instead of guessing.
+backup-2026-09-15-pre-polish
+    -> gameplay-stable state immediately before naming/documentation polish
+    -> 69fc170f635aae4a9865ffbc35ea75c4a2aeed32
+```
 
-## Canonical opening rules
+`Coudji/LMION_Legacy` remains the behavioral oracle when V3 behavior is uncertain. Do not modify Legacy unless explicitly requested.
 
-- every final LMION-managed opening is an `IsoDoor`;
-- `IsoThumpable(isDoor)` is accepted only as source/vanilla/external input at a narrow boundary;
-- HP/max HP survive pickup/replacement;
-- Simple requires a standard frame;
-- Paired has independent `left` / `right` 1x1 leaves and matching paired frame sides;
-- FenceGate and Sliding require no frame;
-- LargeGate uses stable logical leaf identity `A` / `B`, never left/right;
-- Garage uses explicit START/MIDDLE/END geometry.
+## Core V3 rules
+
+LMION V3 is one gameplay mod. Build and Moveables are subsystems, not mutually dependent addons.
+
+Architectural dependency rule:
+
+```text
+                 Services/Common
+                /               \
+             Build             Moveables
+              |                    |
+     family-specific code   family-specific code
+```
+
+Build must not depend on Moveables to understand an opening, and Moveables must not depend on Build. Neutral identity/geometry/placement rules belong in `Services/Common`.
+
+No file should be moved between `client`, `server` and `shared` merely for organization. Source remains human-readable.
+
+## Public API / definitions
+
+External addons use:
+
+```lua
+local LMION = require "LMION/API"
+```
+
+Current built-in data:
+
+```text
+23 defaults
+72 definitions
+0 built-in extensions
+```
 
 Semantic `doorType` values:
 
@@ -71,76 +82,39 @@ LargeGate -> none
 Garage    -> none
 ```
 
-Do not restore redundant public frame/topology fields when the consequence can be derived internally.
+Definitions remain semantic/data-driven. Do not restore redundant public frame/topology implementation fields. Paired membership comes from geometry; LargeGate logical leaves are stable A/B.
 
-Canonical decision: `Docs/Decisions/CanonicalDoorsAndLargeGates.md`.
+Full strict public-schema validation remains deferred until the API shape is complete.
 
-## Data/API foundation — VALIDATED
+## Canonical world representation
 
-External addons use:
+Every final LMION-managed opening is an `IsoDoor`.
 
-```lua
-local LMION = require "LMION/API"
-```
+`IsoThumpable(isDoor)` may be accepted at narrow vanilla/external boundaries, but is not a final LMION representation.
 
-Current built-in catalog:
+Pickup/replacement preserves transported durability. `Runtime/DoorState.lua` and `Runtime/DoorDurability.lua` own normalized world state/durability behavior.
 
-```text
-23 defaults
-72 definitions
-0 built-in extensions
-```
-
-By family:
+## Current shared service layout
 
 ```text
-Doors/Paired          5
-Doors/Single/Metal   16
-Doors/Single/Wooden  27
-FenceGates            9
-GarageDoors           7
-LargeGates            6
-SlidingDoors          2
+Services/Common/
+├─ Garage/
+│  └─ Profiles.lua
+├─ LargeGate/
+│  ├─ Profiles.lua
+│  ├─ Members.lua
+│  └─ PlacementSpace.lua
+└─ SingleTileDoor/
+   └─ Placement.lua
 ```
 
-Validated startup diagnostics include:
+The former flat `*DefinitionProfiles.lua`, `LargeGateMembers.lua`, `LargeGatePlacementSpace.lua` and `SingleTileDoorPlacement.lua` paths were removed after consumers were migrated.
 
-```text
-[LMION:DEV] definitions ready: 23 defaults, 72 definitions, 0 extensions
-[LMION:DEV] entity index ready: 77 mappings; Base.WhitePanelDoor -> Doors.Wood.WhitePanelDoor
-```
+The old Moveables `LargeGate/WorldState.lua` partner/incoherent placement model was also removed.
 
-GameEntity reverse lookup uses:
+## Single-tile behavior — representative in-game validation
 
-```text
-world object
--> object:getEntityScript():getFullName()
--> EntityIndex
--> definitionId
--> effective definition
-```
-
-## Definitions / addon-facing rules
-
-Definitions/defaults are pure data with explicit identities:
-
-```text
-definitionId
-defaultId
-extensionId
-```
-
-`doorType` is the semantic discriminator. Runtime frame/topology/placement consequences are derived internally where possible.
-
-Paired definitions explicitly use `doorType = "Paired"`. They do not expose a public frame-side/topology field because geometry already defines left/right.
-
-LargeGate definitions expose exact N/W A/B geometry but not implementation-specific parcel or topology fields.
-
-Validation remains intentionally structural/minimal. Full strict schema validation is deferred until the public API shape is complete.
-
-## Single-tile integrated checkpoint — VALIDATED IN GAME
-
-Current runtime-proven pilots:
+Representative tested definitions include:
 
 ```text
 Doors.Wood.WhitePanelDoor
@@ -149,489 +123,186 @@ FenceGates.Wood.SmallWhiteWoodenGate
 SlidingDoors.BrownSlidingGlassDoor
 ```
 
-Validated behavior across those pilots as applicable:
+Validated as applicable:
 
 ```text
 Build
-Pickup
+pickup
 replacement
-N/W placement/rotation
-standard/paired/no-frame rules
-HP/max-HP persistence
-MetalWelding Moveables tool bridge
+N/W orientation
+Simple standard-frame requirement
+Paired matching frame-side requirement
+FenceGate / Sliding no-frame placement
+HP/maxHP transport persistence
 canonical final IsoDoor
 ```
 
-This validates the architecture and those pilots, not every catalog definition.
+Recent regression testing specifically reconfirmed Simple, Paired and FenceGate behavior after the architecture reorganization.
 
-## Script convention
+## Inventory placement versus toolbar
 
-Use one PZ script file per opening/family rather than separate `_Item`, `_Build`, `_Entity` files.
-
-Script files contain only parse-time facts PZ actually needs, such as transport items, XUI, CraftRecipe and SpriteConfig. LMION Lua definitions remain authoritative for semantic type, durability, geometry and gameplay data.
-
-Source must remain human-readable. Baseline localization is EN + FR. `Entity.json` owns Construction/GameEntity display labels, while `ItemName.json` owns inventory item labels.
-
-## 2026-09-14 architecture organization checkpoint — STATIC ONLY
-
-A structural cleanup was completed on `main` after creating the backup branch:
+The inventory/right-click path is intentionally separate from the Moveables toolbar.
 
 ```text
-backup-2026-09-14-pre-reorganization
+client/Hooks/Moveables/InventoryPlacement.lua
 ```
 
-The catalog, DefinitionDefaults and PZ script hierarchy were deliberately left untouched.
-
-The core dependency rule is now:
+Routing:
 
 ```text
-                 Services/Common
-                /               \
-             Build             Moveables
-              |                    |
-     family-specific code   family-specific code
+single-tile parcel -> server/LMION/Moveables/DoorInventoryCursor.lua
+LargeGate parcel  -> server/LMION/Moveables/DoorInventoryCursor.lua
+Garage parcel     -> server/LMION/Moveables/GarageCursor.lua
+other Moveable    -> vanilla
 ```
 
-Neutral cross-subsystem knowledge now lives in `Services/Common`:
+The dedicated door inventory cursor preserves `R` rotation and does not activate the toolbar.
+
+Garage inventory placement remains variable-width with its +/- controls. Garage toolbar placement intentionally remains the fixed L3 behavior.
+
+## Shared Moveables engine hook
+
+`shared/LMION/Hooks/Moveables/SpriteProps.lua` owns the common `ISMoveableSpriteProps` boundary used by single-tile doors, LargeGate and Garage.
+
+The old filename `Hooks/Moveables/SingleTileDoor.lua` was removed because the hook had become cross-family.
+
+Multipart vanilla-cursor rendering is owned by:
 
 ```text
-GarageDefinitionProfiles.lua
-LargeGateDefinitionProfiles.lua
-LargeGateMembers.lua
-SingleTileDoorPlacement.lua
+server/LMION/Hooks/Moveables/MultipartGhost.lua
 ```
 
-Build-specific services are grouped under:
+This is a rendering hook, not a cursor implementation.
+
+## LargeGate model
+
+LargeGate is permanently modeled as:
 
 ```text
-Services/Build/Garage/
-Services/Build/LargeGate/
-Services/Build/SingleTileDoor/
+LargeGate
+├─ leaf A
+│  ├─ physical member 1
+│  └─ physical member 2
+└─ leaf B
+   ├─ physical member 1
+   └─ physical member 2
 ```
 
-Moveables-specific services are grouped under:
+Pickup/replacement is per leaf and uses two physical parcels. Inventory and nearby-floor parcels can be mixed; Part1/Part2 are resolved independently and the exact selected floor world object is consumed. The reconstructed leaf is canonical `IsoDoor` and transported HP/maxHP follows the selected parcels.
+
+### LargeGate placement contract — validated in game
+
+Placement/build does **not** search for or infer a partner leaf. A candidate A/B leaf is always planned closed; PZ owns normal double-door grouping once the correct native members exist.
+
+`Services/Common/LargeGate/PlacementSpace.lua` derives the complete native 2x2 swing square. The candidate is rejected when:
 
 ```text
-Services/Moveables/Garage/
-Services/Moveables/LargeGate/
-Services/Moveables/SingleTileDoor/
+its normal closed member placement is invalid
+one of the four swing cells has a solid/tree/vehicle obstruction
+a wall/window/door/fence-like barrier cuts through the swing square
+its swing square overlaps the swing square of any existing LMION LargeGate
 ```
 
-`Services/Build` no longer imports `Services/Moveables` to identify Garage/LargeGate or apply shared placement rules. `Runtime/LargeGateToggleState.lua` and the low-level `PZ` layer likewise no longer depend on Moveables-specific LargeGate knowledge.
+This protects both the candidate and existing LargeGate leaves. Invalid inventory positions remain visible as a red ghost instead of disappearing.
 
-The former `PZ/BuiltLargeGatePart.lua` lookup moved to `Services/Build/LargeGate/BuiltPart.lua`, where its Build-specific ownership is explicit.
+The reverse rule is intentionally **not** imposed on other families. A Garage, FenceGate or other later construction may block an existing LargeGate. This can be accidental or an intentional defensive arrangement.
 
-Client responsibilities were split without changing realm:
+Decision: `Docs/Decisions/LargeGatePlacementSpace.md`.
+
+### LargeGate toggle HP — still test pending
+
+`Runtime/LargeGateToggleState.lua` contains the state-preservation path around PZ's internal `ToggleDoor()` recreation boundary.
+
+Do not describe normal open/close HP preservation as validated until a dedicated current in-game test confirms damaged HP survives both opening and closing.
+
+## Garage Build / Moveables
+
+Core Garage behavior previously validated in game includes variable Build length, pickup/replacement, N/W behavior, resource scaling, and variable inventory placement.
+
+Build services now use concise family-local names:
+
+```text
+Services/Build/Garage/Build.lua
+Services/Build/Garage/FaceProxy.lua
+Services/Build/Garage/Finalizer.lua
+Services/Build/Garage/LengthState.lua
+Services/Build/Garage/Requirements.lua
+```
+
+Client UI ownership:
 
 ```text
 client/LMION/UI/Build/GarageLengthSelector.lua
-client/LMION/Hooks/Build/GarageBuildUI.lua
+client/LMION/Hooks/Build/Garage.lua
 client/LMION/Keybinds/GaragePlacement.lua
-client/LMION/Hooks/Moveables/GarageContextMenu.lua
 ```
 
-Dedicated Garage/LargeGate cursor implementations were moved out of the Hooks namespace but remain server-side:
+The intentional frontend difference remains:
 
 ```text
-server/LMION/Moveables/GarageCursor.lua
-server/LMION/Moveables/LargeGateCursor.lua
+inventory context -> variable Garage width
+toolbar Moveables -> fixed L3
 ```
 
-No file was moved between `client`, `server` and `shared` during this cleanup.
+## Static PZ script rule — validated by startup failure/fix
 
-Temporary compatibility relay files used during the migration were removed after consumers were switched to the final paths. Static path checks found no remaining references to the removed flat Build/Moveables paths, and no `Services/Build -> Services/Moveables` dependency.
+Vanilla GameEntities must **not** be statically redeclared by LMION.
 
-This checkpoint has **not** yet been revalidated in game. The next phase is a complete regression-oriented code analysis, followed by targeted in-game tests.
+The duplicate-tile startup failure demonstrated that repeating a vanilla entity/SpriteConfig in an LMION script merges into the vanilla entity and can invalidate it.
 
-## Build frame policy — VALIDATED IN GAME
-
-Static LMION SpriteConfigs no longer own `dontNeedFrame`. The semantic source of truth is the effective Lua definition through `doorType` / `DoorTypes`.
-
-Active boundary:
+Current rule:
 
 ```text
-ISBuildIsoEntity.new(...)
--> vanilla Build object
--> Hooks/Build/DoorFrameRequirement.lua
--> effective LMION definition
--> frame requirement
--> buildObject.dontNeedFrame
+vanilla script owns vanilla GameEntity
+LMION definitions/runtime may reference or adapt it
+LMION static scripts may declare LMION items/custom entities only
 ```
 
-Commit:
+For vanilla single doors/fence gates, cleaned script files retain only their LMION transport item declarations.
+
+For `DoubleDoor`, `DoubleFenceGate` and `DoubleWireGate`, LMION static files retain parcel items and the custom B entity; the vanilla A entity/style is not redeclared. `Runtime/Build/VanillaLargeGateLeafPreparation.lua` performs the supported leaf-A adaptation at the validated runtime lifecycle boundary instead.
+
+## Startup status
+
+After the vanilla-script cleanup, phase-0 startup was validated:
 
 ```text
-f8cf884e6e3dcb162a5bee797f8c6d1b76f36968  Derive Build frame requirement from LMION door type
+23 defaults, 72 definitions, 0 extensions
+LargeGate Build bridge: 12/12 leaf entities
+no LMION Tile duplicate
+no LMION module-not-found
+no LMION Lua startup error
 ```
 
-User validated in game:
+## 2026-09-15 architecture/naming polish
+
+A behavior-neutral polish pass was started only after the gameplay paths above appeared stable. Backup branch:
 
 ```text
-framed doors still require their frame
-FenceGate / Sliding build without a frame
-LargeGate A and B build without a frame
-Garage builds without a frame
+backup-2026-09-15-pre-polish
 ```
 
-A previous attempt to patch already-loaded `GameEntityScript` / `SpriteConfig` with a minimal scalar-only `GameEntityScript:Load()` fragment failed in game and was reverted. Do not repeat that approach.
-
-Unframed placement is now also guarded by `DoorPlacement` edge validation. `none` means no supporting frame is required; it does not authorize placement through an occupied wall/frame/window/door edge. Keep frame policy and spatial compatibility as separate responsibilities even though both participate in Build validity.
-
-Research: `Docs/Research/Build/LargeGateBuild.md`.
-
-## LargeGate runtime — MOVEABLES REPLACEMENT VALIDATED IN GAME
-
-LargeGate V3 has family-specific services for:
+Main changes:
 
 ```text
-profile/segment lookup
-A/B topology
-runtime closed SpriteGrids
-leaf pickup
-parcel lookup/consumption
-placement planning
-partner open/closed detection
-placement finalization
-Moveables ghost rendering
-Build leaf GameEntities/finalization
+Common services grouped by family
+cross-family SpriteProps hook named by responsibility
+inventory context hook named by responsibility
+multipart ghost hook moved from misleading cursor classification
+obsolete LargeGate partner-state service removed
+Garage Build filenames shortened inside their family folder
+architecture/decision/current-state docs refreshed
 ```
 
-Legacy remains the contract:
+No Catalog/Defaults semantic data is part of this polish, and no realm changes are intended.
+
+After this naming pass, run a short cold-start smoke test rather than repeating the entire gameplay matrix immediately:
 
 ```text
-pickup/replacement per A/B leaf
-2 physical members/parcels per leaf
-inventory + nearby-floor parcel lookup
-N/W behavior
-partner-state coherence
-HP/max-HP persistence
+startup
+one 1x1 inventory replacement + R
+one LargeGate replacement + blocked-swing preview
+one Garage variable inventory placement
 ```
 
-### Failure 1 — generic parcel had no WorldSprite
-
-Tested commit:
-
-```text
-5841a976ae8d2cf7f1928825fd266f76158c1b00
-```
-
-Observed:
-
-```text
-pickup produced parcels
-inventory right-click placement failed
-toolbar placement failed
-```
-
-Cause: all LargeGate segments used generic `Base.LMION_OpeningParcel` with LMION identity only in modData and no Moveable WorldSprite.
-
-**FAILED APPROACH / DO NOT REINTRODUCE:** a universal LargeGate package that replaces engine-visible segment identity.
-
-### Transport identity correction — commit b92705e
-
-V3 restored the Legacy physical parcel model:
-
-```text
-LMION_<Gate>A_Part1
-LMION_<Gate>A_Part2
-LMION_<Gate>B_Part1
-LMION_<Gate>B_Part2
-```
-
-The four declarations live in each gate's normal script file. Item names are internal consequences of the opening entity and are not public definition fields. Parcels use their canonical closed segment WorldSprite and `Icon = Flatpack`; LMION modData carries definition/leaf/part and durability.
-
-### 2026-09-11 initial in-game result on b92705e
-
-Game log reports Project Zomboid **42.20.4**.
-
-Tested with `LargeGates.Metal.DoubleWireGate`, mixed inventory/floor parcels:
-
-```text
-pickup succeeded -> 2 parcels
-placement succeeded from toolbar and inventory right-click
-placed leaf was functional
-both physical members finalized as IsoDoor
-```
-
-This validated that segment-item + WorldSprite restored both placement frontends and that mixed inventory/floor lookup worked.
-
-A remaining defect was then isolated:
-
-```text
-Part1 inventory + Part2 floor -> both consumed
-Part2 inventory + Part1 floor -> placement succeeded but Part1 remained on floor
-```
-
-The floor Part1 was definitely the parcel used by placement because its HP/maxHP reached the placed Part1. The defect was therefore after selection, not a missing/wrong lookup.
-
-### Historical comparison: Legacy vs Workshop/V3 pickup lifecycle
-
-Known-good Legacy LargeGate pickup delegates each physical member to vanilla `pickUpMoveableInternal()` with `isMultiSprite = true`. Vanilla owns item creation, `ReadFromWorldSprite`, world-item delivery and source-object removal.
-
-The failed Workshop refactor used a manual multipart lifecycle. The first V3 implementation independently recreated the same class of manual lifecycle.
-
-V3 has returned pickup to the validated Legacy/vanilla boundary:
-
-```text
-LargeGate high-level hook resolves the two members
--> each member calls vanilla pickUpMoveableInternal()
--> the existing single owner of instanceItem/pickUpMoveableInternal adds LMION identity + durability
-```
-
-**FAILED REFACTOR PATTERN / DO NOT REINTRODUCE BY DEFAULT:** manually recreating vanilla multipart Moveable pickup when Legacy proves the vanilla path works.
-
-### Final floor-parcel correction — VALIDATED
-
-The successful correction does **not** replace PZ's world-item removal calls. It preserves the identity of the exact floor object selected before placement:
-
-```text
-floor lookup
--> return item + source + exact IsoWorldInventoryObject
--> retain exact world object in placement plan
--> place/finalize both members
--> consume that retained world object
-```
-
-The former `preferred`/cursor-item privilege was also removed. Part1 and Part2 are now resolved independently from the available stock, matching Legacy behavior.
-
-Relevant commits:
-
-```text
-1d83215c209053830384e7d7bd330b110bc494ec  Align LargeGate placement lookup with Legacy
-a37ead498fc1f2ee26d5164e44ca30b5d8113cee  Capture exact LargeGate floor parcel object
-4b097bbf9a81a76bc4b9fbf29ff853c06c553179  Retain selected LargeGate floor world object
-5cb06b60129ab61d83f19cdf04535d942e5b20cb  Consume exact selected LargeGate floor parcel
-613b4ef14e716f71c7ccedc0a4ae4058cc6ca851  Use exact floor parcel during LargeGate placement
-```
-
-User re-tested the previously failing case after `613b4ef...` and confirmed: **it works**.
-
-Validated LargeGate replacement semantics now include:
-
-```text
-Part1 and Part2 are independent stock pieces
-inventory + nearby floor may be mixed in either arrangement
-pickup origin does not pair the pieces
-HP/maxHP follows the selected parcel
-both selected parcels are consumed
-functional canonical IsoDoor leaf is reconstructed
-```
-
-Research:
-
-```text
-Docs/Research/Moveables/FlatpackTransport.md
-Docs/Research/Moveables/VanillaMoveablesBehavior.md
-Docs/Research/Moveables/LargeGateGhostRendering.md
-```
-
-### LargeGate ToggleDoor state preservation — TEST PENDING
-
-User observed that pickup/replacement preserves damaged HP correctly, but normal open/close recreates internal LargeGate members and resets them to `100/100`.
-
-Legacy has a dedicated proven workaround around PZ's recreation boundary. Workshop does not appear to contain an equivalent normal-toggle preservation path, so Legacy is the oracle for this issue.
-
-First V3 port failed in game because it added stricter sprite/open-state parity checks that Legacy does not use during the transition.
-
-Current implementation was realigned with Legacy timing while preserving V3 ownership boundaries:
-
-```text
-OnObjectAboutToBeRemoved(logical member 2)
--> object:IsOpen() is target state
--> derive previous layout from LargeGateTopology
--> locate the four old members by square + logical index + definitionId + facing
--> DoorState.capture() all four
-
-OnContainerUpdate
--> resolve recreated gate
--> verify all four reached target state
--> DoorState.restore() all four
-```
-
-Commit:
-
-```text
-709d1ae32829a297f14b21170f50c40e20da9427  Align LargeGate toggle state preservation with Legacy
-```
-
-Do **not** call this validated until the current in-game retest confirms HP survives open and close.
-
-Research: `Docs/Research/Moveables/LargeGateToggleState.md`.
-
-## LargeGate Build status
-
-LargeGate Build code exists, including vanilla full-gate narrowing for supported vanilla entities, A/B GameEntity profiles and post-build canonicalization.
-
-The frame/no-frame Build integration is validated, but the complete LargeGate Build matrix is still **NOT FULLY VALIDATED IN GAME**. Keep resource/finalization/family/orientation validation separate from the already validated frame policy.
-
-## Garage runtime — CORE WORKFLOW VALIDATED IN GAME
-
-Garage V3 runtime is now ported. Legacy remains the behavioral oracle; Workshop resource formulas are the resource/cost reference confirmed by the user.
-
-Core validated on Project Zomboid 42.20.4 with `GarageDoors.GreenGarageDoor`:
-
-```text
-Build L3 succeeds
-Build L6 succeeds
-pickup L3 succeeds when MetalWelding 3 requirement is met/bypassed
-pickup L6 succeeds
-inventory replacement L3 succeeds
-variable replacement from L6 stock responds correctly to +/- width controls
-requested replacement width is placed correctly
-```
-
-The initial pickup failure observed during testing was expected skill gating: the character had MetalWelding 2 while Garage pickup requires 3. Enabling Moveables cheat confirmed the chain pickup itself worked.
-
-The fixed technical L3 SpriteGrid briefly leaked into L6 pickup rendering. Commit:
-
-```text
-3ab07fc740e809fc40c6800bc61ae7c4c72d175c  Render full Garage chain during pickup
-```
-
-changes pickup rendering to use the actual native START/MIDDLE*/END chain footprint.
-
-A separate replacement error occurred after otherwise successful placement:
-
-```text
-attempted index: getSoundFromTool of non-table: null
-ISMoveablesAction.setActionSound
-```
-
-Cause: the dedicated V3 Garage placement action was missing the normal Moveables context fields supplied by the known-good Legacy implementation. Commit:
-
-```text
-3fcb7e90043e235c8974206bb708855a289ed730  Restore Garage placement action Moveables context
-```
-
-restored `moveProps`, `origMoveProps` and `origSpriteName`. User retest after this correction: **works**.
-
-Garage contract implemented:
-
-```text
-pickup may collect the complete physical garage
-inventory placement -> variable width chosen from available stock
-toolbar placement -> intentionally fixed L3
-N/W
-START / MIDDLE* / END stock model
-inventory first + nearby-floor lookup
-for requested length L consume exactly 1 START + (L-2) MIDDLE + 1 END
-extra parcels remain untouched
-HP/maxHP persists per selected parcel/member
-placement prevalidates complete plan and rolls back created members on creation/finalization failure
-```
-
-Garage placement controls/policy:
-
-```text
-width decrease/increase keys are client Mod Options keybinds
-rotation uses the normal PZ Rotate building bind and remains N/W only
-width limit is controlled by Sandbox options
-LMION.GarageMaxLength integer 6..12, default 6
-LMION.UnlimitedGarageWidth disables LMION's artificial cap
-minimum placeable garage length remains L2
-```
-
-`LMION/Domain/GarageLengthPolicy.lua` is the single runtime policy boundary for the garage cap.
-
-Build costs for selected length L:
-
-```text
-MetalBar/IronBar combined = L
-Hinge                     = 2L
-solid SmallSheetMetal      = 3L
-glazed SmallSheetMetal     = 2L
-glazed GlassPanel          = L
-BlowTorch uses             = min(ceil(L/3), 10)
-WeldingRods uses           = min(2*ceil(L/3), 20)
-```
-
-Base CraftRecipe remains L2 and LMION consumes only the delta not already consumed by vanilla. Native selected bar quota is synchronized to L.
-
-Research/status:
-
-```text
-Docs/Research/Moveables/GarageV3PortStatus.md
-```
-
-Still to validate explicitly before calling Garage broadly complete:
-
-```text
-all 7 Garage families
-both N/W orientations as a full matrix
-open Garage pickup/replacement
-toolbar fixed-L3 checkpoint
-mixed inventory/floor START/MIDDLE/END combinations
-pickup L6 -> place L3 -> exactly 3 surplus parcels remain
-damaged HP/maxHP survival
-exact floor parcel consumption
-solid/glazed exact resource consumption outside Build cheat
-mixed MetalBar/IronBar and ground/container Build stock
-higher Sandbox cap/unlimited
-rollback/failure paths
-```
-
-## Historical failures / do not repeat
-
-**TESTED FAILURE / DO NOT REPEAT:**
-
-- Kahlua global `next()` was nil in a profile path. Use `pairs()` + explicit counting.
-- Build CraftRecipe without a GameEntity SpriteConfig can appear in the menu but clicking Build produces no cursor.
-- minimal late `GameEntityScript:Load()` projection of scalar-only `dontNeedFrame` does not update the already-loaded SpriteConfig as intended; use the validated definition-owned `ISBuildIsoEntity.new` boundary instead.
-- V2 LargeGate toolbar could show a complete ghost while click placement failed; do not resume speculative V2 patches.
-- V3 generic `Base.LMION_OpeningParcel` without a WorldSprite broke both LargeGate placement frontends on `5841a976...`.
-- Workshop/manual multipart pickup lifecycle is not the behavioral reference; Legacy delegates each LargeGate member to vanilla `pickUpMoveableInternal()`.
-- A successful placement log is not proof of parcel consumption.
-- Re-resolving a selected floor parcel from `item:getWorldItem()` after placement can lose the exact world object that must be removed; retain the selected `IsoWorldInventoryObject` through the transaction.
-- Do not add batch IDs/pickup-session pairing to LargeGate or Garage stock.
-- Garage synthetic L3 SpriteGrid is a technical Moveables adapter only; do not use it as the actual variable-chain pickup footprint.
-- A custom `ISMoveablesAction` derivative must provide the normal Moveables context expected by vanilla (`moveProps` and related origin fields) if it inherits vanilla start/sound behavior.
-- LargeGate ToggleDoor transition detection must not require sprite/open-state parity while PZ is between old and new layouts; the first V3 attempt did this and failed in game.
-
-General rule: inspect vanilla Lua/JAR before changing an engine boundary and record the result here or under `Docs/Research`.
-
-## Validation summary
-
-**VALIDATED IN GAME:**
-
-- built-in catalog startup 23/72/0;
-- existing GameEntity reverse lookup checkpoint;
-- White Panel Simple pilot;
-- Blue Church Paired pilot;
-- Small White Wooden FenceGate pilot;
-- Brown Sliding Glass Door pilot;
-- N/W behavior for those pilots;
-- their frame/no-frame contracts;
-- definition-owned Build `dontNeedFrame` behavior for framed vs unframed types, including LargeGate A/B and Garage;
-- HP/max-HP persistence for the 1x1 pilots;
-- MetalWelding Moveables tool bridge through Sliding;
-- LargeGate segment-specific item + WorldSprite transport;
-- LargeGate pickup through vanilla physical-member lifecycle;
-- LargeGate toolbar and inventory/right-click replacement;
-- LargeGate mixed inventory/floor parcel lookup in either Part1/Part2 arrangement;
-- LargeGate exact floor-parcel consumption after successful placement;
-- LargeGate per-parcel HP/maxHP restoration through pickup/replacement;
-- functional canonical `IsoDoor` LargeGate leaf after replacement;
-- Garage Green Build L3/L6;
-- Garage Green pickup L3/L6 with requirements met/bypassed;
-- Garage Green inventory replacement;
-- Garage variable +/- width selection and successful placement;
-- Garage placement action after Moveables sound-context correction.
-
-**IMPLEMENTED BUT TEST STILL REQUIRED:**
-
-- LargeGate normal open/close state preservation at commit `709d1ae...`;
-- complete LargeGate Build matrix beyond frame-policy behavior;
-- Garage broader family/resource/stock/HP/floor/toolbar matrix listed above.
-
-**NOT YET VALIDATED BROADLY:**
-
-- remaining Simple definitions;
-- remaining Paired definitions;
-- remaining FenceGate definitions;
-- remaining Sliding definitions.
-
-## Immediate next work
-
-Before any new feature work, perform a complete regression-oriented code analysis of the 2026-09-14 organization pass: dependency direction, require paths, hook ownership, realm placement, duplicated responsibilities and behavior-preserving moves/splits.
-
-After the static analysis is clean, run targeted in-game smoke tests across the previously validated Single/Paired/FenceGate/Sliding pilots plus LargeGate and Garage. Then resume the still-pending LargeGate toggle/Build and broader Garage validation matrix.
+Escalate to the full regression matrix only if one of those fails.
