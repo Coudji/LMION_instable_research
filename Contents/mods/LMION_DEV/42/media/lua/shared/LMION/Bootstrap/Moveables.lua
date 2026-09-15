@@ -1,4 +1,4 @@
-local SingleTileDoorHook = require "LMION/Hooks/Moveables/SingleTileDoor"
+local SpritePropsHook = require "LMION/Hooks/Moveables/SpriteProps"
 local GaragePickupHook = require "LMION/Hooks/Moveables/GaragePickup"
 local GaragePlacementHook = require "LMION/Hooks/Moveables/GaragePlacement"
 local LargeGateFacingHook = require "LMION/Hooks/Moveables/LargeGateFacing"
@@ -29,7 +29,7 @@ function MoveablesBootstrap.run()
     hasRun = true
 
     ToolDefinitions.install()
-    SingleTileDoorHook.install()
+    SpritePropsHook.install()
     GaragePickupHook.install()
     GaragePlacementHook.install()
     LargeGateFacingHook.install()
