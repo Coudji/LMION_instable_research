@@ -1,7 +1,7 @@
 require "BuildingObjects/ISBuildIsoEntity"
 
 local SingleTileDoorBuildProfile = require "LMION/Services/Build/SingleTileDoor/Profile"
-local SingleTileDoorPlacement = require "LMION/Services/Common/SingleTileDoorPlacement"
+local SingleTileDoorPlacement = require "LMION/Services/Common/SingleTileDoor/Placement"
 
 local MOD_ID = "LMION_DEV"
 
