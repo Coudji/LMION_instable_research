@@ -1,7 +1,7 @@
 {
     "Sandbox_LMION": "Let Me In... Or Not",
     "Sandbox_LMION_GarageMaxWidth": "Largeur maximale des portes de garage",
-    "Sandbox_LMION_GarageMaxWidth_tooltip": "Largeur maximale des portes de garage que les joueurs peuvent placer ou construire. Les portes de garage vanilla observées par LMION mesurent au maximum 6 cases de large ; les valeurs jusqu'à 12 sont disponibles pour les serveurs et cartes personnalisés.",
+    "Sandbox_LMION_GarageMaxWidth_tooltip": "Largeur maximale des portes de garage que les joueurs peuvent placer ou construire.",
     "Sandbox_LMION_UnlimitedGarageWidth": "Autoriser une largeur de porte de garage illimitée",
-    "Sandbox_LMION_UnlimitedGarageWidth_tooltip": "Supprime la limite de largeur configurée par LMION. La limite réelle du moteur de Project Zomboid n'est pas définie par LMION."
+    "Sandbox_LMION_UnlimitedGarageWidth_tooltip": "Ignore la limite de largeur configurée ci-dessus. Les portes de garage de plus de 30 cases n’ont pas été testées."
 }
