@@ -8,13 +8,17 @@ local TOOL_KIND_BY_TAG = {
     ["base:hammer"] = "hammer",
 }
 
--- Keep presentation sounds in one place. The definition remains authoritative
--- for the required tool and skill; this table only maps that semantic contract
--- to PZ presentation assets.
+-- Definitions own the required tools and skills. This table only translates
+-- that semantic contract into PZ presentation assets.
+--
+-- Screwdriver intentionally has no override: vanilla/configured Moveables sound
+-- remains authoritative there. Crowbar and hammer need explicit material-aware
+-- presentation because their Moveables tool definitions otherwise both resolve
+-- to the generic Hammering sound.
 local SOUNDS = {
     crowbar = {
         Woodwork = "BeginRemoveBarricadePlankCrowbar",
-        MetalWelding = "BreakMetalItem",
+        MetalWelding = "BuildMetalStructureSmall",
     },
     hammer = {
         Woodwork = "Hammering",
@@ -55,9 +59,9 @@ end
 local function getGoverningSkill(definition, contract)
     local skill = contract and contract.skill or nil
 
-    -- Replacement currently inherits the pickup skill contract. Supporting an
-    -- explicit replacement.skill as well keeps the presentation policy future
-    -- proof without changing the current public schema.
+    -- Replacement currently shares the pickup skill contract. Accept an
+    -- explicit replacement.skill as well so presentation follows the action
+    -- contract if the public schema grows later.
     if type(skill) ~= "table" then
         skill = definition and definition.pickup and definition.pickup.skill or nil
     end
