@@ -201,11 +201,11 @@ Woodwork + hammer       -> Hammering
 MetalWelding + hammer   -> BuildMetalStructureSmall
 ```
 
-The screwdriver intentionally keeps the normal/configured Moveables audio; no LMION material override is required there.
+The screwdriver intentionally keeps the normal/configured Moveables sound; no LMION material override is required there.
 
 `LMION_HammerPlace` reuses the vanilla `Bob_IdleHammering` motion under an LMION-specific `PerformingAction`, rather than using the vanilla `Build` action. This avoids the animation-event hammer sound being layered over the LMION material-aware sound.
 
-`client/LMION/Hooks/Moveables/ActionPresentation.lua` owns runtime integration with `ISMoveablesAction`: resolved tool hand model, action animation, audible tool sound and LMION world-noise emission.
+`client/LMION/Hooks/Moveables/ActionPresentation.lua` owns runtime integration with `ISMoveablesAction`: resolved tool hand model, action animation and sound override.
 
 In-game validation completed:
 
@@ -216,37 +216,24 @@ wood/metal hammer sound no longer doubles after LMION_HammerPlace: OK
 parcel HP tooltip: OK
 ```
 
-### World-sound gameplay policy
+### World-sound gameplay radius — not yet designed
 
 The audible FMOD sound (`character:playSound`) and the zombie/world-sound event (`addSound`) are separate systems.
 
-LMION now owns zombie-attraction noise for its presentation-managed Moveables actions. The policy is intentionally small and derived from the same existing tool/skill contract used for sound selection:
+Current LMION custom sound path calls:
 
-```text
-screwdriver + Woodwork      -> radius 0,  volume 0
-screwdriver + MetalWelding  -> radius 0,  volume 0
-crowbar + Woodwork          -> radius 6,  volume 3
-crowbar + MetalWelding      -> radius 8,  volume 4
-hammer + Woodwork           -> radius 10, volume 5
-hammer + MetalWelding       -> radius 14, volume 7
+```lua
+addSound(character, x, y, z, 10, 5)
 ```
 
-`hammer + Woodwork = 10/5` deliberately preserves the vanilla Moveables baseline so the LMION scale has a familiar gameplay anchor. The ordering is:
+Those last two numbers are **not** player-audio volume/range. They are the PZ `WorldSoundManager` gameplay values:
 
 ```text
-screwdriver << crowbar wood < crowbar metal < hammer wood < hammer metal
+radius = 10 tiles
+volume = 5 attraction strength at the source
 ```
 
-The screwdriver remains audible to the player but emits no LMION `WorldSound`, so it does not intentionally attract zombies.
-
-The PZ `WorldSoundManager` interprets the values as:
-
-```text
-radius = base hearing radius in tiles
-volume = attraction strength at the source
-```
-
-Zombie hearing modifies effective radius. In PZ 42.20.3 the world-sound hearing multiplier is approximately:
+Zombie hearing modifies the effective radius. In PZ 42.20.3 the world-sound hearing multiplier is approximately:
 
 ```text
 hearing value 1 -> x3.0 radius
@@ -254,7 +241,9 @@ normal/default  -> x1.0 radius
 hearing value 3 -> x0.45 radius
 ```
 
-Room/inside-outside attenuation and other zombie modifiers still apply. `volume` falls with distance and is used to rank attraction; it is not a second hard distance.
+So an LMION radius of 10 can effectively be considered by zombies out to roughly 30 / 10 / 4.5 tiles depending on hearing, before room/inside-outside attenuation and other zombie modifiers. `volume` then falls with distance and is used to rank attraction; it is not a hard second distance.
+
+The current `10, 5` values were inherited as presentation plumbing, not intentionally balanced gameplay. No final LMION noise-distance policy has been chosen yet.
 
 ## Parcel durability tooltip — validated in game
 
@@ -273,7 +262,7 @@ The display reads `DoorTransportState`; it does not introduce or maintain a seco
 
 The old filename `Hooks/Moveables/SingleTileDoor.lua` was removed because the hook had become cross-family.
 
-Multipart vanilla-cursor ghost rendering is owned by:
+Multipart vanilla-cursor rendering is owned by:
 
 ```text
 server/LMION/Hooks/Moveables/MultipartGhost.lua
@@ -406,4 +395,4 @@ no LMION Lua startup error
 
 The core gameplay has been exercised repeatedly through the V3 development/refactor cycle and is treated as working unless a new change touches it directly. Do not reopen the full historical regression matrix by default.
 
-At the current head, recent presentation work has been tested in game for audible sound and parcel-HP display. The newly added tool/material world-noise values are intentionally simple and may be judged by feel later; no broad regression pass is required for them.
+At the current head, the recent presentation work has been tested in game for sound and parcel-HP display. The remaining open presentation/design question is the intentional gameplay radius/strength of LMION world sounds (`addSound`), not basic audio playback.
