@@ -1,6 +1,6 @@
 # LMION V3 current state / conversation handoff
 
-Last updated: 2026-09-15
+Last updated: 2026-09-16
 
 This file is the canonical short handoff for active V3 development in `Coudji/LMION_instable_research`. Detailed archaeology and failed experiments remain in `Docs/Research/`; active architectural contracts live in `Docs/Architecture/` and `Docs/Decisions/`.
 
@@ -26,9 +26,13 @@ backup-2026-09-15-pre-polish
 backup-2026-09-15-pre-garage-width-rename
     -> after architecture/naming polish, before Garage length->width terminology cleanup
     -> 8578a2b0d3f03aadf5cbc18419a39fbb2e6ce224
+
+backup-2026-09-15-pre-moveables-presentation
+    -> before the current V3 animation/sound/tooltip presentation pass
+    -> 34b3c41cab0b41c7f3fab527336fbaee7ef7c1de
 ```
 
-`Coudji/LMION_Legacy` remains the behavioral oracle when V3 behavior is uncertain. Do not modify Legacy unless explicitly requested.
+`Coudji/LMION_Legacy` is not the preferred source for current presentation work. `Workshop/Contents/mods/LMION_Pickup` was used as the behavioral reference for the previously solved Moveables animation/equipment sequencing problems. Do not modify Legacy or Workshop unless explicitly requested.
 
 ## Core V3 rules
 
@@ -98,6 +102,8 @@ Every final LMION-managed opening is an `IsoDoor`.
 
 Pickup/replacement preserves transported durability. `Runtime/DoorState.lua` and `Runtime/DoorDurability.lua` own normalized world state/durability behavior.
 
+Transport parcels persist that state through `Runtime/Moveables/DoorTransportState.lua` using `lmionDoorHealth` / `lmionDoorMaxHealth`.
+
 ## Current shared service layout
 
 ```text
@@ -164,6 +170,92 @@ The dedicated door inventory cursor preserves `R` rotation and does not activate
 
 Garage inventory placement remains variable-width with its +/- controls. Garage toolbar placement intentionally remains fixed width 3.
 
+Dedicated inventory cursors set:
+
+```text
+noNeedHammer = true
+skipBuildAction = true
+skipWalk2 = true
+```
+
+The two skip flags are important: `ISBuildingObject` must not queue a vanilla `ISBuildAction` before the LMION Moveables placement action. Without them, the character begins a vanilla strike/sound with the currently held item, then equips the definition-selected tool and starts the actual placement action.
+
+## Moveables action presentation — validated in game
+
+Definitions remain authoritative for the gameplay tool and governing skill. `Services/Moveables/ActionPresentation.lua` only maps that contract to presentation assets; it does not infer a tool from `frame` or `doorType`.
+
+Current animation mapping:
+
+```text
+screwdriver pickup/place -> LMION_ScrewdriverHinge
+crowbar pickup           -> LMION_CrowbarPickupLow
+hammer place             -> LMION_HammerPlace
+```
+
+Current material-aware sound mapping:
+
+```text
+Woodwork + crowbar      -> BeginRemoveBarricadePlankCrowbar
+MetalWelding + crowbar  -> BuildMetalStructureSmall
+Woodwork + hammer       -> Hammering
+MetalWelding + hammer   -> BuildMetalStructureSmall
+```
+
+The screwdriver intentionally keeps the normal/configured Moveables sound; no LMION material override is required there.
+
+`LMION_HammerPlace` reuses the vanilla `Bob_IdleHammering` motion under an LMION-specific `PerformingAction`, rather than using the vanilla `Build` action. This avoids the animation-event hammer sound being layered over the LMION material-aware sound.
+
+`client/LMION/Hooks/Moveables/ActionPresentation.lua` owns runtime integration with `ISMoveablesAction`: resolved tool hand model, action animation and sound override.
+
+In-game validation completed:
+
+```text
+crowbar pickup animation/tool presentation: OK
+hammer replacement equips the correct tool before striking: OK
+wood/metal hammer sound no longer doubles after LMION_HammerPlace: OK
+parcel HP tooltip: OK
+```
+
+### World-sound gameplay radius — not yet designed
+
+The audible FMOD sound (`character:playSound`) and the zombie/world-sound event (`addSound`) are separate systems.
+
+Current LMION custom sound path calls:
+
+```lua
+addSound(character, x, y, z, 10, 5)
+```
+
+Those last two numbers are **not** player-audio volume/range. They are the PZ `WorldSoundManager` gameplay values:
+
+```text
+radius = 10 tiles
+volume = 5 attraction strength at the source
+```
+
+Zombie hearing modifies the effective radius. In PZ 42.20.3 the world-sound hearing multiplier is approximately:
+
+```text
+hearing value 1 -> x3.0 radius
+normal/default  -> x1.0 radius
+hearing value 3 -> x0.45 radius
+```
+
+So an LMION radius of 10 can effectively be considered by zombies out to roughly 30 / 10 / 4.5 tiles depending on hearing, before room/inside-outside attenuation and other zombie modifiers. `volume` then falls with distance and is used to rank attraction; it is not a hard second distance.
+
+The current `10, 5` values were inherited as presentation plumbing, not intentionally balanced gameplay. No final LMION noise-distance policy has been chosen yet.
+
+## Parcel durability tooltip — validated in game
+
+`client/LMION/Hooks/Moveables/ParcelTooltip.lua` adds one line to the normal inventory tooltip when a parcel carries transported door health:
+
+```text
+FR: Pv : current/max
+EN: HP : current/max
+```
+
+The display reads `DoorTransportState`; it does not introduce or maintain a second durability value.
+
 ## Shared Moveables engine hook
 
 `shared/LMION/Hooks/Moveables/SpriteProps.lua` owns the common `ISMoveableSpriteProps` boundary used by single-tile doors, LargeGate and Garage.
@@ -212,12 +304,6 @@ This protects both the candidate and existing LargeGate leaves. Invalid inventor
 The reverse rule is intentionally **not** imposed on other families. A Garage, FenceGate or other later construction may block an existing LargeGate. This can be accidental or an intentional defensive arrangement.
 
 Decision: `Docs/Decisions/LargeGatePlacementSpace.md`.
-
-### LargeGate toggle HP — still test pending
-
-`Runtime/LargeGateToggleState.lua` contains the state-preservation path around PZ's internal `ToggleDoor()` recreation boundary.
-
-Do not describe normal open/close HP preservation as validated until a dedicated current in-game test confirms damaged HP survives both opening and closing.
 
 ## Garage width contract
 
@@ -273,6 +359,8 @@ configurable maximum = 6..12
 UnlimitedGarageWidth = no LMION width cap
 ```
 
+Player-facing Sandbox help intentionally stays concise. Technical rationale for observed vanilla widths belongs in technical documentation, not the Sandbox tooltip.
+
 ## Static PZ script rule — validated by startup failure/fix
 
 Vanilla GameEntities must **not** be statically redeclared by LMION.
@@ -303,33 +391,8 @@ no LMION module-not-found
 no LMION Lua startup error
 ```
 
-## 2026-09-15 architecture/naming polish
+## Current validation stance
 
-A behavior-neutral polish pass was performed only after the gameplay paths above appeared stable.
+The core gameplay has been exercised repeatedly through the V3 development/refactor cycle and is treated as working unless a new change touches it directly. Do not reopen the full historical regression matrix by default.
 
-Main changes:
-
-```text
-Common services grouped by family
-cross-family SpriteProps hook named by responsibility
-inventory context hook named by responsibility
-multipart ghost hook moved from misleading cursor classification
-obsolete LargeGate partner-state service removed
-Garage Build filenames shortened inside their family folder
-Garage variable dimension standardized on width
-architecture/decision/current-state docs refreshed
-```
-
-No Catalog/Defaults semantic data was changed by this polish, and no file changed realm.
-
-After this naming pass, run a short cold-start smoke test rather than repeating the entire gameplay matrix immediately:
-
-```text
-startup
-one 1x1 inventory replacement + R
-one LargeGate replacement + blocked-swing preview
-one Garage Build width change
-one Garage variable inventory placement
-```
-
-Escalate to the full regression matrix only if one of those fails.
+At the current head, the recent presentation work has been tested in game for sound and parcel-HP display. The remaining open presentation/design question is the intentional gameplay radius/strength of LMION world sounds (`addSound`), not basic audio playback.
