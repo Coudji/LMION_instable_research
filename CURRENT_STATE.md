@@ -216,35 +216,6 @@ wood/metal hammer sound no longer doubles after LMION_HammerPlace: OK
 parcel HP tooltip: OK
 ```
 
-### World-sound gameplay radius — not yet designed
-
-The audible FMOD sound (`character:playSound`) and the zombie/world-sound event (`addSound`) are separate systems.
-
-Current LMION custom sound path calls:
-
-```lua
-addSound(character, x, y, z, 10, 5)
-```
-
-Those last two numbers are **not** player-audio volume/range. They are the PZ `WorldSoundManager` gameplay values:
-
-```text
-radius = 10 tiles
-volume = 5 attraction strength at the source
-```
-
-Zombie hearing modifies the effective radius. In PZ 42.20.3 the world-sound hearing multiplier is approximately:
-
-```text
-hearing value 1 -> x3.0 radius
-normal/default  -> x1.0 radius
-hearing value 3 -> x0.45 radius
-```
-
-So an LMION radius of 10 can effectively be considered by zombies out to roughly 30 / 10 / 4.5 tiles depending on hearing, before room/inside-outside attenuation and other zombie modifiers. `volume` then falls with distance and is used to rank attraction; it is not a hard second distance.
-
-The current `10, 5` values were inherited as presentation plumbing, not intentionally balanced gameplay. No final LMION noise-distance policy has been chosen yet.
-
 ## Parcel durability tooltip — validated in game
 
 `client/LMION/Hooks/Moveables/ParcelTooltip.lua` adds one line to the normal inventory tooltip when a parcel carries transported door health:
@@ -395,4 +366,4 @@ no LMION Lua startup error
 
 The core gameplay has been exercised repeatedly through the V3 development/refactor cycle and is treated as working unless a new change touches it directly. Do not reopen the full historical regression matrix by default.
 
-At the current head, the recent presentation work has been tested in game for sound and parcel-HP display. The remaining open presentation/design question is the intentional gameplay radius/strength of LMION world sounds (`addSound`), not basic audio playback.
+At the current head, the recent presentation work has been tested in game for sound and parcel-HP display.
