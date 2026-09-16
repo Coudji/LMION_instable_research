@@ -47,17 +47,10 @@ local function equipResolvedTool(character, tool)
     end
 end
 
-local function emitWorldNoise(action, presentation)
+local function playPresentationSound(action, soundName)
     local character = action and action.character or nil
-    local noise = presentation and presentation.worldNoise or nil
-    if character == nil or noise == nil then
-        return
-    end
-
-    local radius = tonumber(noise.radius) or 0
-    local volume = tonumber(noise.volume) or 0
-    if radius <= 0 or volume <= 0 then
-        return
+    if character == nil or soundName == nil then
+        return nil
     end
 
     addSound(
@@ -65,19 +58,10 @@ local function emitWorldNoise(action, presentation)
         character:getX(),
         character:getY(),
         character:getZ(),
-        radius,
-        volume
+        10,
+        5
     )
-end
 
-local function playPresentationSound(action, presentation)
-    local character = action and action.character or nil
-    local soundName = presentation and presentation.sound or nil
-    if character == nil or soundName == nil then
-        return nil
-    end
-
-    emitWorldNoise(action, presentation)
     return character:playSound(soundName)
 end
 
@@ -93,42 +77,11 @@ function ActionPresentationHook.install()
 
     ISMoveablesAction.setActionSound = function(self)
         local presentation = resolve(self)
-        if presentation == nil then
+        if presentation == nil or presentation.sound == nil then
             return originalSetActionSound(self)
         end
 
-        if presentation.sound ~= nil then
-            self.sound = playPresentationSound(self, presentation)
-            return
-        end
-
-        -- Screwdriver keeps PZ's configured audio but must not inherit the
-        -- vanilla Moveables 10/5 WorldSound. Reproduce only the audible tool
-        -- sound here; LMION's policy intentionally emits no zombie attraction.
-        if presentation.toolKind == "screwdriver" then
-            local moveProps = self.moveProps
-            local mode = self.mode
-            local toolName = nil
-            if moveProps ~= nil then
-                toolName = mode == "pickup" and moveProps.pickUpTool
-                    or mode == "place" and moveProps.placeTool
-                    or nil
-            end
-
-            local toolDef = toolName
-                and ISMoveableDefinitions:getInstance().getToolDefinition(toolName)
-                or nil
-
-            if toolDef ~= nil and toolDef.sound ~= nil then
-                self.sound = self.character:playSound(toolDef.sound)
-                return
-            end
-
-            self.sound = nil
-            return
-        end
-
-        return originalSetActionSound(self)
+        self.sound = playPresentationSound(self, presentation.sound)
     end
 
     ISMoveablesAction.start = function(self)
