@@ -114,6 +114,7 @@ Moveables-specific code owns pickup/replacement transport behavior:
 
 ```text
 Services/Moveables/
+├─ ActionPresentation.lua
 ├─ MoveableProfileFields.lua
 ├─ Garage/
 ├─ LargeGate/
@@ -121,6 +122,23 @@ Services/Moveables/
 ```
 
 These profiles enrich neutral definition information with transport-only facts such as item types, tools, skills and package weights.
+
+`ActionPresentation.lua` translates the tool/skill contract already declared by a definition into presentation assets. It does **not** decide which tool an opening should require. Definitions remain authoritative for `pickup.tools`, `replacement.tools` and the governing skill.
+
+Current presentation mapping:
+
+```text
+screwdriver -> LMION_ScrewdriverHinge for pickup/replacement
+crowbar     -> LMION_CrowbarPickupLow for pickup
+hammer      -> LMION_HammerPlace for replacement
+
+Woodwork + crowbar -> BeginRemoveBarricadePlankCrowbar
+MetalWelding + crowbar -> BuildMetalStructureSmall
+Woodwork + hammer -> Hammering
+MetalWelding + hammer -> BuildMetalStructureSmall
+```
+
+The dedicated `LMION_HammerPlace` AnimSet reuses the vanilla hammering motion without using the vanilla `Build` action contract, avoiding the extra hammer sound that would otherwise be layered over LMION's material-aware sound.
 
 Garage variable placement uses `plan.width` and the same `GarageWidthPolicy` as Build. The vanilla toolbar path remains intentionally fixed width 3.
 
@@ -146,6 +164,24 @@ Actual dedicated placement cursors stay in their established server realm:
 server/LMION/Moveables/GarageCursor.lua
 server/LMION/Moveables/DoorInventoryCursor.lua
 ```
+
+Those cursors use `skipBuildAction = true` and `skipWalk2 = true`: LMION's dedicated Moveables placement action owns the operation directly instead of first queuing a vanilla `ISBuildAction`. This prevents a first hammer strike/sound with the previously held item before the configured replacement tool is equipped.
+
+Moveables action animation/tool-model/sound integration is owned by:
+
+```text
+client/LMION/Hooks/Moveables/ActionPresentation.lua
+```
+
+The hook resolves the presentation policy, keeps the definition-selected gameplay tool authoritative in hand, and overrides only the presentation that LMION owns.
+
+Transported door durability is stored by `Runtime/Moveables/DoorTransportState.lua`. Inventory display of that already-stored state is client-only and owned by:
+
+```text
+client/LMION/Hooks/Moveables/ParcelTooltip.lua
+```
+
+It adds one row to LMION parcel tooltips (`PV : current/max` in French, `HP : current/max` in English) without introducing a second durability state or changing pickup/replacement logic.
 
 Multipart vanilla-cursor ghost rendering is a hook, not a cursor implementation:
 
