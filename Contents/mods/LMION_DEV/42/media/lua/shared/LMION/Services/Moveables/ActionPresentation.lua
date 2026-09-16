@@ -8,13 +8,12 @@ local TOOL_KIND_BY_TAG = {
     ["base:hammer"] = "hammer",
 }
 
--- Definitions own the required tools and skills. This table only translates
--- that semantic contract into PZ presentation assets.
+-- Definitions own the required tools and skills. These tables only translate
+-- that semantic contract into PZ presentation assets and gameplay noise.
 --
--- Screwdriver intentionally has no override: vanilla/configured Moveables sound
--- remains authoritative there. Crowbar and hammer need explicit material-aware
--- presentation because their Moveables tool definitions otherwise both resolve
--- to the generic Hammering sound.
+-- Screwdriver keeps the configured Moveables audio but intentionally emits no
+-- WorldSound for zombie attraction. Crowbar and hammer use material-aware audio
+-- and noise. Wood hammer stays at PZ Moveables' familiar 10/5 baseline.
 local SOUNDS = {
     crowbar = {
         Woodwork = "BeginRemoveBarricadePlankCrowbar",
@@ -23,6 +22,21 @@ local SOUNDS = {
     hammer = {
         Woodwork = "Hammering",
         MetalWelding = "BuildMetalStructureSmall",
+    },
+}
+
+local WORLD_NOISE = {
+    screwdriver = {
+        Woodwork = { radius = 0, volume = 0 },
+        MetalWelding = { radius = 0, volume = 0 },
+    },
+    crowbar = {
+        Woodwork = { radius = 6, volume = 3 },
+        MetalWelding = { radius = 8, volume = 4 },
+    },
+    hammer = {
+        Woodwork = { radius = 10, volume = 5 },
+        MetalWelding = { radius = 14, volume = 7 },
     },
 }
 
@@ -114,6 +128,7 @@ function ActionPresentation.resolve(moveProps, mode)
 
     local skillName = getGoverningSkill(definition, contract)
     local soundBySkill = SOUNDS[toolKind]
+    local noiseBySkill = WORLD_NOISE[toolKind]
 
     return {
         definitionId = moveProps.lmionDefinitionId,
@@ -122,6 +137,7 @@ function ActionPresentation.resolve(moveProps, mode)
         skillName = skillName,
         animation = getAnimation(toolKind, mode),
         sound = soundBySkill and soundBySkill[skillName] or nil,
+        worldNoise = noiseBySkill and noiseBySkill[skillName] or nil,
     }
 end
 
