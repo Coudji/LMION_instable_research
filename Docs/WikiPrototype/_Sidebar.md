@@ -1,8 +1,9 @@
-## Gameplay & référence
+## Gameplay
 
 - [Accueil](Home.md)
-- [Portes](Doors.md)
-- [Durabilité des portes](Door-Durability.md)
+- [Catalogue des portes](Doors.md)
+  - [Portes simples en bois](Doors-Wooden-Single.md)
+    - [Blue Panel Door](Door-Blue-Panel-Door.md)
 
 ## Modding & API
 

@@ -1,45 +1,47 @@
-# Portes
+# Catalogue des portes
 
-LMION traite actuellement six familles de portes. Le type est une information sémantique utilisée par le mod pour appliquer les bonnes règles de placement, de transport et de reconstruction.
+Cette page est le point d'entrée du catalogue joueur. Choisissez une catégorie pour afficher les modèles correspondants.
 
-| Type LMION | Usage | Frame requise | Particularité principale |
-| --- | --- | --- | --- |
-| `Simple` | Porte 1x1 classique | standard | placement sur une frame de porte standard |
-| `Paired` | Double porte 1x1 | paired | les deux membres sont décrits par la géométrie |
-| `FenceGate` | Portillon / porte de clôture | aucune | placement sans frame |
-| `Sliding` | Porte coulissante | aucune | placement sans frame |
-| `LargeGate` | Grand portail à deux vantaux | aucune | chaque vantail A/B contient deux membres physiques |
-| `Garage` | Porte de garage | aucune | largeur variable avec chaîne START/MIDDLE/END |
+## Portes classiques
 
-## Ce que LMION conserve lors d'un déplacement
+### [Portes simples en bois](Doors-Wooden-Single.md)
+Portes 1x1 en bois : portes à panneaux, vitrées, portes de sanitaires, portes rustiques et variantes construites par le joueur.
 
-Quand une porte gérée par LMION est récupérée puis replacée, son état de durabilité transporté est conservé. Les colis utilisés par le système gardent notamment les PV et PV maximum nécessaires à la reconstruction.
+### Portes simples en métal
+Portes 1x1 métalliques. La page de catégorie sera ajoutée au prototype plus tard.
 
-Les règles exactes diffèrent selon la famille. Par exemple, un `LargeGate` est manipulé par vantail alors qu'une porte `Simple` utilise un seul colis.
+### Portes doubles
+Paires de portes 1x1 qui fonctionnent ensemble.
 
-## Exemple : Blue Panel Door
+## Portes spéciales
 
-La porte `Doors.Wood.BluePanelDoor` est une porte vanilla prise en charge par LMION.
+### Portillons et portes de clôture
+Petites ouvertures intégrées aux clôtures.
 
-```text
-definitionId : Doors.Wood.BluePanelDoor
-entity       : Base.BluePanelDoor
-hérite de    : Doors.Wood.FourPanels
-type         : Simple
-```
+### Portes coulissantes
+Portes qui se déplacent latéralement et ne nécessitent pas de cadre standard.
 
-Sa définition propre décrit essentiellement son identité et sa géométrie. Les règles communes — matériau, durabilité, construction, outils de récupération et de remplacement — viennent du default `Doors.Wood.FourPanels`.
+### Grands portails
+Portails à deux grands vantaux.
 
-Cette séparation est volontaire : plusieurs portes visuellement différentes peuvent partager le même comportement de gameplay sans recopier les mêmes paramètres.
+### Portes de garage
+Portes de largeur variable.
 
-Voir [Durabilité des portes](Door-Durability.md) pour un exemple concret de calcul des PV construits.
+---
 
-## Référence complète
+## Principe des fiches
 
-Le wiki final contiendra une table générée ou maintenue à partir des définitions effectives, avec au minimum :
+Chaque modèle aura sa **propre page** avec, lorsqu'elles sont pertinentes :
 
-| Porte | Origine | Type | PV monde | Construction | Métier | Matériaux | Pickup | Remplacement |
-| --- | --- | --- | ---: | --- | --- | --- | --- | --- |
-| Blue Panel Door | vanilla | Simple | à documenter depuis la définition effective | oui | Woodwork | voir recette | tournevis | tournevis |
+- une image ou un aperçu de la porte ;
+- son origine (vanilla ou ajoutée par LMION/un addon) ;
+- sa catégorie et son comportement de placement ;
+- ses PV dans le monde ;
+- ses PV lorsqu'elle est construite, avec l'effet du niveau de métier ;
+- les compétences, outils et matériaux nécessaires à sa construction ;
+- les conditions et outils de récupération ;
+- le poids du colis transporté ;
+- les conditions de remplacement ;
+- les particularités propres à ce modèle.
 
-Cette table n'est volontairement pas remplie ici pour tout le catalogue : le prototype sert d'abord à valider la forme du wiki avant de produire la référence exhaustive.
+Le prototype complet est visible sur la fiche [Blue Panel Door](Door-Blue-Panel-Door.md).

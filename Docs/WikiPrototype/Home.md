@@ -1,28 +1,36 @@
 # LMION Wiki — prototype
 
-> **Prototype de travail.** Cette documentation est hébergée dans le dépôt de développement pour tester la structure et le contenu d'un futur wiki public. Elle n'est pas encore la documentation officielle du mod distribué.
+> **Prototype de travail.** Cette copie vit dans le dépôt de développement afin de tester la forme du futur wiki public. Elle n'est pas la documentation officielle de la version distribuée.
 
-LMION étend la gestion des ouvertures de Project Zomboid. La version actuelle du projet se concentre sur les **portes** : construction, récupération, transport, remplacement et règles propres aux différentes familles de portes.
+Bienvenue sur le wiki de LMION.
 
-À terme, le wiki couvrira également les **fenêtres**, les **serrures**, les objets associés, les recettes et les autres systèmes ajoutés par LMION.
+Le but de cette partie du wiki est d'aider les **joueurs** à trouver rapidement une information concrète : quelles portes existent, comment elles se construisent, combien de PV elles ont, avec quels outils on les récupère et comment elles se replacent.
 
-## Gameplay & référence
+## Catalogue gameplay
 
-- [Portes](Doors.md) — familles de portes actuellement prises en charge et comportement général.
-- [Durabilité des portes](Door-Durability.md) — PV dans le monde, PV de construction et influence du niveau de métier.
-- **Fenêtres** — prévu, pas encore implémenté.
-- **Serrures** — prévu, pas encore implémenté.
-- **Objets et recettes** — sera détaillé au fur et à mesure que les systèmes seront stabilisés.
+### [Portes](Doors.md)
+Parcourir les portes par catégorie, puis ouvrir la fiche détaillée de chaque modèle.
 
-## Modding & API
+Le prototype montre déjà le parcours complet suivant :
 
-- [Premiers pas](Modding-Getting-Started.md) — utiliser l'API LMION et déclarer du contenu externe.
-- [Overrides et extensions](Modding-Overrides.md) — modifier proprement une définition LMION sans recopier son implémentation.
+**Portes → Portes simples en bois → Blue Panel Door → fiche complète**
 
-## Portes actuellement reconnues
+### Fenêtres
+Prévu lorsque LMION commencera à gérer les fenêtres.
 
-LMION distingue six types sémantiques :
+### Serrures
+Prévu avec le futur système de serrures : fonctionnement, objets, types de serrure, clés et interactions.
 
-`Simple`, `Paired`, `FenceGate`, `Sliding`, `LargeGate` et `Garage`.
+### Objets et recettes
+Prévu pour regrouper les objets ajoutés ou modifiés par LMION et leurs recettes.
 
-Le wiki final devra permettre de partir soit d'une question de joueur — « combien de PV a cette porte ? », « comment la construire ? » — soit d'une question de moddeur — « comment ajouter ma porte ? », « comment changer les PV de celle-ci ? » — sans avoir à lire la documentation interne du projet.
+---
+
+## Pour les moddeurs
+
+Cette partie est volontairement séparée du catalogue joueur.
+
+- [Premiers pas avec l'API](Modding-Getting-Started.md)
+- [Overrides et extensions](Modding-Overrides.md)
+
+L'objectif est que quelqu'un qui veut simplement connaître les caractéristiques d'une porte n'ait jamais besoin de lire la documentation d'intégration.
