@@ -116,6 +116,30 @@ if not ISBuildPanel._lmionV3VariantBuildInstalled then
 
         return result
     end
+
+    local previousOnStopCraft = ISBuildPanel.onStopCraft
+
+    ISBuildPanel.onStopCraft = function(self)
+        local member = VariantState.getSelectedMember(self.logic)
+        local result = previousOnStopCraft(self)
+
+        if member == nil then
+            return result
+        end
+
+        local restored = VariantState.setSelectedDefinitionId(
+            self.logic,
+            member.definitionId
+        )
+        if restored == nil then
+            return result
+        end
+
+        self:createBuildIsoEntity()
+        self:updateManualInputs()
+
+        return result
+    end
 end
 
 print("[LMION:DEV] Build variant hook installed")
