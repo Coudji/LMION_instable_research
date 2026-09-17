@@ -1,8 +1,10 @@
 # LMION V3 current state / conversation handoff
 
-Last updated: 2026-09-16
+Last updated: 2026-09-17
 
 This file is the canonical short handoff for active V3 development in `Coudji/LMION_instable_research`. Detailed archaeology and failed experiments remain in `Docs/Research/`; active architectural contracts live in `Docs/Architecture/` and `Docs/Decisions/`.
+
+A public-facing wiki prototype now lives under `Docs/WikiPrototype/`. It is intentionally separate from the internal technical documentation and is meant to prototype the future user/modder wiki that will eventually accompany the distributed `Coudji/PZMOD_LMION` repository. Do not modify the distribution repository unless explicitly requested.
 
 ## Repository and safety checkpoints
 
