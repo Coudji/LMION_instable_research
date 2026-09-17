@@ -31,6 +31,7 @@ end
 
 function VariantState.setSelectedDefinitionId(logic, definitionId)
     local group = VariantState.getGroupFromLogic(logic)
+        or VariantGroups.getForDefinition(definitionId)
     if group == nil then
         return nil
     end
