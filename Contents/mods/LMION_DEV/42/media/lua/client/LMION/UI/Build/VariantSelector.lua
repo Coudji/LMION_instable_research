@@ -110,17 +110,9 @@ function LMIONBuildVariantSelector:onClick(button)
         return
     end
 
-    self:updateState()
-
-    local buildPanel = ISBuildWindow and ISBuildWindow.instance or nil
-    if buildPanel ~= nil and buildPanel.logic == self.logic then
-        buildPanel:createBuildIsoEntity()
-        buildPanel:updateManualInputs()
-    end
-
-    if self.panel ~= nil then
-        self.panel:xuiRecalculateLayout()
-    end
+    -- logic:setRecipe() fires PZ's onRecipeChanged and onRebuildInputItemNodes
+    -- events. Vanilla rebuilds the title, icon, ingredients and build control
+    -- from the newly-selected variant recipe; do not start placement here.
 end
 
 function LMIONBuildVariantSelector:calculateLayout(panelWidth, panelHeight)
