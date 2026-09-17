@@ -4,5 +4,6 @@
     "IGUI_LMION_GarageWidthOptions": "LMION garage placement",
     "IGUI_LMION_GarageWidthDecrease": "Decrease garage width",
     "IGUI_LMION_GarageWidthIncrease": "Increase garage width",
+    "IGUI_LMION_BuildVariant_Model": "Model",
     "IGUI_LMION_ParcelHealth": "HP"
 }

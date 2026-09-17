@@ -8,6 +8,14 @@ local SUPPORTED_DEFINITIONS = {
     ["Doors.Wood.BlueChurchDoubleDoor"] = true,
     ["FenceGates.Wood.SmallWhiteWoodenGate"] = true,
     ["SlidingDoors.BrownSlidingGlassDoor"] = true,
+
+    ["Doors.Metal.BlackServiceDoor"] = true,
+    ["Doors.Metal.BlueServiceDoor"] = true,
+    ["Doors.Metal.GreenServiceDoor"] = true,
+    ["Doors.Metal.LightRedServiceDoor"] = true,
+    ["Doors.Metal.OrangeServiceDoor"] = true,
+    ["Doors.Metal.RedServiceDoor"] = true,
+    ["Doors.Metal.WhiteServiceDoorWithPorthole"] = true,
 }
 
 local SINGLE_ENTITY_TYPES = {

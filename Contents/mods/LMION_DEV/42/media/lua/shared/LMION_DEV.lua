@@ -10,10 +10,19 @@ DefinitionBootstrap.run(LMION)
 MoveablesBootstrap.run()
 VanillaLargeGateLeafPreparation.install()
 
--- Prototype: only Black Service Door is hydrated from its effective Lua
--- definition. Its script keeps an empty CraftRecipe component so PZ still
--- owns the buildable-entity shell while LMION owns the recipe data.
-CraftRecipeHydrator.hydrateDefinition("Doors.Metal.BlackServiceDoor")
+local SERVICE_DOOR_DEFINITIONS = {
+    "Doors.Metal.BlackServiceDoor",
+    "Doors.Metal.BlueServiceDoor",
+    "Doors.Metal.GreenServiceDoor",
+    "Doors.Metal.LightRedServiceDoor",
+    "Doors.Metal.OrangeServiceDoor",
+    "Doors.Metal.RedServiceDoor",
+    "Doors.Metal.WhiteServiceDoorWithPorthole",
+}
+
+for index = 1, #SERVICE_DOOR_DEFINITIONS do
+    CraftRecipeHydrator.hydrateDefinition(SERVICE_DOOR_DEFINITIONS[index])
+end
 
 if Events ~= nil and Events.OnGameBoot ~= nil then
     Events.OnGameBoot.Add(LargeGateBuildDiagnostics.run)

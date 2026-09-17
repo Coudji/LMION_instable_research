@@ -3,11 +3,6 @@ return {
     entity = "Base.BlackServiceDoor",
     inherits = "Doors.Metal.Service",
 
-    construction = {
-        category = "Welding",
-        variantGroup = "Doors.Metal.Service",
-    },
-
     geometry = {
         N = {
             closed = "fixtures_doors_02_13",

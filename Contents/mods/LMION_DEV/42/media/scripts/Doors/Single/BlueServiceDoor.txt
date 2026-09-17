@@ -29,21 +29,6 @@ module Base
 
         component CraftRecipe
         {
-            timedAction = BuildWallMetal,
-            time = 120,
-            category = LMION,
-            SkillRequired = MetalWelding:3,
-            xpAward = MetalWelding:15,
-
-            inputs
-            {
-                item 1 [Base.Screwdriver] mode:keep,
-                item 1 [Base.SheetMetal],
-                item 1 [Base.SmallSheetMetal],
-                item 2 [Base.Plank],
-                item 6 [Base.Screws],
-                item 2 [Base.Hinge],
-            }
         }
 
         component SpriteConfig

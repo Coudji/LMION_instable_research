@@ -1,4 +1,5 @@
 local Resolver = require "LMION/Definitions/Resolver"
+require "LMION/Services/Build/VariantGroups"
 
 local CraftRecipeHydrator = {}
 
@@ -127,6 +128,11 @@ local function buildRecipeScript(definition)
 
     if construction.xp ~= nil then
         addValue(lines, "xpAward", skillName .. ":" .. tostring(construction.xp))
+    end
+
+    if type(construction.variantGroup) == "string"
+        and construction.variantGroup ~= "" then
+        addValue(lines, "OnAddToMenu", "LMIONBuildVariantOnAddToMenu")
     end
 
     lines[#lines + 1] = ""
