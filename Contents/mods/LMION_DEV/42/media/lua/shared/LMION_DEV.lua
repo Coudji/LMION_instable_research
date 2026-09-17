@@ -4,10 +4,16 @@ local MoveablesBootstrap = require "LMION/Bootstrap/Moveables"
 local DefinitionIndexDiagnostics = require "LMION/Diagnostics/DefinitionIndex"
 local LargeGateBuildDiagnostics = require "LMION/Diagnostics/LargeGateBuild"
 local VanillaLargeGateLeafPreparation = require "LMION/Runtime/Build/VanillaLargeGateLeafPreparation"
+local CraftRecipeHydrator = require "LMION/Runtime/Build/CraftRecipeHydrator"
 
 DefinitionBootstrap.run(LMION)
 MoveablesBootstrap.run()
 VanillaLargeGateLeafPreparation.install()
+
+-- Prototype: only Black Service Door is hydrated from its effective Lua
+-- definition. Its script keeps an empty CraftRecipe component so PZ still
+-- owns the buildable-entity shell while LMION owns the recipe data.
+CraftRecipeHydrator.hydrateDefinition("Doors.Metal.BlackServiceDoor")
 
 if Events ~= nil and Events.OnGameBoot ~= nil then
     Events.OnGameBoot.Add(LargeGateBuildDiagnostics.run)
