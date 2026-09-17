@@ -1,7 +1,6 @@
 local VariantGroups = require "LMION/Services/Build/VariantGroups"
 
 local VariantState = {}
-local selectionByLogic = setmetatable({}, { __mode = "k" })
 
 local function getRecipe(logic)
     if logic == nil or logic.getRecipe == nil then
@@ -16,22 +15,18 @@ function VariantState.getGroupFromLogic(logic)
 end
 
 function VariantState.getSelectedMember(logic)
-    local group = VariantState.getGroupFromLogic(logic)
+    local recipe = getRecipe(logic)
+    local group = VariantGroups.getForRecipe(recipe)
     if group == nil or #group.members == 0 then
         return nil
     end
 
-    local definitionId = selectionByLogic[logic]
+    local definitionId = VariantGroups.getDefinitionIdForRecipe(recipe)
     local member = definitionId
         and group.memberByDefinitionId[definitionId]
         or nil
 
-    if member == nil then
-        member = group.representative
-        selectionByLogic[logic] = member.definitionId
-    end
-
-    return member
+    return member or group.representative
 end
 
 function VariantState.setSelectedDefinitionId(logic, definitionId)
@@ -45,7 +40,12 @@ function VariantState.setSelectedDefinitionId(logic, definitionId)
         return nil
     end
 
-    selectionByLogic[logic] = member.definitionId
+    local recipe = VariantGroups.getRecipeForMember(member)
+    if recipe == nil or logic == nil or logic.setRecipe == nil then
+        return nil
+    end
+
+    logic:setRecipe(recipe)
     return member
 end
 
@@ -65,9 +65,10 @@ function VariantState.selectRelative(logic, delta)
         index = index - #group.members
     end
 
-    local member = group.members[index]
-    selectionByLogic[logic] = member.definitionId
-    return member
+    return VariantState.setSelectedDefinitionId(
+        logic,
+        group.members[index].definitionId
+    )
 end
 
 return VariantState
