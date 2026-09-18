@@ -3,6 +3,7 @@ require "Entity/ISUI/CraftRecipe/ISWidgetInput"
 require "Entity/ISUI/BuildRecipe/ISBuildPanel"
 require "Entity/ISUI/Controls/ISWidgetTitleHeader"
 require "LMION/Hooks/Build/RecipeOptions"
+require "LMION/Hooks/Build/RepeatPlacement"
 
 local GarageBuild = require "LMION/Services/Build/Garage/Build"
 local GarageRequirements = require "LMION/Services/Build/Garage/Requirements"
@@ -176,39 +177,6 @@ ISBuildPanel.createBuildIsoEntity = function(self, dontSetDrag)
                 )
                 or not GarageWidthState.hasSelectedBars(self.logic, width)
         end
-    end
-
-    return result
-end
-
-local previousOnStopCraft = ISBuildPanel.onStopCraft
-
-ISBuildPanel.onStopCraft = function(self)
-    local profile, width = getGarageContext(self.logic)
-    if profile == nil then
-        return previousOnStopCraft(self)
-    end
-
-    self._lmionGarageRepeatWidth = width
-    local ok, result = pcall(previousOnStopCraft, self)
-    self._lmionGarageRepeatWidth = nil
-
-    GarageWidthState.setWidthOnLogic(self.logic, width)
-
-    if self.buildEntity ~= nil then
-        self.buildEntity.lmionGarageWidth = width
-    end
-
-    local selector = self.craftRecipePanel
-        and self.craftRecipePanel.lmionGarageWidthSelector
-        or nil
-
-    if selector ~= nil then
-        selector:updateState()
-    end
-
-    if not ok then
-        error(result)
     end
 
     return result
