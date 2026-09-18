@@ -1,5 +1,12 @@
 local BuildRecipe = {}
 
+local ENTITY_RECIPE_SCRIPT = [[
+CraftRecipe
+{
+    tags = EntityRecipe,
+}
+]]
+
 local function getEntityShortName(entityId)
     if type(entityId) ~= "string" or entityId == "" then
         return nil
@@ -55,16 +62,23 @@ function BuildRecipe.getEntityId(recipe)
         return nil
     end
 
-    local current = recipe
+    if recipe.getScriptObjectFullType ~= nil then
+        local ok, fullType = pcall(recipe.getScriptObjectFullType, recipe)
+        if ok and type(fullType) == "string" and fullType ~= "" then
+            return fullType
+        end
+    end
+
+    local current = recipe.getParent ~= nil and recipe:getParent() or nil
     local visited = {}
 
     while current ~= nil and not visited[current] do
         visited[current] = true
 
-        if current.getFullName ~= nil then
-            local ok, fullName = pcall(current.getFullName, current)
-            if ok and type(fullName) == "string" and fullName ~= "" then
-                return fullName
+        if current.getScriptObjectFullType ~= nil then
+            local ok, fullType = pcall(current.getScriptObjectFullType, current)
+            if ok and type(fullType) == "string" and fullType ~= "" then
+                return fullType
             end
         end
 
@@ -100,11 +114,14 @@ function BuildRecipe.reload(recipe, script)
         error("LMION BuildRecipe: recipe does not expose the reload lifecycle", 2)
     end
 
-    -- CraftRecipe:Load appends IO data. PZ's own hot-reload lifecycle calls
-    -- PreReload first; without it every LMION refresh duplicates inputs and
-    -- leaves derived fields such as Prop1 pointing at the previous projection.
+    -- CraftRecipe:Load appends IO data, so projection refreshes need the same
+    -- reset phase as PZ's script hot reload. Embedded GameEntity recipes also
+    -- receive the EntityRecipe tag from CraftRecipeComponentScript.load(); a
+    -- direct recipe reload bypasses that component step, so replay the marker
+    -- before applying the definition-owned recipe body.
     local recipeName = recipe:getName()
     recipe:PreReload()
+    recipe:Load(recipeName, ENTITY_RECIPE_SCRIPT)
     recipe:Load(recipeName, script)
     recipe:OnScriptsLoaded(nil)
 
