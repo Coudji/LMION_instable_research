@@ -12,9 +12,7 @@ function VariantMenuFilter.install()
 
     function LMIONBuildVariantOnAddToMenu(params)
         local recipe = params and params.recipe or nil
-        local recipeName = recipe and recipe.getName and recipe:getName() or nil
-
-        return VariantGroups.shouldShowRecipeName(recipeName)
+        return VariantGroups.shouldShowRecipe(recipe)
     end
 
     return true
