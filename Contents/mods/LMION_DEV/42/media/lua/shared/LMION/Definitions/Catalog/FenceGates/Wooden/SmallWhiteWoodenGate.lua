@@ -1,7 +1,6 @@
 return {
     definitionId = "FenceGates.Wood.SmallWhiteWoodenGate",
     entity = "Base.SmallWhiteWoodenGate",
-    inherits = "FenceGates.Wood.Base",
     doorType = "FenceGate",
 
     materialType = "Wood",
@@ -32,7 +31,11 @@ return {
         skill = { Woodwork = 1 },
         tools = { { tag = "base:crowbar" } },
         breakChance = 0,
-        packages = { count = 1, weight = 7 },
+        packages = {
+            count = 1,
+            weight = 7,
+            item = "Base.LMION_SmallWhiteWoodenGate",
+        },
     },
 
     replacement = {
