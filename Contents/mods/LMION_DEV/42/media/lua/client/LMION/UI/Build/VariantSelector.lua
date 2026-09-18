@@ -2,7 +2,7 @@ require "ISUI/ISPanel"
 require "ISUI/ISLabel"
 require "ISUI/ISButton"
 
-local VariantGroups = require "LMION/Services/Build/VariantGroups"
+local BuildRecipe = require "LMION/PZ/BuildRecipe"
 local VariantState = require "LMION/Services/Build/VariantState"
 
 local CONTROL_HEIGHT = getTextManager():getFontHeight(UIFont.Small) + 8
@@ -78,7 +78,7 @@ function LMIONBuildVariantSelector:createChildren()
 end
 
 local function getMemberDisplayName(member)
-    local recipe = VariantGroups.getRecipeForMember(member)
+    local recipe = member and BuildRecipe.getByName(member.recipeName) or nil
     if recipe ~= nil and recipe.getTranslationName ~= nil then
         return recipe:getTranslationName()
     end
@@ -98,6 +98,7 @@ function LMIONBuildVariantSelector:updateState()
     end
 
     self.value:setName(getMemberDisplayName(member))
+
     local canSwitch = #group.members > 1
     self.previous.enable = canSwitch
     self.next.enable = canSwitch
@@ -105,14 +106,7 @@ end
 
 function LMIONBuildVariantSelector:onClick(button)
     local delta = button == self.previous and -1 or 1
-    local member = VariantState.selectRelative(self.logic, delta)
-    if member == nil then
-        return
-    end
-
-    -- logic:setRecipe() fires PZ's onRecipeChanged and onRebuildInputItemNodes
-    -- events. Vanilla rebuilds the title, icon, ingredients and build control
-    -- from the newly-selected variant recipe; do not start placement here.
+    VariantState.selectRelative(self.logic, delta)
 end
 
 function LMIONBuildVariantSelector:calculateLayout(panelWidth, panelHeight)
