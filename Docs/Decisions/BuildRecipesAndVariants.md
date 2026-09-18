@@ -20,7 +20,9 @@ construction.variantGroup
 
 The PZ entity script keeps the `CraftRecipe` component shell required for Project Zomboid to create the buildable recipe object, but it does not duplicate the recipe values above.
 
-At bootstrap, `Runtime/Build/CraftRecipeHydrator.lua` translates the effective definition into the PZ `CraftRecipe` contract and reloads that existing recipe object. `PZ/BuildRecipe.lua` is the narrow engine adapter used for recipe lookup.
+At bootstrap, Build translates the effective definition into the PZ `CraftRecipe` contract and reloads that existing recipe object. `PZ/BuildRecipe.lua` is the narrow engine adapter used for recipe lookup.
+
+The generic translation lives in `Runtime/Build/CraftRecipeHydrator.lua`. Families whose PZ recipe shape is materially different keep their translation with that family. Garage uses `Runtime/Build/Garage/CraftRecipeHydrator.lua` because its variable-width bar input and width-dependent material presentation are part of the Garage Build contract rather than a generic recipe rule.
 
 This keeps one gameplay source of truth while preserving the parse-time GameEntity structure expected by PZ.
 
@@ -42,6 +44,14 @@ This also applies to definitions registered by third-party addons before Build b
 Construction category is definition data, not an LMION branding category.
 
 An opening that naturally belongs with vanilla woodworking, welding or another construction family should use the corresponding PZ category. LMION making an existing-style opening buildable or moveable is not by itself a reason to place that opening under an `LMION` category.
+
+Current migrated examples include:
+
+```text
+Doors.Wood.FourPanels -> Carpentry
+Doors.Metal.Service   -> Welding
+GarageDoors.Solid     -> Welding
+```
 
 ## Variant groups
 
@@ -76,6 +86,27 @@ Built-in registration is explicit through `Definitions/BuiltinContent.lua`, so t
 
 Third-party definitions participate through the same registry and grouping mechanism. A mod that wants several of its definitions grouped gives them the same `construction.variantGroup` value; it does not call a second variant-registration API.
 
+## Build recipe options UI
+
+Variant selection and family-specific controls may coexist for one recipe. A grouped Garage, for example, needs both a model selector and the Garage width selector.
+
+`client/LMION/Hooks/Build/RecipeOptions.lua` is therefore the single owner of the `ISBuildRecipePanel.createDynamicChildren` extension point. It injects one `RecipeOptionsPanel` into the vanilla filler row. The panel composes the controls that apply to the current recipe instead of letting multiple subsystem hooks replace the same table cell.
+
+The individual widgets remain independent:
+
+```text
+UI/Build/VariantSelector.lua
+    model selection only
+
+UI/Build/GarageWidthSelector.lua
+    Garage width selection only
+
+UI/Build/RecipeOptionsPanel.lua
+    presentation composition only
+```
+
+Garage and variant business rules remain in their own services. The shared client boundary exists only because PZ exposes one UI location for those independent controls.
+
 ## Hidden variants and sequential Build
 
 Non-representative recipes remain real recipes but are filtered out of the visible construction list through PZ's `OnAddToMenu` callback.
@@ -91,7 +122,10 @@ Bootstrap/Build.lua
     Build startup coordination and discovery of definition-owned recipe shells
 
 Runtime/Build/CraftRecipeHydrator.lua
-    effective definition -> PZ CraftRecipe translation
+    generic effective definition -> PZ CraftRecipe translation
+
+Runtime/Build/Garage/CraftRecipeHydrator.lua
+    Garage-specific variable-width PZ recipe translation
 
 Runtime/Build/VariantMenuFilter.lua
     PZ OnAddToMenu callback boundary
@@ -105,11 +139,20 @@ Services/Build/VariantState.lua
 PZ/BuildRecipe.lua
     narrow ScriptManager/build-recipe lookup and shell inspection adapter
 
+client/LMION/UI/Build/RecipeOptionsPanel.lua
+    compose applicable Build recipe controls
+
 client/LMION/UI/Build/VariantSelector.lua
-    selector widget/presentation
+    variant selector widget/presentation
+
+client/LMION/UI/Build/GarageWidthSelector.lua
+    Garage width selector widget/presentation
+
+client/LMION/Hooks/Build/RecipeOptions.lua
+    single vanilla Build recipe options UI boundary
 
 client/LMION/Hooks/Build/Variants.lua
-    narrow vanilla UI integration and sequential-build restoration
+    sequential-build variant restoration
 ```
 
-`Services/Build` does not own PZ UI objects or direct ScriptManager lookup. The client hook does not own grouping policy or recipe construction.
+`Services/Build` does not own PZ UI objects or direct ScriptManager lookup. Client hooks do not own grouping policy or recipe construction.
