@@ -24,7 +24,18 @@ At bootstrap, `Runtime/Build/CraftRecipeHydrator.lua` translates the effective d
 
 This keeps one gameplay source of truth while preserving the parse-time GameEntity structure expected by PZ.
 
-The migration is deliberate and explicit. `Bootstrap/Build.lua` currently enumerates the definitions whose static recipes have been replaced by definition-owned hydration. Do not infer support by scanning directories or automatically hydrate every definition merely because it has a `construction` table.
+`Bootstrap/Build.lua` does not keep a second list of definition-owned recipes. It iterates the registered definitions, resolves their effective data, and hydrates a recipe when all of the following are true:
+
+```text
+the effective definition has construction data
+the definition exposes one entity id
+a PZ buildable recipe exists for that entity
+the existing CraftRecipe is an empty shell
+```
+
+The empty-shell check is the migration boundary. It lets LMION discover definition-owned recipes from registered data without overwriting build recipes that are still explicitly authored in PZ scripts.
+
+This also applies to definitions registered by third-party addons before Build bootstrap runs. A modder does not register a variant or recipe in a separate LMION list: registering the definition and supplying the corresponding empty `CraftRecipe` shell is sufficient.
 
 ## Vanilla-facing categories
 
@@ -55,13 +66,15 @@ This deliberately allows variants to differ in materials, skill, time or other r
 
 `variantGroup = false` is an explicit opt-out from an inherited variant group. It is a presentation decision, not a statement that the recipe is technically incompatible with grouping.
 
+No group-specific registration list exists. Variant membership is derived entirely from the effective registered definitions.
+
 ## Representative member
 
 The representative is the first registered definition in a variant group.
 
 Built-in registration is explicit through `Definitions/BuiltinContent.lua`, so the representative is reviewable and deterministic. For the current metal service-door group, `Doors.Metal.BlackServiceDoor` is registered first and is therefore the visible catalog representative.
 
-Do not add a second duplicate list solely to choose the representative while registration order already expresses that decision clearly.
+Third-party definitions participate through the same registry and grouping mechanism. A mod that wants several of its definitions grouped gives them the same `construction.variantGroup` value; it does not call a second variant-registration API.
 
 ## Hidden variants and sequential Build
 
@@ -75,7 +88,7 @@ The hook does not replace the selected build entity. Once the actual variant rec
 
 ```text
 Bootstrap/Build.lua
-    Build startup coordination and explicit recipe-hydration migration list
+    Build startup coordination and discovery of definition-owned recipe shells
 
 Runtime/Build/CraftRecipeHydrator.lua
     effective definition -> PZ CraftRecipe translation
@@ -90,7 +103,7 @@ Services/Build/VariantState.lua
     active BuildLogic variant selection
 
 PZ/BuildRecipe.lua
-    narrow ScriptManager/build-recipe lookup adapter
+    narrow ScriptManager/build-recipe lookup and shell inspection adapter
 
 client/LMION/UI/Build/VariantSelector.lua
     selector widget/presentation
