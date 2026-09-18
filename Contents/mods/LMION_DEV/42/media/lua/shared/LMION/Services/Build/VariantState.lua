@@ -1,3 +1,4 @@
+local BuildRecipe = require "LMION/PZ/BuildRecipe"
 local VariantGroups = require "LMION/Services/Build/VariantGroups"
 
 local VariantState = {}
@@ -13,17 +14,6 @@ local function getRecipeName(logic)
     end
 
     return recipe:getName()
-end
-
-local function getRecipeForMember(member)
-    if type(member) ~= "table"
-        or type(member.recipeName) ~= "string"
-        or ScriptManager == nil
-        or ScriptManager.instance == nil then
-        return nil
-    end
-
-    return ScriptManager.instance:getBuildableRecipe(member.recipeName)
 end
 
 function VariantState.getGroupFromLogic(logic)
@@ -46,7 +36,7 @@ function VariantState.setSelectedDefinitionId(logic, definitionId)
         return nil
     end
 
-    local recipe = getRecipeForMember(member)
+    local recipe = BuildRecipe.getByName(member.recipeName)
     if recipe == nil or logic == nil or logic.setRecipe == nil then
         return nil
     end
