@@ -29,23 +29,6 @@ module Base
 
         component CraftRecipe
         {
-            timedAction = BuildWallHammer,
-            time = 170,
-            category = LMION,
-            SkillRequired = Woodwork:7,
-            xpAward = Woodwork:40,
-
-            inputs
-            {
-                item 1 tags[base:hammer] mode:keep flags[Prop1;MayDegradeVeryLight],
-                item 1 [Base.Screwdriver] mode:keep,
-                item 2 [Base.Plank],
-                item 2 [Base.Nails],
-                item 2 [Base.Hinge],
-                item 4 [Base.Screws],
-                item 1 [Base.Doorknob],
-                item 3 [Base.GlassPanel],
-            }
         }
 
         component SpriteConfig
