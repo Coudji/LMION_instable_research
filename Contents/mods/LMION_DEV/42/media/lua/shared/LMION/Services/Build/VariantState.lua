@@ -2,31 +2,36 @@ local VariantGroups = require "LMION/Services/Build/VariantGroups"
 
 local VariantState = {}
 
-local function getRecipe(logic)
+local function getRecipeName(logic)
     if logic == nil or logic.getRecipe == nil then
         return nil
     end
 
-    return logic:getRecipe()
-end
-
-function VariantState.getGroupFromLogic(logic)
-    return VariantGroups.getForRecipe(getRecipe(logic))
-end
-
-function VariantState.getSelectedMember(logic)
-    local recipe = getRecipe(logic)
-    local group = VariantGroups.getForRecipe(recipe)
-    if group == nil or #group.members == 0 then
+    local recipe = logic:getRecipe()
+    if recipe == nil or recipe.getName == nil then
         return nil
     end
 
-    local definitionId = VariantGroups.getDefinitionIdForRecipe(recipe)
-    local member = definitionId
-        and group.memberByDefinitionId[definitionId]
-        or nil
+    return recipe:getName()
+end
 
-    return member or group.representative
+local function getRecipeForMember(member)
+    if type(member) ~= "table"
+        or type(member.recipeName) ~= "string"
+        or ScriptManager == nil
+        or ScriptManager.instance == nil then
+        return nil
+    end
+
+    return ScriptManager.instance:getBuildableRecipe(member.recipeName)
+end
+
+function VariantState.getGroupFromLogic(logic)
+    return VariantGroups.getForRecipeName(getRecipeName(logic))
+end
+
+function VariantState.getSelectedMember(logic)
+    return VariantGroups.getMemberForRecipeName(getRecipeName(logic))
 end
 
 function VariantState.setSelectedDefinitionId(logic, definitionId)
@@ -41,7 +46,7 @@ function VariantState.setSelectedDefinitionId(logic, definitionId)
         return nil
     end
 
-    local recipe = VariantGroups.getRecipeForMember(member)
+    local recipe = getRecipeForMember(member)
     if recipe == nil or logic == nil or logic.setRecipe == nil then
         return nil
     end
