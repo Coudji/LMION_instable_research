@@ -65,8 +65,11 @@ Anything not deliberately exposed through that API is internal and may change. P
 Important current contracts include:
 
 ```text
+Docs/Decisions/BuildRecipesAndVariants.md
 Docs/Decisions/CanonicalDoorsAndLargeGates.md
 Docs/Decisions/LargeGatePlacementSpace.md
 ```
+
+The Build recipe/variant decision defines definition-owned construction data, vanilla-facing categories, presentation-only variant grouping and the hidden-variant sequential-build behavior.
 
 The LargeGate placement decision explicitly separates leaf placement validity from partner inference and documents the native 2x2 swing-space rule and its deliberate scope boundary.
