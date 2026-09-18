@@ -29,16 +29,6 @@ module Base
 
         component CraftRecipe
         {
-            timedAction = BuildWallHammer,
-            time = 80,
-            category = LMION,
-            xpAward = Woodwork:5,
-
-            inputs
-            {
-                item 4 [Base.Log],
-                item 4 [Base.RippedSheets;Base.RippedSheetsDirty;Base.Twine;Base.Rope;Base.SheetRope],
-            }
         }
 
         component SpriteConfig
