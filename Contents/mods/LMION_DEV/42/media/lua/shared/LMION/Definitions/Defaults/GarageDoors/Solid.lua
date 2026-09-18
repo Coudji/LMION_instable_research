@@ -17,16 +17,21 @@ return {
         construction = {
             category = "Welding",
             variantGroup = "GarageDoors.Solid",
+            timedAction = "BuildWallMetal",
             skill = { MetalWelding = 6 },
             time = 200,
             xp = 50,
             tools = { { tag = "base:weldingmask" } },
             materials = {
-                { item = "Base.BlowTorch", uses = 6 },
-                { item = "Base.SmallSheetMetal", amount = 9 },
-                { anyOf = { "Base.MetalBar", "Base.IronBar" }, amount = 3 },
-                { item = "Base.Hinge", amount = 6 },
-                { item = "Base.WeldingRods", uses = 3 },
+                { item = "Base.BlowTorch", uses = { perStep = 1, step = 3, max = 10 } },
+                { item = "Base.SmallSheetMetal", amount = { perWidth = 3 } },
+                {
+                    anyOf = { "Base.MetalBar", "Base.IronBar" },
+                    amount = { perWidth = 1 },
+                    widthInput = true,
+                },
+                { item = "Base.Hinge", amount = { perWidth = 2 } },
+                { item = "Base.WeldingRods", uses = { perStep = 2, step = 3, max = 20 } },
             },
         },
 

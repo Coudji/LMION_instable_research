@@ -35,43 +35,23 @@ local function getSelector(input, index, kind)
 
     if input.tag ~= nil then
         selectors = selectors + 1
-        selector = "tags[" .. requireString(
-            input.tag,
-            kind .. " tag at index " .. tostring(index) .. " must be a non-empty string"
-        ) .. "]"
+        selector = "tags[" .. requireString(input.tag, kind .. " tag at index " .. tostring(index) .. " must be a non-empty string") .. "]"
     end
-
     if input.anyTagOf ~= nil then
         selectors = selectors + 1
-        selector = "tags[" .. joinValues(
-            input.anyTagOf,
-            kind .. " tag alternatives at index " .. tostring(index) .. " must be non-empty strings"
-        ) .. "]"
+        selector = "tags[" .. joinValues(input.anyTagOf, kind .. " tag alternatives at index " .. tostring(index) .. " must be non-empty strings") .. "]"
     end
-
     if input.item ~= nil then
         selectors = selectors + 1
-        selector = "[" .. requireString(
-            input.item,
-            kind .. " item at index " .. tostring(index) .. " must be a non-empty string"
-        ) .. "]"
+        selector = "[" .. requireString(input.item, kind .. " item at index " .. tostring(index) .. " must be a non-empty string") .. "]"
     end
-
     if input.anyOf ~= nil then
         selectors = selectors + 1
-        selector = "[" .. joinValues(
-            input.anyOf,
-            kind .. " item alternatives at index " .. tostring(index) .. " must be non-empty strings"
-        ) .. "]"
+        selector = "[" .. joinValues(input.anyOf, kind .. " item alternatives at index " .. tostring(index) .. " must be non-empty strings") .. "]"
     end
 
     if selectors ~= 1 then
-        fail(
-            kind
-                .. " at index "
-                .. tostring(index)
-                .. " must define exactly one of tag, anyTagOf, item or anyOf"
-        )
+        fail(kind .. " at index " .. tostring(index) .. " must define exactly one of tag, anyTagOf, item or anyOf")
     end
 
     return selector
@@ -81,17 +61,12 @@ local function appendFlags(target, flags, index, kind)
     if flags == nil then
         return
     end
-
     if type(flags) ~= "table" then
         fail(kind .. " flags at index " .. tostring(index) .. " must be a table")
     end
 
     for flagIndex = 1, #flags do
-        local flag = requireString(
-            flags[flagIndex],
-            kind .. " flag at index " .. tostring(index) .. " must be a non-empty string"
-        )
-
+        local flag = requireString(flags[flagIndex], kind .. " flag at index " .. tostring(index) .. " must be a non-empty string")
         local exists = false
         for existingIndex = 1, #target do
             if target[existingIndex] == flag then
@@ -99,24 +74,27 @@ local function appendFlags(target, flags, index, kind)
                 break
             end
         end
-
         if not exists then
             target[#target + 1] = flag
         end
     end
 end
 
-local function addInputLine(lines, quantity, selector, mode, flags)
-    local line = "        item " .. tostring(quantity) .. " " .. selector
+local function addInputLine(lines, quantity, selector, mode, flags, variable)
+    local quantityText = tostring(quantity)
+    if type(variable) == "table" then
+        local minimum = tonumber(variable.min) or quantity
+        local maximum = tonumber(variable.max) or 2147483647
+        quantityText = "variable[" .. tostring(math.floor(minimum)) .. ":" .. tostring(math.floor(maximum)) .. "]"
+    end
 
+    local line = "        item " .. quantityText .. " " .. selector
     if mode ~= nil then
         line = line .. " mode:" .. mode
     end
-
     if #flags > 0 then
         line = line .. " flags[" .. table.concat(flags, ";") .. "]"
     end
-
     lines[#lines + 1] = line .. ","
 end
 
@@ -124,7 +102,6 @@ function CraftRecipeInputs.addTools(lines, tools)
     if tools == nil then
         return
     end
-
     if type(tools) ~= "table" then
         fail("construction.tools must be a table")
     end
@@ -133,7 +110,6 @@ function CraftRecipeInputs.addTools(lines, tools)
         local tool = tools[index]
         local selector = getSelector(tool, index, "construction tool")
         local amount = tonumber(tool.amount) or 1
-
         if amount < 1 or amount ~= math.floor(amount) then
             fail("construction tool amount at index " .. tostring(index) .. " must be a positive integer")
         end
@@ -142,10 +118,7 @@ function CraftRecipeInputs.addTools(lines, tools)
         if mode == nil then
             mode = "keep"
         else
-            mode = requireString(
-                mode,
-                "construction tool mode at index " .. tostring(index) .. " must be a non-empty string"
-            )
+            mode = requireString(mode, "construction tool mode at index " .. tostring(index) .. " must be a non-empty string")
         end
 
         local flags = {}
@@ -158,7 +131,6 @@ function CraftRecipeInputs.addMaterials(lines, materials)
     if materials == nil then
         return
     end
-
     if type(materials) ~= "table" then
         fail("construction.materials must be a table")
     end
@@ -170,32 +142,21 @@ function CraftRecipeInputs.addMaterials(lines, materials)
         local uses = tonumber(material.uses)
 
         if (amount == nil) == (uses == nil) then
-            fail(
-                "construction material must define exactly one of amount or uses at index "
-                    .. tostring(index)
-            )
+            fail("construction material must define exactly one numeric amount or uses at index " .. tostring(index))
         end
 
         local quantity = amount or uses
         if quantity < 1 or quantity ~= math.floor(quantity) then
-            fail(
-                "construction material quantity at index "
-                    .. tostring(index)
-                    .. " must be a positive integer"
-            )
+            fail("construction material quantity at index " .. tostring(index) .. " must be a positive integer")
         end
 
         local mode = material.mode
         if mode ~= nil then
-            mode = requireString(
-                mode,
-                "construction material mode at index " .. tostring(index) .. " must be a non-empty string"
-            )
+            mode = requireString(mode, "construction material mode at index " .. tostring(index) .. " must be a non-empty string")
         end
 
         local flags = {}
         appendFlags(flags, material.flags, index, "construction material")
-
         if uses ~= nil then
             local hasDontRecord = false
             for flagIndex = 1, #flags do
@@ -209,7 +170,7 @@ function CraftRecipeInputs.addMaterials(lines, materials)
             end
         end
 
-        addInputLine(lines, quantity, selector, mode, flags)
+        addInputLine(lines, quantity, selector, mode, flags, material.variable)
     end
 end
 

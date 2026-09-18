@@ -2,7 +2,7 @@ local Resolver = require "LMION/Definitions/Resolver"
 local BuildRecipe = require "LMION/PZ/BuildRecipe"
 local CraftRecipeInputs = require "LMION/Runtime/Build/CraftRecipeInputs"
 local GarageBuild = require "LMION/Services/Build/Garage/Build"
-local GarageRequirements = require "LMION/Services/Build/Garage/Requirements"
+local GarageMaterials = require "LMION/Services/Build/Garage/Materials"
 
 local GarageCraftRecipeHydrator = {}
 
@@ -10,43 +10,31 @@ local function fail(message)
     error("LMION GarageCraftRecipeHydrator: " .. message, 3)
 end
 
+local function addValue(lines, key, value)
+    if value ~= nil then
+        lines[#lines + 1] = string.format("    %s = %s,", key, tostring(value))
+    end
+end
+
 local function getSingleSkill(skill)
     if type(skill) ~= "table" then
         fail("construction.skill must be a table")
     end
 
-    local skillName = nil
-    local skillLevel = nil
-
-    for name, level in pairs(skill) do
-        if skillName ~= nil then
-            fail("garage construction currently supports one construction skill")
+    local name, level = nil, nil
+    for skillName, skillLevel in pairs(skill) do
+        if name ~= nil then
+            fail("Garage Build currently supports one governing construction skill")
         end
-
-        skillName = name
-        skillLevel = tonumber(level)
+        name = skillName
+        level = tonumber(skillLevel)
     end
 
-    if skillName == nil or skillLevel == nil then
+    if type(name) ~= "string" or name == "" or level == nil then
         fail("construction.skill must contain one valid skill")
     end
 
-    return skillName, math.floor(skillLevel)
-end
-
-local function addValue(lines, key, value)
-    if value == nil then
-        return
-    end
-
-    lines[#lines + 1] = string.format("    %s = %s,", key, tostring(value))
-end
-
-local function getMinimumRequirements(definition)
-    return GarageRequirements.getRequirements(
-        { definition = definition },
-        GarageBuild.MinWidth
-    )
+    return name, math.floor(level)
 end
 
 local function buildRecipeScript(definition)
@@ -55,22 +43,19 @@ local function buildRecipeScript(definition)
         fail("definition has no construction contract")
     end
 
+    local timedAction = construction.timedAction
+    if type(timedAction) ~= "string" or timedAction == "" then
+        fail("construction.timedAction must be a non-empty string")
+    end
+
     local skillName, skillLevel = getSingleSkill(construction.skill)
-    if skillName ~= "MetalWelding" then
-        fail("unsupported garage construction skill " .. tostring(skillName))
+    local materials = GarageMaterials.getRecipeMaterials(definition, GarageBuild.MinWidth)
+    if materials == nil then
+        fail("could not derive minimum-width garage materials")
     end
 
-    local requirements = getMinimumRequirements(definition)
-    if requirements == nil then
-        fail("could not derive minimum-width garage requirements")
-    end
-
-    local lines = {
-        "CraftRecipe",
-        "{",
-    }
-
-    addValue(lines, "timedAction", "BuildWallMetal")
+    local lines = { "CraftRecipe", "{" }
+    addValue(lines, "timedAction", timedAction)
     addValue(lines, "time", construction.time)
     addValue(lines, "category", construction.category)
     addValue(lines, "SkillRequired", skillName .. ":" .. tostring(skillLevel))
@@ -78,9 +63,7 @@ local function buildRecipeScript(definition)
     if construction.xp ~= nil then
         addValue(lines, "xpAward", skillName .. ":" .. tostring(construction.xp))
     end
-
-    if type(construction.variantGroup) == "string"
-        and construction.variantGroup ~= "" then
+    if type(construction.variantGroup) == "string" and construction.variantGroup ~= "" then
         addValue(lines, "OnAddToMenu", "LMIONBuildVariantOnAddToMenu")
     end
 
@@ -88,48 +71,24 @@ local function buildRecipeScript(definition)
     lines[#lines + 1] = "    inputs"
     lines[#lines + 1] = "    {"
     CraftRecipeInputs.addTools(lines, construction.tools)
-    lines[#lines + 1] = "        item 1 [Base.BlowTorch] flags[DontRecordInput],"
-    lines[#lines + 1] = string.format(
-        "        item %d [Base.SmallSheetMetal],",
-        requirements.SmallSheetMetal.amount
-    )
-
-    if requirements.GlassPanel ~= nil then
-        lines[#lines + 1] = string.format(
-            "        item %d [Base.GlassPanel],",
-            requirements.GlassPanel.amount
-        )
-    end
-
-    lines[#lines + 1] = string.format(
-        "        item variable[%d:2147483647] [Base.MetalBar;Base.IronBar],",
-        requirements.Bars.amount
-    )
-    lines[#lines + 1] = string.format(
-        "        item %d [Base.Hinge],",
-        requirements.Hinge.amount
-    )
-    lines[#lines + 1] = string.format(
-        "        item %d [Base.WeldingRods] flags[DontRecordInput],",
-        requirements.WeldingRods.amount
-    )
+    CraftRecipeInputs.addMaterials(lines, materials)
     lines[#lines + 1] = "    }"
     lines[#lines + 1] = "}"
 
     return table.concat(lines, "\n")
 end
 
-function GarageCraftRecipeHydrator.hydrateDefinition(definitionId)
+function GarageCraftRecipeHydrator.hydrateDefinition(definitionId, entityId)
     local definition = Resolver.resolveDefinition(definitionId)
-    local recipe = BuildRecipe.getByEntityId(definition.entity)
+    entityId = entityId or definition.entity
+    local recipe = BuildRecipe.getByEntityId(entityId)
 
     if recipe == nil then
-        fail("buildable recipe not found for " .. tostring(definition.entity))
+        fail("buildable recipe not found for " .. tostring(entityId))
     end
 
     recipe:Load(recipe:getName(), buildRecipeScript(definition))
     recipe:OnScriptsLoaded(nil)
-
     return recipe
 end
 
