@@ -1,6 +1,7 @@
 return {
     definitionId = "FenceGates.Wood.SmallWhiteWoodenGate",
     entity = "Base.SmallWhiteWoodenGate",
+    inherits = "FenceGates.Wood.Base",
     doorType = "FenceGate",
 
     materialType = "Wood",
