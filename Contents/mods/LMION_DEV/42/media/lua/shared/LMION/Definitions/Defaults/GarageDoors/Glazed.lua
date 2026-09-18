@@ -15,6 +15,8 @@ return {
         },
 
         construction = {
+            category = "Welding",
+            variantGroup = "GarageDoors.Glazed",
             skill = { MetalWelding = 6 },
             time = 200,
             xp = 50,
