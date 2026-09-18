@@ -8,10 +8,24 @@ local extensions = {}
 local defaultIds = {}
 local definitionIds = {}
 local extensionIds = {}
+local changeListeners = {}
 local revision = 0
+
+local function notifyChangeListeners()
+    for index = 1, #changeListeners do
+        local ok, reason = pcall(changeListeners[index], revision)
+        if not ok then
+            print(
+                "[LMION:DEV] definition registry listener failed: "
+                    .. tostring(reason)
+            )
+        end
+    end
+end
 
 local function advanceRevision()
     revision = revision + 1
+    notifyChangeListeners()
 end
 
 function Registry.registerDefault(definitionDefault)
@@ -54,6 +68,15 @@ function Registry.registerExtension(extension)
     advanceRevision()
 
     return extensionId
+end
+
+function Registry.addChangeListener(listener)
+    if type(listener) ~= "function" then
+        error("LMION: registry change listener must be a function", 2)
+    end
+
+    changeListeners[#changeListeners + 1] = listener
+    return listener
 end
 
 function Registry.getDefault(defaultId)

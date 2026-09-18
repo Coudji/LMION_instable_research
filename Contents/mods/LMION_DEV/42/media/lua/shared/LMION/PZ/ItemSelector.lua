@@ -71,10 +71,11 @@ local function getTagTypes(tagName)
         if okItems and items ~= nil then
             for index = 0, items:size() - 1 do
                 local item = items:get(index)
-                local okHasTag, hasTag = item ~= nil
-                    and item.hasTag ~= nil
-                    and pcall(item.hasTag, item, tag)
-                    or false, false
+                local okHasTag, hasTag = false, false
+
+                if item ~= nil and item.hasTag ~= nil then
+                    okHasTag, hasTag = pcall(item.hasTag, item, tag)
+                end
 
                 if okHasTag and hasTag then
                     addUnique(

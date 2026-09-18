@@ -1,3 +1,4 @@
+local Registry = require "LMION/Definitions/Registry"
 local SpritePropsHook = require "LMION/Hooks/Moveables/SpriteProps"
 local GaragePickupHook = require "LMION/Hooks/Moveables/GaragePickup"
 local GaragePlacementHook = require "LMION/Hooks/Moveables/GaragePlacement"
@@ -13,12 +14,36 @@ local ToolDefinitions = require "LMION/Runtime/Moveables/ToolDefinitions"
 
 local MoveablesBootstrap = {}
 local hasRun = false
+local listenerInstalled = false
+local tileDefinitionsLoaded = false
 
 local function configureSprites()
+    tileDefinitionsLoaded = true
     SingleTileDoorSprites.configure()
     GarageSpriteGrids.configure()
     LargeGateSprites.configure()
     LargeGateSpriteGrids.configure()
+end
+
+local function refreshLateDefinitions()
+    if hasRun and tileDefinitionsLoaded then
+        local ok, reason = pcall(configureSprites)
+        if not ok then
+            print(
+                "[LMION:DEV] Moveables sprite projection deferred: "
+                    .. tostring(reason)
+            )
+        end
+    end
+end
+
+local function installRegistryListener()
+    if listenerInstalled then
+        return
+    end
+
+    listenerInstalled = true
+    Registry.addChangeListener(refreshLateDefinitions)
 end
 
 function MoveablesBootstrap.run()
@@ -36,6 +61,7 @@ function MoveablesBootstrap.run()
     LargeGatePickupHook.install()
     LargeGatePlacementHook.install()
     LargeGateToggleState.install()
+    installRegistryListener()
 
     if Events and Events.OnLoadedTileDefinitions then
         Events.OnLoadedTileDefinitions.Add(configureSprites)

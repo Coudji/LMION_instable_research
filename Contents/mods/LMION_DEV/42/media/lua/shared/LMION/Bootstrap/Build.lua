@@ -8,6 +8,7 @@ local VariantMenuFilter = require "LMION/Runtime/Build/VariantMenuFilter"
 
 local BuildBootstrap = {}
 local hasRun = false
+local listenerInstalled = false
 local claimedEntityIds = {}
 local hydratedRevision = -1
 
@@ -91,6 +92,29 @@ function BuildBootstrap.refresh(force)
     return true
 end
 
+local function refreshSafely()
+    if not hasRun then
+        return
+    end
+
+    local ok, reason = pcall(BuildBootstrap.refresh, true)
+    if not ok then
+        print(
+            "[LMION:DEV] Build definition projection deferred: "
+                .. tostring(reason)
+        )
+    end
+end
+
+local function installRegistryListener()
+    if listenerInstalled then
+        return
+    end
+
+    listenerInstalled = true
+    Registry.addChangeListener(refreshSafely)
+end
+
 function BuildBootstrap.run()
     if hasRun then
         return false
@@ -100,12 +124,11 @@ function BuildBootstrap.run()
 
     VariantMenuFilter.install()
     VanillaLargeGateLeafPreparation.install()
+    installRegistryListener()
     BuildBootstrap.refresh(true)
 
     if Events ~= nil and Events.OnGameBoot ~= nil then
-        Events.OnGameBoot.Add(function()
-            BuildBootstrap.refresh(true)
-        end)
+        Events.OnGameBoot.Add(refreshSafely)
     end
 
     return true

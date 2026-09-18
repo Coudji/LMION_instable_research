@@ -7,6 +7,7 @@ local ActionContract = require "LMION/Services/Moveables/ActionContract"
 
 local ToolDefinitions = {}
 local installed = false
+local listenerInstalled = false
 local registeredNames = {}
 local builtRevision = -1
 
@@ -84,17 +85,40 @@ function ToolDefinitions.refresh(force)
     return true
 end
 
+local function refreshSafely()
+    if not installed then
+        return
+    end
+
+    local ok, reason = pcall(ToolDefinitions.refresh, true)
+    if not ok then
+        print(
+            "[LMION:DEV] Moveables tool projection deferred: "
+                .. tostring(reason)
+        )
+    end
+end
+
+local function installRegistryListener()
+    if listenerInstalled then
+        return
+    end
+
+    listenerInstalled = true
+    Registry.addChangeListener(refreshSafely)
+end
+
 function ToolDefinitions.install()
     if installed then
         return false
     end
     installed = true
 
-    ToolDefinitions.refresh(true)
+    installRegistryListener()
+    refreshSafely()
+
     if Events ~= nil and Events.OnGameBoot ~= nil then
-        Events.OnGameBoot.Add(function()
-            ToolDefinitions.refresh(true)
-        end)
+        Events.OnGameBoot.Add(refreshSafely)
     end
 
     return true
