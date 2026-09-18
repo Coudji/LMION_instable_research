@@ -29,58 +29,14 @@ module Base
 
         component CraftRecipe
         {
-            timedAction = BuildWallHammer,
-            time = 180,
-            category = LMION,
-            SkillRequired = Woodwork:7,
-            xpAward = Woodwork:45,
-
-            inputs
-            {
-                item 1 tags[base:hammer] mode:keep flags[Prop1;MayDegradeVeryLight],
-                item 1 [Base.Screwdriver] mode:keep,
-                item 4 [Base.Plank],
-                item 4 [Base.Nails],
-                item 2 [Base.Hinge],
-                item 4 [Base.Screws],
-                item 1 [Base.Doorknob],
-                item 2 [Base.GlassPanel],
-            }
         }
 
         component SpriteConfig
         {
-            face W
-            {
-                layer
-                {
-                    row = location_shop_gas2go_01_60,
-                }
-            }
-
-            face N
-            {
-                layer
-                {
-                    row = location_shop_gas2go_01_61,
-                }
-            }
-
-            face W_OPEN
-            {
-                layer
-                {
-                    row = location_shop_gas2go_01_62,
-                }
-            }
-
-            face N_OPEN
-            {
-                layer
-                {
-                    row = location_shop_gas2go_01_63,
-                }
-            }
+            face W { layer { row = location_shop_gas2go_01_60, } }
+            face N { layer { row = location_shop_gas2go_01_61, } }
+            face W_OPEN { layer { row = location_shop_gas2go_01_62, } }
+            face N_OPEN { layer { row = location_shop_gas2go_01_63, } }
         }
     }
 }
