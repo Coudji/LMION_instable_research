@@ -10,6 +10,7 @@ For a migrated LMION buildable entity, the effective definition owns:
 
 ```text
 construction.category
+construction.timedAction
 construction.skill
 construction.time
 construction.xp
@@ -20,24 +21,49 @@ construction.variantGroup
 
 The PZ entity script keeps the `CraftRecipe` component shell required for Project Zomboid to create the buildable recipe object, but it does not duplicate the recipe values above.
 
-At bootstrap, Build translates the effective definition into the PZ `CraftRecipe` contract and reloads that existing recipe object. `PZ/BuildRecipe.lua` is the narrow engine adapter used for recipe lookup.
+At runtime, Build translates the effective definition into the PZ `CraftRecipe` contract and reloads that existing recipe object. `PZ/BuildRecipe.lua` is the narrow engine adapter used for exact GameEntity/CraftRecipe lookup.
 
-The generic translation lives in `Runtime/Build/CraftRecipeHydrator.lua`. Families whose PZ recipe shape is materially different keep their translation with that family. Garage uses `Runtime/Build/Garage/CraftRecipeHydrator.lua` because its variable-width bar input and width-dependent material presentation are part of the Garage Build contract rather than a generic recipe rule.
+The generic translation lives in `Runtime/Build/CraftRecipeHydrator.lua`. Families whose PZ recipe shape is materially different keep their translation with that family. Garage uses `Runtime/Build/Garage/CraftRecipeHydrator.lua` because its variable-width input and width-dependent material presentation are part of the Garage Build contract rather than a generic recipe rule.
 
 This keeps one gameplay source of truth while preserving the parse-time GameEntity structure expected by PZ.
 
-`Bootstrap/Build.lua` does not keep a second list of definition-owned recipes. It iterates the registered definitions, resolves their effective data, and hydrates a recipe when all of the following are true:
+## Recipe discovery and lifecycle
 
-```text
-the effective definition has construction data
-the definition exposes one entity id
-a PZ buildable recipe exists for that entity
-the existing CraftRecipe is an empty shell
+`Bootstrap/Build.lua` does not keep a second list of definition-owned recipes. It iterates registered definitions, resolves their effective data, derives their GameEntity ids (`entity` and multipart `entities` members), and hydrates recipes whose existing CraftRecipe is an empty migration shell.
+
+The empty-shell check is the transitional migration boundary. It prevents LMION from overwriting recipes that are still explicitly authored in PZ scripts. Once an entity has been claimed by the definition-owned path, later registry revisions may rehydrate it from the new effective definition.
+
+The registry exposes a revision/change boundary. Build refreshes its projections when definitions/defaults/extensions are registered after initial bootstrap and retries at `OnGameBoot`. A third-party addon therefore does not need a second recipe-registration API or an LMION-specific CraftRecipe ModID.
+
+The old `LMION_DEV` recipe ModID gate is intentionally gone. Registration in the LMION definition registry, plus a matching GameEntity/CraftRecipe shell, is the ownership signal.
+
+## Construction action
+
+`construction.timedAction` is authored data. Build does not infer it from a skill name.
+
+For example:
+
+```lua
+construction = {
+    timedAction = "BuildWallHammer",
+    skill = { Woodwork = 6 },
+    ...
+}
 ```
 
-The empty-shell check is the migration boundary. It lets LMION discover definition-owned recipes from registered data without overwriting build recipes that are still explicitly authored in PZ scripts.
+or:
 
-This also applies to definitions registered by third-party addons before Build bootstrap runs. A modder does not register a variant or recipe in a separate LMION list: registering the definition and supplying the corresponding empty `CraftRecipe` shell is sufficient.
+```lua
+construction = {
+    timedAction = "BuildWallMetal",
+    skill = { MetalWelding = 4 },
+    ...
+}
+```
+
+An addon may provide another valid PZ timed-action id without requiring a core mapping.
+
+The generic Build hydrator serializes the authored skill table rather than maintaining a Woodwork/MetalWelding whitelist. Numeric `construction.xp` remains convenient for a single-skill recipe; a skill table can be used when a PZ recipe legitimately has several skill XP awards.
 
 ## Construction input descriptors
 
@@ -54,7 +80,7 @@ A tool descriptor may select its input with one of:
 
 Tool identity is therefore open-ended: an addon may use a new item or tag without requiring an LMION core change. Tools default to `amount = 1` and `mode = "keep"`; either can be stated explicitly when a recipe needs something else.
 
-PZ input flags that are part of the authored recipe also live on the descriptor rather than in a hidden tag-specific lookup. For example the current woodworking hammer contract is:
+PZ input flags that are part of the authored recipe also live on the descriptor rather than in a hidden tag-specific lookup. For example a woodworking hammer contract may state:
 
 ```lua
 tools = {
@@ -66,23 +92,43 @@ tools = {
 }
 ```
 
-`Runtime/Build/CraftRecipeInputs.lua` owns the mechanical conversion of those descriptors to PZ input syntax. It is shared by the generic recipe hydrator and family-specific hydrators such as Garage. Family hydrators may still own genuinely family-specific input shapes, but they must read common tool requirements from the effective definition rather than restating a concrete tool.
+`Runtime/Build/CraftRecipeInputs.lua` owns the mechanical conversion of those descriptors to PZ input syntax. It is shared by the generic recipe hydrator and family-specific hydrators.
 
-`construction.materials` uses the same selector vocabulary (`tag`, `anyTagOf`, `item`, `anyOf`). A material defines exactly one of `amount` or `uses`; `uses` is translated to the PZ non-recorded-input form used by drainable construction consumables. Optional `mode` and `flags` remain explicit definition data when required.
+`construction.materials` uses the same selector vocabulary (`tag`, `anyTagOf`, `item`, `anyOf`). Normal recipes define a numeric `amount` or `uses`; `uses` is translated to PZ's non-recorded-input form used by drainable construction consumables. Optional `mode` and `flags` remain explicit definition data.
+
+## Garage width-dependent materials
+
+Garage runtime knows that a Garage has a variable **width**. It does not know that a Garage is made from `SmallSheetMetal`, `MetalBar`, `GlassPanel`, or any other concrete resource.
+
+Width scaling lives on Garage material descriptors, for example:
+
+```lua
+materials = {
+    {
+        item = "Base.SmallSheetMetal",
+        amount = { perWidth = 3 },
+    },
+    {
+        anyOf = { "Base.MetalBar", "Base.IronBar" },
+        amount = { perWidth = 1 },
+        widthInput = true,
+    },
+    {
+        item = "Base.WeldingRods",
+        uses = { perStep = 2, step = 3, max = 20 },
+    },
+}
+```
+
+`Services/Build/Garage/Materials.lua` evaluates that authored contract for a selected width. `widthInput = true` identifies the one PZ variable input used to drive Garage width; `WidthState` and finalization discover that input from the definition rather than searching for MetalBar/IronBar by name.
+
+`Services/Build/Garage/Requirements.lua` derives stock checks and extra consumption from the same evaluated material descriptors. There is no second solid/glazed resource table and no Glass-material heuristic.
 
 ## Vanilla-facing categories
 
 Construction category is definition data, not an LMION branding category.
 
 An opening that naturally belongs with vanilla woodworking, welding or another construction family should use the corresponding PZ category. LMION making an existing-style opening buildable or moveable is not by itself a reason to place that opening under an `LMION` category.
-
-Current migrated examples include:
-
-```text
-Doors.Wood.FourPanels -> Carpentry
-Doors.Metal.Service   -> Welding
-GarageDoors.Solid     -> Welding
-```
 
 ## Variant groups
 
@@ -103,7 +149,7 @@ availability/build control
 selected build object
 ```
 
-This deliberately allows variants to differ in materials, skill, time or other recipe data. For example, colored variants may require different paint items while still sharing one catalog entry.
+This deliberately allows variants to differ in materials, skill, time or other recipe data.
 
 `variantGroup = false` is an explicit opt-out from an inherited variant group. It is a presentation decision, not a statement that the recipe is technically incompatible with grouping.
 
@@ -113,9 +159,7 @@ No group-specific registration list exists. Variant membership is derived entire
 
 The representative is the first registered definition in a variant group.
 
-Built-in registration is explicit through `Definitions/BuiltinContent.lua`, so the representative is reviewable and deterministic. For the current metal service-door group, `Doors.Metal.BlackServiceDoor` is registered first and is therefore the visible catalog representative.
-
-Third-party definitions participate through the same registry and grouping mechanism. A mod that wants several of its definitions grouped gives them the same `construction.variantGroup` value; it does not call a second variant-registration API.
+Built-in registration is explicit through `Definitions/BuiltinContent.lua`, so the representative is reviewable and deterministic. Third-party definitions participate through the same registry and grouping mechanism.
 
 ## Build recipe options UI
 
@@ -136,8 +180,6 @@ UI/Build/RecipeOptionsPanel.lua
     presentation composition only
 ```
 
-Garage and variant business rules remain in their own services. The shared client boundary exists only because PZ exposes one UI location for those independent controls.
-
 ## Hidden variants and sequential Build
 
 Non-representative recipes remain real recipes but are filtered out of the visible construction list through PZ's `OnAddToMenu` callback.
@@ -150,13 +192,19 @@ Once the actual variant recipe is restored, vanilla creates the correct ghost an
 
 ```text
 Bootstrap/Build.lua
-    Build startup coordination and discovery of definition-owned recipe shells
+    Build startup/registry-refresh coordination and recipe-shell discovery
+
+PZ/BuildRecipe.lua
+    exact GameEntity -> CraftRecipe engine lookup
 
 Runtime/Build/CraftRecipeInputs.lua
     generic definition input descriptor -> PZ CraftRecipe input syntax
 
 Runtime/Build/CraftRecipeHydrator.lua
     generic effective definition -> PZ CraftRecipe translation
+
+Services/Build/Garage/Materials.lua
+    Garage definition material scaling evaluation
 
 Runtime/Build/Garage/CraftRecipeHydrator.lua
     Garage-specific variable-width PZ recipe translation
@@ -170,26 +218,11 @@ Services/Build/VariantGroups.lua
 Services/Build/VariantState.lua
     active BuildLogic variant selection
 
-PZ/BuildRecipe.lua
-    narrow ScriptManager/build-recipe lookup and shell inspection adapter
-
-client/LMION/UI/Build/RecipeOptionsPanel.lua
-    compose applicable Build recipe controls
-
-client/LMION/UI/Build/VariantSelector.lua
-    variant selector widget/presentation
-
-client/LMION/UI/Build/GarageWidthSelector.lua
-    Garage width selector widget/presentation
-
 client/LMION/Hooks/Build/RecipeOptions.lua
     single vanilla Build recipe options UI boundary
 
 client/LMION/Hooks/Build/RepeatPlacement.lua
     single post-build repeat-placement state restoration boundary
-
-client/LMION/Hooks/Build/Variants.lua
-    loads the variant-related Build adapters; no recipe/UI business logic
 ```
 
-`Services/Build` does not own PZ UI objects or direct ScriptManager lookup. Client hooks do not own grouping policy or recipe construction.
+Build does not own tool/material identity outside definitions. Client hooks do not own grouping policy or recipe construction.
