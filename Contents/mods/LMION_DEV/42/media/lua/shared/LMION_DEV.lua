@@ -6,8 +6,8 @@ local DefinitionIndexDiagnostics = require "LMION/Diagnostics/DefinitionIndex"
 local LargeGateBuildDiagnostics = require "LMION/Diagnostics/LargeGateBuild"
 
 DefinitionBootstrap.run(LMION)
-BuildBootstrap.run()
 MoveablesBootstrap.run()
+BuildBootstrap.run()
 
 if Events ~= nil and Events.OnGameBoot ~= nil then
     Events.OnGameBoot.Add(LargeGateBuildDiagnostics.run)
