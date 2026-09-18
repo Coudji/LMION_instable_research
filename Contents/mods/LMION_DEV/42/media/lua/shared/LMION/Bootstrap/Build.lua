@@ -1,3 +1,6 @@
+local Registry = require "LMION/Definitions/Registry"
+local Resolver = require "LMION/Definitions/Resolver"
+local BuildRecipe = require "LMION/PZ/BuildRecipe"
 local CraftRecipeHydrator = require "LMION/Runtime/Build/CraftRecipeHydrator"
 local VanillaLargeGateLeafPreparation = require "LMION/Runtime/Build/VanillaLargeGateLeafPreparation"
 local VariantMenuFilter = require "LMION/Runtime/Build/VariantMenuFilter"
@@ -5,21 +8,26 @@ local VariantMenuFilter = require "LMION/Runtime/Build/VariantMenuFilter"
 local BuildBootstrap = {}
 local hasRun = false
 
-local DEFINITION_OWNED_RECIPES = {
-    "Doors.Metal.BlackServiceDoor",
-    "Doors.Metal.BlueServiceDoor",
-    "Doors.Metal.GreenServiceDoor",
-    "Doors.Metal.LightRedServiceDoor",
-    "Doors.Metal.OrangeServiceDoor",
-    "Doors.Metal.RedServiceDoor",
-    "Doors.Metal.WhiteServiceDoorWithPorthole",
-}
-
 local function hydrateDefinitionOwnedRecipes()
-    for index = 1, #DEFINITION_OWNED_RECIPES do
-        CraftRecipeHydrator.hydrateDefinition(
-            DEFINITION_OWNED_RECIPES[index]
-        )
+    local definitionIds = Registry.getDefinitionIds()
+
+    for index = 1, #definitionIds do
+        local definitionId = definitionIds[index]
+        local definition = Resolver.resolveDefinition(definitionId)
+        local construction = type(definition) == "table"
+            and definition.construction
+            or nil
+        local entityId = type(definition) == "table"
+            and definition.entity
+            or nil
+
+        if type(construction) == "table" and type(entityId) == "string" then
+            local recipe = BuildRecipe.getByEntityId(entityId)
+
+            if BuildRecipe.isEmptyShell(recipe) then
+                CraftRecipeHydrator.hydrateDefinition(definitionId)
+            end
+        end
     end
 end
 
