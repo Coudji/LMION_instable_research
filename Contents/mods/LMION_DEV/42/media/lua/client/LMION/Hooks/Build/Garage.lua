@@ -1,9 +1,8 @@
-require "Entity/ISUI/BuildRecipe/ISBuildRecipePanel"
 require "Entity/ISUI/BuildRecipe/ISWidgetBuildControl"
 require "Entity/ISUI/CraftRecipe/ISWidgetInput"
 require "Entity/ISUI/BuildRecipe/ISBuildPanel"
 require "Entity/ISUI/Controls/ISWidgetTitleHeader"
-require "LMION/UI/Build/GarageWidthSelector"
+require "LMION/Hooks/Build/RecipeOptions"
 
 local GarageBuild = require "LMION/Services/Build/Garage/Build"
 local GarageRequirements = require "LMION/Services/Build/Garage/Requirements"
@@ -24,30 +23,6 @@ local function getContainers(logic)
     end
 
     return logic:getContainers()
-end
-
-local previousCreateDynamicChildren = ISBuildRecipePanel.createDynamicChildren
-
-ISBuildRecipePanel.createDynamicChildren = function(self)
-    previousCreateDynamicChildren(self)
-
-    local profile = getGarageContext(self.logic)
-    if profile == nil or self.rootTable == nil then
-        self.lmionGarageWidthSelector = nil
-        return
-    end
-
-    local selector = LMIONGarageWidthSelector:new(
-        self.player,
-        self.logic,
-        self
-    )
-    selector:initialise()
-    selector:instantiate()
-
-    self.lmionGarageWidthSelector = selector
-    self.rootTable:setElement(0, 1, selector)
-    self:xuiRecalculateLayout()
 end
 
 local function getInputFullType(widget)
