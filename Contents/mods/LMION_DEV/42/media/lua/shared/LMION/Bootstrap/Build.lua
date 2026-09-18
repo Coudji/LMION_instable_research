@@ -2,11 +2,21 @@ local Registry = require "LMION/Definitions/Registry"
 local Resolver = require "LMION/Definitions/Resolver"
 local BuildRecipe = require "LMION/PZ/BuildRecipe"
 local CraftRecipeHydrator = require "LMION/Runtime/Build/CraftRecipeHydrator"
+local GarageCraftRecipeHydrator = require "LMION/Runtime/Build/Garage/CraftRecipeHydrator"
 local VanillaLargeGateLeafPreparation = require "LMION/Runtime/Build/VanillaLargeGateLeafPreparation"
 local VariantMenuFilter = require "LMION/Runtime/Build/VariantMenuFilter"
 
 local BuildBootstrap = {}
 local hasRun = false
+
+local function hydrateDefinition(definitionId, definition)
+    if definition.doorType == "Garage" then
+        GarageCraftRecipeHydrator.hydrateDefinition(definitionId)
+        return
+    end
+
+    CraftRecipeHydrator.hydrateDefinition(definitionId)
+end
 
 local function hydrateDefinitionOwnedRecipes()
     local definitionIds = Registry.getDefinitionIds()
@@ -25,7 +35,7 @@ local function hydrateDefinitionOwnedRecipes()
             local recipe = BuildRecipe.getByEntityId(entityId)
 
             if BuildRecipe.isEmptyShell(recipe) then
-                CraftRecipeHydrator.hydrateDefinition(definitionId)
+                hydrateDefinition(definitionId, definition)
             end
         end
     end
