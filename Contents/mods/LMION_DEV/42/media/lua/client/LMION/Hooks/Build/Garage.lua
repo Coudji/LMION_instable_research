@@ -14,6 +14,7 @@ local function getGarageContext(logic)
     if profile == nil then
         return nil, nil
     end
+
     return profile, GarageWidthState.ensureWidthOnLogic(logic)
 end
 
@@ -23,19 +24,27 @@ end
 
 local function getInputFullType(widget)
     local inputScript = widget and widget.inputScript or nil
-    local items = inputScript and inputScript.getPossibleInputItems and inputScript:getPossibleInputItems() or nil
+    local items = inputScript
+        and inputScript.getPossibleInputItems
+        and inputScript:getPossibleInputItems()
+        or nil
+
     if items == nil or items:size() < 1 then
         return nil
     end
+
     return items:get(0):getFullName()
 end
 
 local previousInputUpdateValues = ISWidgetInput.updateValues
+
 ISWidgetInput.updateValues = function(self)
     previousInputUpdateValues(self)
 
     local profile, width = getGarageContext(self.logic)
-    if profile == nil or self.primary == nil or self.primary.label == nil then
+    if profile == nil
+        or self.primary == nil
+        or self.primary.label == nil then
         return
     end
 
@@ -56,7 +65,10 @@ ISWidgetInput.updateValues = function(self)
     local text = nil
 
     if requirement.uses then
-        local amountText = satisfied and tostring(requirement.amount) or tostring(available) .. "/" .. tostring(requirement.amount)
+        local amountText = satisfied
+            and tostring(requirement.amount)
+            or tostring(available) .. "/" .. tostring(requirement.amount)
+
         text = amountText .. " " .. getText("Attributes_Type_Uses")
     else
         text = tostring(available) .. "/" .. tostring(requirement.amount)
@@ -73,6 +85,7 @@ ISWidgetInput.updateValues = function(self)
     else
         self.primary.label.textColor = self.colBad
         self.borderColor = self.colBad
+
         if available <= 0 then
             self.primary.icon.backgroundColor.a = 0.25
         end
@@ -80,17 +93,32 @@ ISWidgetInput.updateValues = function(self)
 end
 
 local previousTitleUpdateLabels = ISWidgetTitleHeader.updateLabels
+
 ISWidgetTitleHeader.updateLabels = function(self)
     previousTitleUpdateLabels(self)
+
     local profile, width = getGarageContext(self.logic)
-    if profile == nil or self.errorLabel == nil or self.player:isBuildCheat() then
+    if profile == nil
+        or self.errorLabel == nil
+        or self.player:isBuildCheat() then
         return
     end
 
-    local hasRequirements = GarageRequirements.hasRequirements(self.player, profile, width, getContainers(self.logic))
-    local hasSelectedBars = GarageWidthState.hasSelectedBars(self.logic, width)
-    if not hasRequirements or not hasSelectedBars then
-        local text = getText("IGUI_CraftingWindow_Error_NotAvailable") .. getText("IGUI_CraftingWindow_Error_Inputs")
+    local hasRequirements = GarageRequirements.hasRequirements(
+        self.player,
+        profile,
+        width,
+        getContainers(self.logic)
+    )
+    local hasSelectedWidthInputs = GarageWidthState.hasSelectedWidthInputs(
+        self.logic,
+        width
+    )
+
+    if not hasRequirements or not hasSelectedWidthInputs then
+        local text = getText("IGUI_CraftingWindow_Error_NotAvailable")
+            .. getText("IGUI_CraftingWindow_Error_Inputs")
+
         self.errorLabel.errorText = text
         self.errorLabel:setName(text)
         self.errorLabel:setVisible(true)
@@ -98,34 +126,54 @@ ISWidgetTitleHeader.updateLabels = function(self)
 end
 
 local previousBuildControlPrerender = ISWidgetBuildControl.prerender
+
 ISWidgetBuildControl.prerender = function(self)
     previousBuildControlPrerender(self)
+
     local profile, width = getGarageContext(self.logic)
-    if profile == nil or self.buttonCraft == nil or self.player:isBuildCheat() then
+    if profile == nil
+        or self.buttonCraft == nil
+        or self.player:isBuildCheat() then
         return
     end
 
     self.buttonCraft.enable = self.buttonCraft.enable
-        and GarageRequirements.hasRequirements(self.player, profile, width, getContainers(self.logic))
-        and GarageWidthState.hasSelectedBars(self.logic, width)
+        and GarageRequirements.hasRequirements(
+            self.player,
+            profile,
+            width,
+            getContainers(self.logic)
+        )
+        and GarageWidthState.hasSelectedWidthInputs(self.logic, width)
 end
 
 local previousCreateBuildIsoEntity = ISBuildPanel.createBuildIsoEntity
+
 ISBuildPanel.createBuildIsoEntity = function(self, dontSetDrag)
     local profile, width = getGarageContext(self.logic)
+
     if profile ~= nil and self._lmionGarageRepeatWidth ~= nil then
         width = GarageBuild.normalizeWidth(self._lmionGarageRepeatWidth)
     end
 
     local result = previousCreateBuildIsoEntity(self, dontSetDrag)
+
     if profile ~= nil and self.buildEntity ~= nil then
         self.buildEntity.lmionGarageWidth = width
         self.buildEntity.lmionGarageDefinitionId = profile.definitionId
 
         if not self.player:isBuildCheat() then
             self.buildEntity.blockBuild = self.buildEntity.blockBuild
-                or not GarageRequirements.hasRequirements(self.player, profile, width, getContainers(self.logic))
-                or not GarageWidthState.hasSelectedBars(self.logic, width)
+                or not GarageRequirements.hasRequirements(
+                    self.player,
+                    profile,
+                    width,
+                    getContainers(self.logic)
+                )
+                or not GarageWidthState.hasSelectedWidthInputs(
+                    self.logic,
+                    width
+                )
         end
     end
 
