@@ -29,58 +29,14 @@ module Base
 
         component CraftRecipe
         {
-            timedAction = BuildWallMetal,
-            time = 170,
-            category = LMION,
-            SkillRequired = MetalWelding:4,
-            xpAward = MetalWelding:30,
-
-            inputs
-            {
-                item 1 [Base.WeldingMask] mode:keep,
-                item 4 [Base.BlowTorch] flags[DontRecordInput],
-                item 1 [Base.SheetMetal],
-                item 2 [Base.MetalBar;Base.IronBar],
-                item 2 [Base.Hinge],
-                item 4 [Base.WeldingRods] flags[DontRecordInput],
-                item 1 [Base.Doorknob],
-                item 1 [Base.GlassPanel],
-            }
         }
 
         component SpriteConfig
         {
-            face W
-            {
-                layer
-                {
-                    row = fixtures_doors_01_20,
-                }
-            }
-
-            face N
-            {
-                layer
-                {
-                    row = fixtures_doors_01_21,
-                }
-            }
-
-            face W_OPEN
-            {
-                layer
-                {
-                    row = fixtures_doors_01_22,
-                }
-            }
-
-            face N_OPEN
-            {
-                layer
-                {
-                    row = fixtures_doors_01_23,
-                }
-            }
+            face W { layer { row = fixtures_doors_01_20, } }
+            face N { layer { row = fixtures_doors_01_21, } }
+            face W_OPEN { layer { row = fixtures_doors_01_22, } }
+            face N_OPEN { layer { row = fixtures_doors_01_23, } }
         }
     }
 }
