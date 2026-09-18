@@ -4,37 +4,8 @@ local CraftRecipeInputs = require "LMION/Runtime/Build/CraftRecipeInputs"
 
 local CraftRecipeHydrator = {}
 
-local TIMED_ACTIONS = {
-    Woodwork = "BuildWallHammer",
-    MetalWelding = "BuildWallMetal",
-}
-
 local function fail(message)
     error("LMION CraftRecipeHydrator: " .. message, 3)
-end
-
-local function getSingleSkill(skill)
-    if type(skill) ~= "table" then
-        fail("construction.skill must be a table")
-    end
-
-    local skillName = nil
-    local skillLevel = nil
-
-    for name, level in pairs(skill) do
-        if skillName ~= nil then
-            fail("recipe hydration currently supports one construction skill")
-        end
-
-        skillName = name
-        skillLevel = tonumber(level)
-    end
-
-    if skillName == nil or skillLevel == nil then
-        fail("construction.skill must contain one valid skill")
-    end
-
-    return skillName, math.floor(skillLevel)
 end
 
 local function addValue(lines, key, value)
@@ -45,17 +16,72 @@ local function addValue(lines, key, value)
     lines[#lines + 1] = string.format("    %s = %s,", key, tostring(value))
 end
 
+local function serializeLevels(levels, label)
+    if levels == nil then
+        return nil, {}
+    end
+    if type(levels) ~= "table" then
+        fail(label .. " must be a table")
+    end
+
+    local names = {}
+    for name in pairs(levels) do
+        if type(name) ~= "string" or name == "" then
+            fail(label .. " contains an invalid skill name")
+        end
+        names[#names + 1] = name
+    end
+    table.sort(names)
+
+    local values = {}
+    for index = 1, #names do
+        local name = names[index]
+        local level = tonumber(levels[name])
+        if level == nil or level < 0 or level ~= math.floor(level) then
+            fail(label .. " contains an invalid level for " .. name)
+        end
+        values[index] = name .. ":" .. tostring(level)
+    end
+
+    return #values > 0 and table.concat(values, ";") or nil, names
+end
+
+local function serializeXp(xp, skillNames)
+    if xp == nil then
+        return nil
+    end
+
+    if type(xp) == "table" then
+        return serializeLevels(xp, "construction.xp")
+    end
+
+    local amount = tonumber(xp)
+    if amount == nil or amount < 0 then
+        fail("construction.xp must be a non-negative number or a skill table")
+    end
+    if #skillNames ~= 1 then
+        fail("numeric construction.xp requires exactly one construction skill")
+    end
+
+    return skillNames[1] .. ":" .. tostring(amount)
+end
+
 local function buildRecipeScript(definition)
     local construction = definition.construction
     if type(construction) ~= "table" then
         fail("definition has no construction contract")
     end
 
-    local skillName, skillLevel = getSingleSkill(construction.skill)
-    local timedAction = TIMED_ACTIONS[skillName]
-    if timedAction == nil then
-        fail("unsupported construction skill " .. tostring(skillName))
+    local timedAction = construction.timedAction
+    if type(timedAction) ~= "string" or timedAction == "" then
+        fail("construction.timedAction must be a non-empty string")
     end
+
+    local skillRequired, skillNames = serializeLevels(
+        construction.skill,
+        "construction.skill"
+    )
+    local xpAward = serializeXp(construction.xp, skillNames)
 
     local lines = {
         "CraftRecipe",
@@ -65,11 +91,8 @@ local function buildRecipeScript(definition)
     addValue(lines, "timedAction", timedAction)
     addValue(lines, "time", construction.time)
     addValue(lines, "category", construction.category)
-    addValue(lines, "SkillRequired", skillName .. ":" .. tostring(skillLevel))
-
-    if construction.xp ~= nil then
-        addValue(lines, "xpAward", skillName .. ":" .. tostring(construction.xp))
-    end
+    addValue(lines, "SkillRequired", skillRequired)
+    addValue(lines, "xpAward", xpAward)
 
     if type(construction.variantGroup) == "string"
         and construction.variantGroup ~= "" then
@@ -87,19 +110,16 @@ local function buildRecipeScript(definition)
     return table.concat(lines, "\n")
 end
 
-function CraftRecipeHydrator.hydrateDefinition(definitionId)
+function CraftRecipeHydrator.hydrateDefinition(definitionId, entityId)
     local definition = Resolver.resolveDefinition(definitionId)
-    local recipe = BuildRecipe.getByEntityId(definition.entity)
+    entityId = entityId or definition.entity
+    local recipe = BuildRecipe.getByEntityId(entityId)
 
     if recipe == nil then
-        fail("buildable recipe not found for " .. tostring(definition.entity))
+        fail("buildable recipe not found for " .. tostring(entityId))
     end
 
     recipe:Load(recipe:getName(), buildRecipeScript(definition))
-
-    -- The entity CraftRecipe shell has already passed PZ's first script-load
-    -- phase. Re-run it after loading definition-owned recipe data so derived
-    -- recipe state is rebuilt by the engine.
     recipe:OnScriptsLoaded(nil)
 
     return recipe

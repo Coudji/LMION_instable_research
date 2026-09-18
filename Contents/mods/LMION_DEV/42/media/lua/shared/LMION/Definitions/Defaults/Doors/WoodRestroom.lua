@@ -18,6 +18,7 @@ return {
         construction = {
             category = "Carpentry",
             variantGroup = "Doors.Wood.Restroom",
+            timedAction = "BuildWallHammer",
             skill = { Woodwork = 1 },
             time = 50,
             xp = 5,

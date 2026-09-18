@@ -3,8 +3,6 @@ require "BuildingObjects/ISBuildIsoEntity"
 local SingleTileDoorBuildProfile = require "LMION/Services/Build/SingleTileDoor/Profile"
 local SingleTileDoorPlacement = require "LMION/Services/Common/SingleTileDoor/Placement"
 
-local MOD_ID = "LMION_DEV"
-
 local function getGameScript(buildObject)
     local spriteScript = nil
 
@@ -17,11 +15,6 @@ end
 
 local function getProfile(buildObject)
     if buildObject == nil or buildObject.craftRecipe == nil then
-        return nil
-    end
-
-    if buildObject.craftRecipe.getModID ~= nil
-        and buildObject.craftRecipe:getModID() ~= MOD_ID then
         return nil
     end
 

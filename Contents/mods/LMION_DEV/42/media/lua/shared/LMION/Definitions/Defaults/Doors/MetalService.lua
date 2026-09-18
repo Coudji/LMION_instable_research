@@ -18,6 +18,7 @@ return {
         construction = {
             category = "Welding",
             variantGroup = "Doors.Metal.Service",
+            timedAction = "BuildWallMetal",
             skill = { MetalWelding = 3 },
             time = 120,
             xp = 15,

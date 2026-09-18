@@ -20,12 +20,28 @@ function BuildRecipe.getByName(recipeName)
 end
 
 function BuildRecipe.getByEntityId(entityId)
-    local recipeName = getEntityShortName(entityId)
-    if recipeName == nil then
+    if type(entityId) ~= "string"
+        or entityId == ""
+        or ScriptManager == nil
+        or ScriptManager.instance == nil then
         return nil
     end
 
-    return BuildRecipe.getByName(recipeName)
+    if ScriptManager.instance.getGameEntityScript ~= nil
+        and ComponentType ~= nil
+        and ComponentType.CraftRecipe ~= nil then
+        local entity = ScriptManager.instance:getGameEntityScript(entityId)
+        if entity ~= nil and entity.getComponentScriptFor ~= nil then
+            local component = entity:getComponentScriptFor(ComponentType.CraftRecipe)
+            if component ~= nil and component.getCraftRecipe ~= nil then
+                return component:getCraftRecipe()
+            end
+            return nil
+        end
+    end
+
+    local recipeName = getEntityShortName(entityId)
+    return recipeName and BuildRecipe.getByName(recipeName) or nil
 end
 
 function BuildRecipe.getNameForEntityId(entityId)

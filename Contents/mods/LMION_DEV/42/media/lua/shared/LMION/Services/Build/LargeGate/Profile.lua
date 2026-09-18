@@ -6,6 +6,7 @@ local LargeGateBuildProfile = {}
 
 local LEAVES = { "A", "B" }
 local profilesByEntityId = nil
+local builtRevision = nil
 
 local function addDefinition(index, definition)
     if definition == nil or definition.doorType ~= "LargeGate" then
@@ -36,6 +37,13 @@ local function buildIndex()
     end
 
     profilesByEntityId = index
+    builtRevision = Registry.getRevision()
+end
+
+local function ensureBuilt()
+    if profilesByEntityId == nil or builtRevision ~= Registry.getRevision() then
+        buildIndex()
+    end
 end
 
 local function getEntityId(gameScript)
@@ -61,12 +69,15 @@ local function getEntityId(gameScript)
 end
 
 function LargeGateBuildProfile.getByGameScript(gameScript)
-    if profilesByEntityId == nil then
-        buildIndex()
-    end
+    ensureBuilt()
 
     local entityId = getEntityId(gameScript)
     return entityId and profilesByEntityId[entityId] or nil
+end
+
+function LargeGateBuildProfile.invalidate()
+    profilesByEntityId = nil
+    builtRevision = nil
 end
 
 return LargeGateBuildProfile
