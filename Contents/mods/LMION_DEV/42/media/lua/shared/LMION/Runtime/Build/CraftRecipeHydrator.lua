@@ -1,5 +1,5 @@
 local Resolver = require "LMION/Definitions/Resolver"
-require "LMION/Services/Build/VariantGroups"
+local BuildRecipe = require "LMION/PZ/BuildRecipe"
 
 local CraftRecipeHydrator = {}
 
@@ -27,7 +27,7 @@ local function getSingleSkill(skill)
 
     for name, level in pairs(skill) do
         if skillName ~= nil then
-            fail("recipe hydration prototype currently supports one construction skill")
+            fail("recipe hydration currently supports one construction skill")
         end
 
         skillName = name
@@ -39,14 +39,6 @@ local function getSingleSkill(skill)
     end
 
     return skillName, math.floor(skillLevel)
-end
-
-local function getEntityShortName(entityId)
-    if type(entityId) ~= "string" or entityId == "" then
-        fail("definition has no valid entity")
-    end
-
-    return string.match(entityId, "^[^.]+%.(.+)$") or entityId
 end
 
 local function addValue(lines, key, value)
@@ -148,32 +140,18 @@ end
 
 function CraftRecipeHydrator.hydrateDefinition(definitionId)
     local definition = Resolver.resolveDefinition(definitionId)
-    local recipeName = getEntityShortName(definition.entity)
+    local recipe = BuildRecipe.getByEntityId(definition.entity)
 
-    if ScriptManager == nil or ScriptManager.instance == nil then
-        fail("ScriptManager is unavailable")
-    end
-
-    local recipe = ScriptManager.instance:getBuildableRecipe(recipeName)
     if recipe == nil then
         fail("buildable recipe not found for " .. tostring(definition.entity))
     end
 
-    local recipeScript = buildRecipeScript(definition)
-    recipe:Load(recipe:getName(), recipeScript)
+    recipe:Load(recipe:getName(), buildRecipeScript(definition))
 
-    -- The empty entity CraftRecipe has already passed the engine's first
-    -- OnScriptsLoaded phase. Re-run it after hydrating the actual inputs and
-    -- timed action so PZ can resolve its derived recipe state.
+    -- The entity CraftRecipe shell has already passed PZ's first script-load
+    -- phase. Re-run it after loading definition-owned recipe data so derived
+    -- recipe state is rebuilt by the engine.
     recipe:OnScriptsLoaded(nil)
-
-    print(string.format(
-        "[LMION:DEV] hydrated build recipe %s from %s (category=%s, inputs=%d)",
-        tostring(recipe:getName()),
-        tostring(definitionId),
-        tostring(recipe:getCategory()),
-        recipe:getInputCount()
-    ))
 
     return recipe
 end
