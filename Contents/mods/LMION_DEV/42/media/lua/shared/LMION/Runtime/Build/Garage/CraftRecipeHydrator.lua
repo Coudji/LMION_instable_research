@@ -1,5 +1,6 @@
 local Resolver = require "LMION/Definitions/Resolver"
 local BuildRecipe = require "LMION/PZ/BuildRecipe"
+local CraftRecipeInputs = require "LMION/Runtime/Build/CraftRecipeInputs"
 local GarageBuild = require "LMION/Services/Build/Garage/Build"
 local GarageRequirements = require "LMION/Services/Build/Garage/Requirements"
 
@@ -86,7 +87,7 @@ local function buildRecipeScript(definition)
     lines[#lines + 1] = ""
     lines[#lines + 1] = "    inputs"
     lines[#lines + 1] = "    {"
-    lines[#lines + 1] = "        item 1 tags[base:weldingmask] mode:keep,"
+    CraftRecipeInputs.addTools(lines, construction.tools)
     lines[#lines + 1] = "        item 1 [Base.BlowTorch] flags[DontRecordInput],"
     lines[#lines + 1] = string.format(
         "        item %d [Base.SmallSheetMetal],",

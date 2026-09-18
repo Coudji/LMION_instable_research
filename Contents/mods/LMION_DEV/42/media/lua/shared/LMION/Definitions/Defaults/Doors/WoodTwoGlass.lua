@@ -21,7 +21,13 @@ return {
             skill = { Woodwork = 7 },
             time = 180,
             xp = 45,
-            tools = { { tag = "base:hammer" }, { tag = "base:screwdriver" } },
+            tools = {
+                {
+                    tag = "base:hammer",
+                    flags = { "Prop1", "MayDegradeVeryLight" },
+                },
+                { tag = "base:screwdriver" },
+            },
 
             materials = {
                 { item = "Base.Plank", amount = 4 },
