@@ -1,4 +1,5 @@
 local GarageBuild = require "LMION/Services/Build/Garage/Build"
+local GarageMaterials = require "LMION/Services/Build/Garage/Materials"
 local GarageRequirements = require "LMION/Services/Build/Garage/Requirements"
 local GarageWidthState = require "LMION/Services/Build/Garage/WidthState"
 local SingleTileDoorFinalizer = require "LMION/Services/Build/SingleTileDoor/Finalizer"
@@ -26,10 +27,25 @@ local function getWidth(buildObject)
     )
 end
 
-local function getVanillaBarCount(buildObject)
+local function getVanillaWidthInputCount(buildObject, profile)
     local data = buildObject and buildObject.modData or nil
-    return (tonumber(data and data["need:Base.MetalBar"]) or 0)
-        + (tonumber(data and data["need:Base.IronBar"]) or 0)
+    local definition = profile and profile.definition or nil
+    local requirement = definition and GarageMaterials.getWidthInputRequirement(
+        definition,
+        GarageBuild.MinWidth
+    ) or nil
+
+    if data == nil or requirement == nil then
+        return 0
+    end
+
+    local count = 0
+    for index = 1, #requirement.itemTypes do
+        count = count
+            + (tonumber(data["need:" .. requirement.itemTypes[index]]) or 0)
+    end
+
+    return count
 end
 
 function GarageFinalizer.getProfile(buildObject)
@@ -51,7 +67,7 @@ function GarageFinalizer.beforeSetInfo(buildObject, profile)
         profile,
         getWidth(buildObject),
         getContainers(buildObject),
-        getVanillaBarCount(buildObject)
+        getVanillaWidthInputCount(buildObject, profile)
     ) then
         return false
     end
