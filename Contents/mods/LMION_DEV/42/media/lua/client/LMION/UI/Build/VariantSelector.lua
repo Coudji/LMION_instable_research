@@ -78,7 +78,7 @@ function LMIONBuildVariantSelector:createChildren()
 end
 
 local function getMemberDisplayName(member)
-    local recipe = member and BuildRecipe.getByName(member.recipeName) or nil
+    local recipe = member and BuildRecipe.getByEntityId(member.entityId) or nil
     if recipe ~= nil and recipe.getTranslationName ~= nil then
         return recipe:getTranslationName()
     end
