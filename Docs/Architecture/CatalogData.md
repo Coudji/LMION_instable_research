@@ -48,6 +48,26 @@ It has no directory scanning and no gameplay behavior. Its sole purpose is to de
 
 Explicit registration makes the built-in dataset deterministic and keeps missing/extra content visible in code review.
 
+## Construction data and variants
+
+Construction requirements belong to the effective definition. For migrated Build recipes, LMION projects those values into the PZ `CraftRecipe` at runtime rather than maintaining a second copy of the recipe in the static entity script.
+
+`construction.variantGroup` is a presentation grouping. Definitions with the same non-empty value may be shown as variants under one construction-list representative, but each definition keeps its own effective construction contract. Group members are therefore allowed to differ in materials, skills, time or other recipe values.
+
+A definition may use:
+
+```lua
+construction = {
+    variantGroup = false,
+}
+```
+
+to opt out of a `variantGroup` inherited from its default. This is an explicit presentation choice; it does not mean the definition would be technically unable to participate in a group.
+
+The first registered member of a group is its representative. Built-in registration order comes from `Definitions/BuiltinContent.lua`, so this choice remains explicit and reviewable.
+
+Detailed runtime ownership is documented in `Docs/Decisions/BuildRecipesAndVariants.md`.
+
 ## `doorType` and frame requirements
 
 `doorType` is the public semantic fact. The current finite vocabulary is:
