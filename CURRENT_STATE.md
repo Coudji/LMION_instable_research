@@ -1,6 +1,6 @@
 # LMION V3 current state / conversation handoff
 
-Last updated: 2026-09-17
+Last updated: 2026-09-18
 
 This file is the canonical short handoff for active V3 development in `Coudji/LMION_instable_research`. Detailed archaeology and failed experiments remain in `Docs/Research/`; active architectural contracts live in `Docs/Architecture/` and `Docs/Decisions/`.
 
@@ -150,6 +150,45 @@ canonical final IsoDoor
 ```
 
 Recent regression testing specifically reconfirmed Simple, Paired and FenceGate behavior after the architecture reorganization.
+
+## Definition-owned Build recipes and variants
+
+Construction recipe ownership is being migrated from duplicated static-script + Lua data to a single effective-definition source of truth.
+
+For migrated entities, the PZ script keeps an empty `CraftRecipe` component shell while `Runtime/Build/CraftRecipeHydrator.lua` supplies category, skill, time, XP, tools and materials from the effective LMION definition at bootstrap.
+
+The initial migrated set is the seven metal service-door definitions. `Bootstrap/Build.lua` owns that explicit migration list; it is not inferred by scanning folders.
+
+Service doors use the vanilla-facing `Welding` construction category instead of an LMION category.
+
+`construction.variantGroup` is presentation-only. One representative recipe is visible in the left construction list while the right panel selects among real member recipes. Variant recipes are allowed to differ; an in-game feasibility test temporarily grouped `WhiteServiceDoorWithPorthole` and confirmed that its additional `GlassPanel` requirement refreshed correctly with the selected variant.
+
+The shipped `WhiteServiceDoorWithPorthole` definition intentionally keeps:
+
+```lua
+variantGroup = false
+```
+
+so it opts out of the inherited service-door presentation group despite being technically compatible with the variant mechanism.
+
+Current tested variant behavior:
+
+```text
+right-panel name/icon refresh: OK
+variant-specific recipe refresh: OK
+left representative remains stable: OK
+selected ghost/entity matches variant: OK
+right-click return preserves variant: OK
+sequential construction preserves variant and ghost: OK
+```
+
+The representative is the first registered group member; built-in registration order makes Black Service Door the service-door representative.
+
+The prototype was then reorganized to V3 ownership boundaries. `Services/Build/VariantGroups.lua` owns grouping policy, `VariantState.lua` owns active recipe selection, `PZ/BuildRecipe.lua` owns ScriptManager lookup, `Runtime/Build/VariantMenuFilter.lua` owns the PZ menu callback, and `client/LMION/Hooks/Build/Variants.lua` is limited to UI insertion plus hidden-variant restoration after vanilla's post-build refresh. The earlier hook that replaced `ISBuildIsoEntity` was removed because vanilla already builds the correct object once the real variant recipe is active.
+
+Decision: `Docs/Decisions/BuildRecipesAndVariants.md`.
+
+The post-refactor code path still requires one focused in-game regression pass; the behavior listed above was validated immediately before the ownership cleanup.
 
 ## Inventory placement versus toolbar
 
@@ -352,6 +391,8 @@ For vanilla single doors/fence gates, cleaned script files retain only their LMI
 
 For `DoubleDoor`, `DoubleFenceGate` and `DoubleWireGate`, LMION static files retain parcel items and the custom B entity; the vanilla A entity/style is not redeclared. `Runtime/Build/VanillaLargeGateLeafPreparation.lua` performs the supported leaf-A adaptation at the validated runtime lifecycle boundary instead.
 
+For migrated custom LMION buildable entities, an empty `CraftRecipe` component may remain as the parse-time shell required by PZ while recipe values come from the effective Lua definition.
+
 ## Startup status
 
 After the vanilla-script cleanup, phase-0 startup was validated:
@@ -364,8 +405,10 @@ no LMION module-not-found
 no LMION Lua startup error
 ```
 
+The definition-owned recipe/variant ownership refactor happened after that startup checkpoint and needs the focused regression noted above.
+
 ## Current validation stance
 
 The core gameplay has been exercised repeatedly through the V3 development/refactor cycle and is treated as working unless a new change touches it directly. Do not reopen the full historical regression matrix by default.
 
-At the current head, the recent presentation work has been tested in game for sound and parcel-HP display.
+At the current head, Moveables presentation remains validated. Build service-door variants were validated immediately before their architecture cleanup; retest only that affected path before expanding the migration.
