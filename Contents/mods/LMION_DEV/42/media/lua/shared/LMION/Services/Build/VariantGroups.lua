@@ -6,7 +6,7 @@ local VariantGroups = {}
 local cachedRevision = -1
 local groupsById = {}
 local groupByDefinitionId = {}
-local definitionIdByRecipeName = {}
+local memberByRecipeName = {}
 
 local function getEntityShortName(entityId)
     if type(entityId) ~= "string" or entityId == "" then
@@ -24,7 +24,7 @@ local function rebuild()
 
     groupsById = {}
     groupByDefinitionId = {}
-    definitionIdByRecipeName = {}
+    memberByRecipeName = {}
 
     local definitionIds = Registry.getDefinitionIds()
     for index = 1, #definitionIds do
@@ -45,6 +45,7 @@ local function rebuild()
                     group = {
                         id = groupId,
                         members = {},
+                        memberByDefinitionId = {},
                     }
                     groupsById[groupId] = group
                 end
@@ -53,28 +54,19 @@ local function rebuild()
                     definitionId = definitionId,
                     entityId = definition.entity,
                     recipeName = recipeName,
+                    index = #group.members + 1,
                 }
 
                 group.members[#group.members + 1] = member
+                group.memberByDefinitionId[definitionId] = member
                 groupByDefinitionId[definitionId] = group
-                definitionIdByRecipeName[recipeName] = definitionId
+                memberByRecipeName[recipeName] = member
+
+                if group.representative == nil then
+                    group.representative = member
+                end
             end
         end
-    end
-
-    for _, group in pairs(groupsById) do
-        table.sort(group.members, function(a, b)
-            return a.definitionId < b.definitionId
-        end)
-
-        group.memberByDefinitionId = {}
-        for index = 1, #group.members do
-            local member = group.members[index]
-            member.index = index
-            group.memberByDefinitionId[member.definitionId] = member
-        end
-
-        group.representative = group.members[1]
     end
 
     cachedRevision = revision
@@ -90,55 +82,31 @@ function VariantGroups.getForDefinition(definitionId)
     return groupByDefinitionId[definitionId]
 end
 
-function VariantGroups.getForRecipe(recipe)
-    if recipe == nil or recipe.getName == nil then
+function VariantGroups.getMemberForRecipeName(recipeName)
+    if type(recipeName) ~= "string" or recipeName == "" then
         return nil
     end
 
     rebuild()
+    return memberByRecipeName[recipeName]
+end
 
-    local definitionId = definitionIdByRecipeName[recipe:getName()]
-    if definitionId == nil then
+function VariantGroups.getForRecipeName(recipeName)
+    local member = VariantGroups.getMemberForRecipeName(recipeName)
+    if member == nil then
         return nil
     end
 
-    return groupByDefinitionId[definitionId]
+    return groupByDefinitionId[member.definitionId]
 end
 
-function VariantGroups.getDefinitionIdForRecipe(recipe)
-    if recipe == nil or recipe.getName == nil then
-        return nil
-    end
-
-    rebuild()
-    return definitionIdByRecipeName[recipe:getName()]
-end
-
-function VariantGroups.getRecipeForMember(member)
-    if type(member) ~= "table"
-        or type(member.recipeName) ~= "string"
-        or ScriptManager == nil
-        or ScriptManager.instance == nil then
-        return nil
-    end
-
-    return ScriptManager.instance:getBuildableRecipe(member.recipeName)
-end
-
-function VariantGroups.shouldShowRecipe(recipe)
-    local group = VariantGroups.getForRecipe(recipe)
+function VariantGroups.shouldShowRecipeName(recipeName)
+    local group = VariantGroups.getForRecipeName(recipeName)
     if group == nil or group.representative == nil then
         return true
     end
 
-    return recipe:getName() == group.representative.recipeName
-end
-
--- PZ's Build/Craft recipe lists already support OnAddToMenu callbacks in both
--- list and grid modes. Hydrated grouped recipes point at this callback so only
--- the representative recipe is shown; every underlying recipe still exists.
-function LMIONBuildVariantOnAddToMenu(params)
-    return VariantGroups.shouldShowRecipe(params and params.recipe or nil)
+    return recipeName == group.representative.recipeName
 end
 
 return VariantGroups
