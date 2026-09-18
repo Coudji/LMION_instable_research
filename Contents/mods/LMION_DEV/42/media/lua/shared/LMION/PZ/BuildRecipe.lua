@@ -86,4 +86,29 @@ function BuildRecipe.isEmptyShell(recipe)
     return recipe:getInputCount() == 0
 end
 
+function BuildRecipe.reload(recipe, script)
+    if recipe == nil then
+        error("LMION BuildRecipe: recipe is required", 2)
+    end
+    if type(script) ~= "string" or script == "" then
+        error("LMION BuildRecipe: recipe script is required", 2)
+    end
+    if recipe.PreReload == nil
+        or recipe.Load == nil
+        or recipe.OnScriptsLoaded == nil
+        or recipe.getName == nil then
+        error("LMION BuildRecipe: recipe does not expose the reload lifecycle", 2)
+    end
+
+    -- CraftRecipe:Load appends IO data. PZ's own hot-reload lifecycle calls
+    -- PreReload first; without it every LMION refresh duplicates inputs and
+    -- leaves derived fields such as Prop1 pointing at the previous projection.
+    local recipeName = recipe:getName()
+    recipe:PreReload()
+    recipe:Load(recipeName, script)
+    recipe:OnScriptsLoaded(nil)
+
+    return recipe
+end
+
 return BuildRecipe
