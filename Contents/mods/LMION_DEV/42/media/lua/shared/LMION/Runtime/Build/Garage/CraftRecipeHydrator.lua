@@ -87,9 +87,7 @@ function GarageCraftRecipeHydrator.hydrateDefinition(definitionId, entityId)
         fail("buildable recipe not found for " .. tostring(entityId))
     end
 
-    recipe:Load(recipe:getName(), buildRecipeScript(definition))
-    recipe:OnScriptsLoaded(nil)
-    return recipe
+    return BuildRecipe.reload(recipe, buildRecipeScript(definition))
 end
 
 return GarageCraftRecipeHydrator
