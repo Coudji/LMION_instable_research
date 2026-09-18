@@ -111,9 +111,9 @@ Garage and variant business rules remain in their own services. The shared clien
 
 Non-representative recipes remain real recipes but are filtered out of the visible construction list through PZ's `OnAddToMenu` callback.
 
-Because the active recipe may therefore be absent from the visible list, `client/LMION/Hooks/Build/Variants.lua` preserves the selected variant across vanilla's post-build refresh before vanilla resumes sequential placement.
+Because an active variant may be absent from the visible list, and Garage also carries a selected width across repeated placement, `client/LMION/Hooks/Build/RepeatPlacement.lua` is the single owner of the `ISBuildPanel.onStopCraft` extension point. It snapshots the independent variant and Garage states, lets vanilla perform its normal refresh, then restores whichever states applied.
 
-The hook does not replace the selected build entity. Once the actual variant recipe is active, vanilla already creates the correct ghost and final entity, so LMION delegates that behavior back to PZ.
+Once the actual variant recipe is restored, vanilla creates the correct ghost and final entity. LMION does not replace the build entity merely to implement variant selection.
 
 ## Ownership
 
@@ -151,8 +151,11 @@ client/LMION/UI/Build/GarageWidthSelector.lua
 client/LMION/Hooks/Build/RecipeOptions.lua
     single vanilla Build recipe options UI boundary
 
+client/LMION/Hooks/Build/RepeatPlacement.lua
+    single post-build repeat-placement state restoration boundary
+
 client/LMION/Hooks/Build/Variants.lua
-    sequential-build variant restoration
+    loads the variant-related Build adapters; no recipe/UI business logic
 ```
 
 `Services/Build` does not own PZ UI objects or direct ScriptManager lookup. Client hooks do not own grouping policy or recipe construction.
