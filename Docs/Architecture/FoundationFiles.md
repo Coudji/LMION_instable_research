@@ -35,7 +35,15 @@ local LMION = require "LMION/API"
 
 `Bootstrap/Moveables.lua` installs the Moveables engine adapters and registers the tile-definition-time sprite configuration. It coordinates installation but does not own family rules.
 
-`LMION_DEV.lua` remains a small entrypoint.
+`Bootstrap/Build.lua` coordinates Build startup concerns that must run after definitions are registered. It installs the variant-menu callback, prepares the supported vanilla LargeGate leaf entities and explicitly hydrates the definitions whose construction recipes have already migrated to Lua-definition ownership. The hydration list is explicit by design; Build does not infer migration support by scanning folders.
+
+`LMION_DEV.lua` remains a small entrypoint. Its startup order stays:
+
+```text
+Definitions
+Moveables
+Build
+```
 
 ## `Services/Common`
 
@@ -82,11 +90,13 @@ The Sandbox option is `LMION.GarageMaxWidth`.
 
 ## `Services/Build`
 
-Build-specific code is grouped by family:
+Build-specific code is grouped by family, with small cross-family services only where the contract is genuinely common:
 
 ```text
 Services/Build/
 ├─ ConstructionDurability.lua
+├─ VariantGroups.lua
+├─ VariantState.lua
 ├─ Garage/
 │  ├─ Build.lua
 │  ├─ FaceProxy.lua
@@ -102,11 +112,30 @@ Services/Build/
    └─ Profile.lua
 ```
 
+`VariantGroups.lua` owns semantic construction-catalog grouping: group membership, registration-order representative selection and recipe-name/member mapping. It contains no PZ UI hook and no direct `ScriptManager` lookup.
+
+`VariantState.lua` owns the selected Build variant by switching the real PZ recipe on `BuildLogic`. Because the selected variant is the actual recipe, vanilla remains responsible for refreshing title, icon, requirements, ingredients and selected build object.
+
 The family folder already supplies context, so filenames inside it avoid redundant prefixes such as `GarageBuildRequirements`.
 
 Garage `WidthState.lua` owns the selected Build width, the native variable-bar input synchronization and the transient recipe modData key `LMIONGarageBuildWidth`.
 
 Build may depend on `Domain`, narrow `PZ` adapters, runtime primitives and `Services/Common`. It must not depend on `Services/Moveables` merely to understand an opening.
+
+## Build recipe runtime
+
+Definition-owned construction recipes are translated at runtime rather than duplicated in static PZ script data.
+
+```text
+Runtime/Build/CraftRecipeHydrator.lua
+Runtime/Build/VariantMenuFilter.lua
+```
+
+`CraftRecipeHydrator.lua` translates an effective definition's construction contract into the existing PZ `CraftRecipe` object. It does not own variant grouping policy.
+
+`VariantMenuFilter.lua` owns the engine-facing `OnAddToMenu` callback used to hide non-representative variant recipes while keeping every member as a real recipe.
+
+The full contract is documented in `Docs/Decisions/BuildRecipesAndVariants.md`.
 
 ## `Services/Moveables`
 
@@ -195,6 +224,8 @@ No file is moved between `client`, `server` and `shared` merely for naming neatn
 
 `PZ/` contains narrow low-level adapters around Project Zomboid objects and engine-visible identity. It must not depend upward on Build or Moveables workflows.
 
+`PZ/BuildRecipe.lua` owns the narrow `ScriptManager` boundary for resolving buildable recipes by recipe name or entity id. Build services use that adapter instead of reaching directly into `ScriptManager`.
+
 Workflow-specific lookups live with their owner. For example, post-Build LargeGate lookup is `Services/Build/LargeGate/BuiltPart.lua`, not a PZ helper.
 
 ## Client Build UI
@@ -207,11 +238,22 @@ client/LMION/Hooks/Build/Garage.lua
 client/LMION/Keybinds/GaragePlacement.lua
 ```
 
-The UI widget owns the width selector; the hook owns vanilla UI integration; keybind registration remains independent.
+Variant Build UI follows the same separation:
+
+```text
+client/LMION/UI/Build/VariantSelector.lua
+client/LMION/Hooks/Build/Variants.lua
+```
+
+The selector owns presentation and user input. The hook only inserts it into the vanilla recipe panel and preserves a hidden selected variant across vanilla's post-build refresh. Variant policy and selection live in `Services/Build`.
+
+The old prototype behavior that replaced `ISBuildIsoEntity` in the variant hook was removed: selecting the real variant recipe already makes vanilla produce the correct ghost and final entity.
 
 ## Static PZ scripts
 
 Static scripts contain only parse-time declarations PZ actually requires: LMION transport items and custom LMION GameEntities/XUI/CraftRecipe/SpriteConfig where applicable.
+
+For a migrated definition-owned build recipe, the custom entity retains an empty `CraftRecipe` component shell so PZ creates the recipe object at parse time. Recipe values are then supplied from the effective Lua definition by Build bootstrap; they are not duplicated in the static script.
 
 **Vanilla GameEntities must not be statically redeclared by LMION.** Vanilla scripts remain the owner of vanilla entities. Supported vanilla LargeGate leaf-A adaptation is performed at the validated runtime lifecycle boundary by `Runtime/Build/VanillaLargeGateLeafPreparation.lua`; this is distinct from a conflicting static script redeclaration.
 
