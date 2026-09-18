@@ -16,8 +16,10 @@ return {
     },
 
     construction = {
+        category = "Carpentry",
+        timedAction = "BuildWallHammer",
         time = 80,
-        xp = 5,
+        xp = { Woodwork = 5 },
         tools = {},
         materials = {
             { item = "Base.Log", amount = 4 },
