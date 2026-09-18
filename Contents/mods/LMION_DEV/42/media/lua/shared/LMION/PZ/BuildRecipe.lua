@@ -32,4 +32,12 @@ function BuildRecipe.getNameForEntityId(entityId)
     return getEntityShortName(entityId)
 end
 
+function BuildRecipe.isEmptyShell(recipe)
+    if recipe == nil or recipe.getInputCount == nil then
+        return false
+    end
+
+    return recipe:getInputCount() == 0
+end
+
 return BuildRecipe
