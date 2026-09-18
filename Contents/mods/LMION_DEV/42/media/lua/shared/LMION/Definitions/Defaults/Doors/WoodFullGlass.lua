@@ -1,56 +1,30 @@
 return {
     defaultId = "Doors.Wood.FullGlass",
-
     defaults = {
         doorType = "Simple",
         materialType = "Glass_Solid",
         doorSound = "MetalDoor",
         thumpSound = "ZombieThumpWindow",
-
         engineMaterials = { "Wood", "Nails", "Screws" },
-
-        durability = {
-            worldHealth = 425,
-            health = 300,
-            skillBaseHealth = 175,
-        },
-
+        durability = { worldHealth = 425, health = 300, skillBaseHealth = 175 },
         construction = {
-            category = "Carpentry",
-            variantGroup = "Doors.Wood.FullGlass",
-            timedAction = "BuildWallHammer",
-            skill = { Woodwork = 7 },
-            time = 170,
-            xp = 40,
-            tools = {
-                {
-                    tag = "base:hammer",
-                    flags = { "Prop1", "MayDegradeVeryLight" },
-                },
-                { tag = "base:screwdriver" },
-            },
-
+            category = "Carpentry", variantGroup = "Doors.Wood.FullGlass", timedAction = "BuildWallHammer",
+            skill = { Woodwork = 7 }, time = 170, xp = 40,
+            tools = { { tag = "base:hammer", flags = { "Prop1", "MayDegradeVeryLight" } }, { tag = "base:screwdriver" } },
             materials = {
-                { item = "Base.Plank", amount = 2 },
-                { item = "Base.Nails", amount = 2 },
-                { item = "Base.Hinge", amount = 2 },
-                { item = "Base.Screws", amount = 4 },
-                { item = "Base.Doorknob", amount = 1 },
-                { item = "Base.GlassPanel", amount = 3 },
+                { item = "Base.Plank", amount = 2 }, { item = "Base.Nails", amount = 2 },
+                { item = "Base.Hinge", amount = 2 }, { item = "Base.Screws", amount = 4 },
+                { item = "Base.Doorknob", amount = 1 }, { item = "Base.GlassPanel", amount = 3 },
             },
         },
-
         pickup = {
-            skill = { Woodwork = 3 },
-            tools = { { tag = "base:screwdriver" } },
-            breakChance = 0,
-            packages = { count = 1, weight = 14 },
+            skill = { Woodwork = 3 }, tools = { { tag = "base:screwdriver" } },
+            action = { time = 100, sound = "Dismantle", soundIsWav = true, animation = "LMION_ScrewdriverHinge" },
+            breakChance = 0, packages = { count = 1, weight = 14, itemTemplate = "Base.LMION_{entityName}" },
         },
-
         replacement = {
-            packages = 1,
-            tools = { { tag = "base:screwdriver" } },
-            materials = {},
+            packages = 1, tools = { { tag = "base:screwdriver" } },
+            action = { time = 100, sound = "Dismantle", soundIsWav = true, animation = "LMION_ScrewdriverHinge" }, materials = {},
         },
     },
 }

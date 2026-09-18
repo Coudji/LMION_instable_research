@@ -1,68 +1,24 @@
+local ActionContract = require "LMION/Services/Moveables/ActionContract"
+local PackageContract = require "LMION/Services/Moveables/PackageContract"
+
 local MoveableProfileFields = {}
 
-local function hasSkill(skill, skillName)
-    return type(skill) == "table" and skill[skillName] ~= nil
+function MoveableProfileFields.getAction(definition, mode)
+    return ActionContract.get(definition, mode)
 end
 
-function MoveableProfileFields.getSingleSkillLevel(skill)
-    if type(skill) ~= "table" then
-        return 0
-    end
-
-    local count = 0
-    local level = nil
-
-    for _, value in pairs(skill) do
-        count = count + 1
-        if count > 1 then
-            return nil
-        end
-        level = value
-    end
-
-    if count == 0 then
-        return 0
-    end
-
-    return tonumber(level) or 0
+function MoveableProfileFields.getToolName(definition, mode)
+    local action = ActionContract.get(definition, mode)
+    return action and action.toolDefinitionName or nil
 end
 
-function MoveableProfileFields.getSingleToolName(tools, governingSkill)
-    if type(tools) ~= "table" or #tools ~= 1 then
-        return nil
-    end
-
-    local tool = tools[1]
-    if type(tool) ~= "table" then
-        return nil
-    end
-
-    local metal = hasSkill(governingSkill, "MetalWelding")
-
-    if tool.tag == "base:screwdriver" then
-        return metal and "LMIONMetalScrewdriver" or "Screwdriver"
-    end
-    if tool.tag == "base:crowbar" then
-        return metal and "LMIONMetalCrowbar" or "Crowbar"
-    end
-    if tool.tag == "base:hammer" then
-        return metal and "LMIONMetalHammer" or "Hammer"
-    end
-
-    return nil
+function MoveableProfileFields.getSkillLevel(definition, mode)
+    local action = ActionContract.get(definition, mode)
+    return action and action.skillLevel or 0
 end
 
-function MoveableProfileFields.getItemType(entityId)
-    if type(entityId) ~= "string" then
-        return nil
-    end
-
-    local shortName = string.match(entityId, "^[^.]+%.(.+)$") or entityId
-    if shortName == "" then
-        return nil
-    end
-
-    return "Base.LMION_" .. shortName
+function MoveableProfileFields.getPackageItemType(definition, context)
+    return PackageContract.getItemType(definition, context)
 end
 
 function MoveableProfileFields.hasScriptItem(itemType)
@@ -79,6 +35,15 @@ function MoveableProfileFields.getPackageWeight(pickup)
     end
 
     return tonumber(packages.weight)
+end
+
+function MoveableProfileFields.getBreakChance(pickup)
+    if type(pickup) ~= "table" then
+        return 0
+    end
+
+    local chance = tonumber(pickup.breakChance) or 0
+    return math.max(0, math.min(100, chance))
 end
 
 return MoveableProfileFields

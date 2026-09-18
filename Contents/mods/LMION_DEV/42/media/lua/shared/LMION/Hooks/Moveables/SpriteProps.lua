@@ -1,10 +1,12 @@
 require "Moveables/ISMoveableSpriteProps"
 
+local Resolver = require "LMION/Definitions/Resolver"
 local DoorObject = require "LMION/PZ/DoorObject"
 local DoorTransportState = require "LMION/Runtime/Moveables/DoorTransportState"
 local GarageMoveProps = require "LMION/Services/Moveables/Garage/MoveProps"
 local LargeGateParcel = require "LMION/Runtime/Moveables/LargeGateParcel"
 local LargeGateMoveProps = require "LMION/Services/Moveables/LargeGate/MoveProps"
+local ActionContract = require "LMION/Services/Moveables/ActionContract"
 local SingleTileDoorMoveProps = require "LMION/Services/Moveables/SingleTileDoor/MoveProps"
 local SingleTileDoorPlacement = require "LMION/Services/Common/SingleTileDoor/Placement"
 local SingleTileDoorPlacementFinalizer = require "LMION/Services/Moveables/SingleTileDoor/PlacementFinalizer"
@@ -111,6 +113,28 @@ local function hasPlacementRequirements(moveProps, character)
     return hasSkill and hasTool
 end
 
+local function getLMIONAction(moveProps, mode)
+    local definitionId = moveProps and moveProps.lmionDefinitionId or nil
+    if type(definitionId) ~= "string"
+        or (mode ~= "pickup" and mode ~= "place") then
+        return nil
+    end
+
+    return ActionContract.get(Resolver.resolveDefinition(definitionId), mode)
+end
+
+local function getPerk(action)
+    if action == nil or action.skillName == nil then
+        return nil
+    end
+    if PerkFactory == nil
+        or PerkFactory.Perks == nil
+        or PerkFactory.Perks.FromString == nil then
+        return nil
+    end
+    return PerkFactory.Perks.FromString(action.skillName)
+end
+
 function SpritePropsHook.install()
     if ISMoveableSpriteProps._lmionV3SpritePropsInstalled == true then
         return false
@@ -121,6 +145,8 @@ function SpritePropsHook.install()
     local originalNew = ISMoveableSpriteProps.new
     local originalHasFaces = ISMoveableSpriteProps.hasFaces
     local originalGetFaces = ISMoveableSpriteProps.getFaces
+    local originalGetBreakChance = ISMoveableSpriteProps.getBreakChance
+    local originalHasRequiredSkill = ISMoveableSpriteProps.hasRequiredSkill
     local originalPickup = ISMoveableSpriteProps.pickUpMoveableInternal
     local originalInstanceItem = ISMoveableSpriteProps.instanceItem
     local originalCanPlace = ISMoveableSpriteProps.canPlaceMoveableInternal
@@ -166,13 +192,45 @@ function SpritePropsHook.install()
 
         local profile = SingleTileDoorMoveProps.getProfile(self)
         if profile ~= nil then
-            return {
-                N = profile.faces.N,
-                W = profile.faces.W,
-            }
+            return { N = profile.faces.N, W = profile.faces.W }
         end
 
         return originalGetFaces(self)
+    end
+
+    ISMoveableSpriteProps.getBreakChance = function(self, player)
+        if self.lmionBreakChance ~= nil then
+            if ISMoveableDefinitions.cheat
+                or (player ~= nil and player:isMovablesCheat()) then
+                return 0
+            end
+            return tonumber(self.lmionBreakChance) or 0
+        end
+        return originalGetBreakChance(self, player)
+    end
+
+    ISMoveableSpriteProps.hasRequiredSkill = function(self, player, mode)
+        local action = getLMIONAction(self, mode)
+        if action == nil then
+            return originalHasRequiredSkill(self, player, mode)
+        end
+
+        if ISMoveableDefinitions.cheat
+            or (player ~= nil and player:isMovablesCheat()) then
+            return true
+        end
+
+        local perk = getPerk(action)
+        if action.skillName == nil then
+            return true
+        end
+        if player == nil or perk == nil then
+            return false
+        end
+
+        local perkName = perk.getName and perk:getName() or action.skillName
+        local level = tonumber(action.skillLevel) or 0
+        return player:getPerkLevel(perk) >= level, perkName, perk
     end
 
     ISMoveableSpriteProps.pickUpMoveableInternal = function(
@@ -241,10 +299,7 @@ function SpritePropsHook.install()
         if profile ~= nil
             and item ~= nil
             and self.lmionPendingDoorState ~= nil then
-            DoorTransportState.writeToItem(
-                item,
-                self.lmionPendingDoorState
-            )
+            DoorTransportState.writeToItem(item, self.lmionPendingDoorState)
         elseif largeGateSegment ~= nil and item ~= nil then
             configureLargeGateParcel(
                 item,

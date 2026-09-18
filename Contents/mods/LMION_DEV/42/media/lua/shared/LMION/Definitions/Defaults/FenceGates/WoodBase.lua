@@ -1,44 +1,22 @@
 return {
     defaultId = "FenceGates.Wood.Base",
-
     defaults = {
-        doorType = "FenceGate",
-        materialType = "Wood_Solid",
-        doorSound = "WoodGate",
-        thumpSound = "ZombieThumpWood",
-
+        doorType = "FenceGate", materialType = "Wood_Solid", doorSound = "WoodGate", thumpSound = "ZombieThumpWood",
         engineMaterials = { "Wood", "Nails" },
-
-        durability = {
-            worldHealth = 500,
-            health = 300,
-            skillBaseHealth = 225,
-        },
-
+        durability = { worldHealth = 500, health = 300, skillBaseHealth = 225 },
         construction = {
-            skill = { Woodwork = 3 },
-            time = 100,
-            xp = 15,
+            timedAction = "BuildWallHammer", skill = { Woodwork = 3 }, time = 100, xp = 15,
             tools = { { tag = "base:hammer" } },
-            materials = {
-                { item = "Base.Plank", amount = 4 },
-                { item = "Base.Nails", amount = 4 },
-                { item = "Base.Hinge", amount = 2 },
-                { item = "Base.Doorknob", amount = 1 },
-            },
+            materials = { { item = "Base.Plank", amount = 4 }, { item = "Base.Nails", amount = 4 }, { item = "Base.Hinge", amount = 2 }, { item = "Base.Doorknob", amount = 1 } },
         },
-
         pickup = {
-            skill = { Woodwork = 1 },
-            tools = { { tag = "base:crowbar" } },
-            breakChance = 0,
-            packages = { count = 1, weight = 14 },
+            skill = { Woodwork = 1 }, tools = { { tag = "base:crowbar" } },
+            action = { time = 150, sound = "BeginRemoveBarricadePlankCrowbar", soundIsWav = true, animation = "LMION_CrowbarPickupLow" },
+            breakChance = 0, packages = { count = 1, weight = 14, itemTemplate = "Base.LMION_{entityName}" },
         },
-
         replacement = {
-            packages = 1,
-            tools = { { tag = "base:hammer" } },
-            materials = {},
+            packages = 1, tools = { { tag = "base:hammer" } },
+            action = { time = 75, sound = "Hammering", soundIsWav = true, animation = "LMION_HammerPlace" }, materials = {},
         },
     },
 }

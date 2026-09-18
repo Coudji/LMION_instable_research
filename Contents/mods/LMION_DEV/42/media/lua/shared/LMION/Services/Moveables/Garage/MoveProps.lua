@@ -6,7 +6,6 @@ function GarageMoveProps.getSegment(moveProps, sprite)
     if moveProps ~= nil and moveProps.lmionGarageSegment ~= nil then
         return moveProps.lmionGarageSegment
     end
-
     local sourceSprite = sprite or (moveProps and moveProps.sprite)
     return GarageProfiles.getSegmentBySprite(sourceSprite)
 end
@@ -18,7 +17,6 @@ function GarageMoveProps.applyProfile(moveProps, sprite)
 
     local segment = GarageProfiles.getSegmentBySprite(sprite or moveProps.sprite)
     local profile = segment and segment.profile or nil
-
     if profile == nil then
         return nil
     end
@@ -31,8 +29,9 @@ function GarageMoveProps.applyProfile(moveProps, sprite)
     moveProps.pickUpLevel = profile.pickUpLevel
     moveProps.rawWeight = profile.rawWeight
     moveProps.weight = profile.weight
-    moveProps.canBreak = false
+    moveProps.canBreak = profile.breakChance > 0
     moveProps.facing = segment.facing
+    moveProps.lmionBreakChance = profile.breakChance
 
     moveProps.lmionDefinitionId = profile.definitionId
     moveProps.lmionGarageSegment = segment
@@ -47,7 +46,6 @@ end
 function GarageMoveProps.getFaces(moveProps)
     local segment = GarageMoveProps.getSegment(moveProps)
     local profile = segment and segment.profile or nil
-
     if profile == nil then
         return nil
     end

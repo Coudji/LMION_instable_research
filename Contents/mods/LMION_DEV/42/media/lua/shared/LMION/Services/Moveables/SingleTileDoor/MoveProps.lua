@@ -7,7 +7,6 @@ function SingleTileDoorMoveProps.getProfile(moveProps, sprite)
     if moveProps ~= nil and moveProps.lmionSingleTileDoorProfile ~= nil then
         return moveProps.lmionSingleTileDoorProfile
     end
-
     return SingleTileDoorProfiles.getBySprite(sprite or (moveProps and moveProps.sprite or nil))
 end
 
@@ -15,7 +14,6 @@ function SingleTileDoorMoveProps.getFacing(moveProps, profile, sprite)
     if moveProps ~= nil and moveProps.lmionSingleTileDoorFacing ~= nil then
         return moveProps.lmionSingleTileDoorFacing
     end
-
     if moveProps ~= nil and (moveProps.facing == "N" or moveProps.facing == "W") then
         return moveProps.facing
     end
@@ -27,12 +25,8 @@ function SingleTileDoorMoveProps.getFacing(moveProps, profile, sprite)
     end
 
     if type(resolvedSprite) == "string" then
-        if resolvedSprite == profile.faces.N then
-            return "N"
-        end
-        if resolvedSprite == profile.faces.W then
-            return "W"
-        end
+        if resolvedSprite == profile.faces.N then return "N" end
+        if resolvedSprite == profile.faces.W then return "W" end
     end
 
     return nil
@@ -40,13 +34,8 @@ end
 
 function SingleTileDoorMoveProps.getClosedSpriteName(moveProps, profile, fallback)
     local facing = SingleTileDoorMoveProps.getFacing(moveProps, profile, fallback)
-    if facing == "N" then
-        return profile.faces.N
-    end
-    if facing == "W" then
-        return profile.faces.W
-    end
-
+    if facing == "N" then return profile.faces.N end
+    if facing == "W" then return profile.faces.W end
     return fallback
 end
 
@@ -68,7 +57,8 @@ function SingleTileDoorMoveProps.applyProfile(moveProps, sprite)
     moveProps.pickUpLevel = profile.pickUpLevel
     moveProps.rawWeight = profile.rawWeight
     moveProps.weight = profile.weight
-    moveProps.canBreak = false
+    moveProps.canBreak = profile.breakChance > 0
+    moveProps.lmionBreakChance = profile.breakChance
     moveProps.lmionDefinitionId = profile.definitionId
     moveProps.lmionSingleTileDoorProfile = profile
     moveProps.lmionSingleTileDoorFacing = SingleTileDoorMoveProps.getFacing(moveProps, profile, sprite)

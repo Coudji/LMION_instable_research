@@ -3,12 +3,8 @@ local LargeGateProfiles = require "LMION/Services/Moveables/LargeGate/Profiles"
 local LargeGateMoveProps = {}
 
 local function getSpriteName(sprite)
-    if sprite == nil then
-        return nil
-    end
-    if type(sprite) == "string" then
-        return sprite
-    end
+    if sprite == nil then return nil end
+    if type(sprite) == "string" then return sprite end
     return sprite:getName()
 end
 
@@ -16,7 +12,6 @@ local function isGridAnchor(moveProps)
     if moveProps == nil or not moveProps.isMultiSprite then
         return false
     end
-
     local sprite = moveProps.sprite
     local grid = sprite and sprite:getSpriteGrid() or nil
     return grid ~= nil and grid:getAnchorSprite() == sprite
@@ -26,7 +21,6 @@ function LargeGateMoveProps.getSegment(moveProps, sprite)
     if moveProps ~= nil and moveProps.lmionLargeGateSegment ~= nil then
         return moveProps.lmionLargeGateSegment
     end
-
     return LargeGateProfiles.getSegmentBySprite(sprite or (moveProps and moveProps.sprite or nil))
 end
 
@@ -38,35 +32,24 @@ end
 function LargeGateMoveProps.getFaces(moveProps)
     local segment = LargeGateMoveProps.getSegment(moveProps)
     local profile = segment and segment.profile or nil
-    if profile == nil then
-        return nil
-    end
+    if profile == nil then return nil end
 
     local partIndex = isGridAnchor(moveProps) and 1 or segment.partIndex
     local northParts = profile.geometry.N[segment.leaf]
     local westParts = profile.geometry.W[segment.leaf]
     local north = northParts and northParts[partIndex] or nil
     local west = westParts and westParts[partIndex] or nil
-    if north == nil or west == nil then
-        return nil
-    end
+    if north == nil or west == nil then return nil end
 
-    return {
-        N = north.closed,
-        W = west.closed,
-    }
+    return { N = north.closed, W = west.closed }
 end
 
 function LargeGateMoveProps.applyProfile(moveProps, sprite)
-    if moveProps == nil then
-        return nil
-    end
+    if moveProps == nil then return nil end
 
     local segment = LargeGateProfiles.getSegmentBySprite(sprite or moveProps.sprite)
     local profile = segment and segment.profile or nil
-    if profile == nil then
-        return nil
-    end
+    if profile == nil then return nil end
 
     moveProps.isMoveable = true
     moveProps.customItem = segment.itemType
@@ -76,8 +59,9 @@ function LargeGateMoveProps.applyProfile(moveProps, sprite)
     moveProps.pickUpLevel = profile.pickUpLevel
     moveProps.rawWeight = profile.rawWeight
     moveProps.weight = profile.weight
-    moveProps.canBreak = false
+    moveProps.canBreak = profile.breakChance > 0
     moveProps.facing = segment.facing
+    moveProps.lmionBreakChance = profile.breakChance
 
     moveProps.lmionDefinitionId = profile.definitionId
     moveProps.lmionLargeGateSegment = segment

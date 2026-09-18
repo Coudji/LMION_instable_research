@@ -1,48 +1,103 @@
 require "Moveables/ISMoveableDefinitions"
 
+local Registry = require "LMION/Definitions/Registry"
+local Resolver = require "LMION/Definitions/Resolver"
+local ItemSelector = require "LMION/PZ/ItemSelector"
+local ActionContract = require "LMION/Services/Moveables/ActionContract"
+
 local ToolDefinitions = {}
+local installed = false
+local registeredNames = {}
+local builtRevision = -1
 
-local function register()
+local function fail(message)
+    error("LMION Moveables ToolDefinitions: " .. message, 3)
+end
+
+local function getPerk(skillName)
+    if skillName == nil then
+        return nil
+    end
+
+    if PerkFactory == nil
+        or PerkFactory.Perks == nil
+        or PerkFactory.Perks.FromString == nil then
+        fail("PerkFactory.Perks.FromString is unavailable")
+    end
+
+    local perk = PerkFactory.Perks.FromString(skillName)
+    if perk == nil then
+        fail("unknown Moveables skill " .. tostring(skillName))
+    end
+    return perk
+end
+
+local function registerAction(definitions, definition, mode)
+    local action = ActionContract.get(definition, mode)
+    if action == nil or action.toolSelector == nil then
+        return
+    end
+
+    local itemTypes = ItemSelector.getItemTypes(action.toolSelector)
+    if #itemTypes == 0 then
+        fail(
+            "tool selector resolved no items for "
+                .. tostring(definition.definitionId)
+                .. " "
+                .. mode
+        )
+    end
+
+    local name = action.toolDefinitionName
+    definitions.removeToolDefinition(name)
+    definitions.addToolDefinition(
+        name,
+        itemTypes,
+        getPerk(action.skillName),
+        action.time,
+        action.sound,
+        action.soundIsWav
+    )
+    registeredNames[name] = true
+end
+
+function ToolDefinitions.refresh(force)
+    local revision = Registry.getRevision()
+    if not force and builtRevision == revision then
+        return false
+    end
+
     local definitions = ISMoveableDefinitions:getInstance()
+    for name in pairs(registeredNames) do
+        definitions.removeToolDefinition(name)
+    end
+    registeredNames = {}
+    ItemSelector.clearCache()
 
-    definitions.removeToolDefinition("LMIONMetalScrewdriver")
-    definitions.removeToolDefinition("LMIONMetalCrowbar")
-    definitions.removeToolDefinition("LMIONMetalHammer")
+    for _, definitionId in ipairs(Registry.getDefinitionIds()) do
+        local definition = Resolver.resolveDefinition(definitionId)
+        registerAction(definitions, definition, "pickup")
+        registerAction(definitions, definition, "place")
+    end
 
-    definitions.addToolDefinition(
-        "LMIONMetalScrewdriver",
-        { "Base.Screwdriver" },
-        Perks.MetalWelding,
-        100,
-        "Dismantle",
-        true
-    )
-
-    definitions.addToolDefinition(
-        "LMIONMetalCrowbar",
-        { "Tag.Crowbar", "Crowbar" },
-        Perks.MetalWelding,
-        150,
-        "Hammering",
-        true
-    )
-
-    definitions.addToolDefinition(
-        "LMIONMetalHammer",
-        { "Base.Hammer" },
-        Perks.MetalWelding,
-        75,
-        "Hammering",
-        true
-    )
+    builtRevision = revision
+    return true
 end
 
 function ToolDefinitions.install()
-    register()
-
-    if Events ~= nil and Events.OnGameBoot ~= nil then
-        Events.OnGameBoot.Add(register)
+    if installed then
+        return false
     end
+    installed = true
+
+    ToolDefinitions.refresh(true)
+    if Events ~= nil and Events.OnGameBoot ~= nil then
+        Events.OnGameBoot.Add(function()
+            ToolDefinitions.refresh(true)
+        end)
+    end
+
+    return true
 end
 
 return ToolDefinitions

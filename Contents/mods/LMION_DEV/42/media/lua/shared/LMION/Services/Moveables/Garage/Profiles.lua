@@ -11,14 +11,6 @@ local profilesByDefinitionId = nil
 local segmentsBySpriteName = nil
 local builtRevision = nil
 
-local function shortName(entityId)
-    if type(entityId) ~= "string" then
-        return nil
-    end
-
-    return string.match(entityId, "^[^.]+%.(.+)$") or entityId
-end
-
 local function buildProfile(commonProfile)
     if type(commonProfile) ~= "table" then
         return nil
@@ -27,40 +19,27 @@ local function buildProfile(commonProfile)
     local definition = commonProfile.definition
     local pickup = definition and definition.pickup or nil
     local replacement = definition and definition.replacement or nil
-    local weight = MoveableProfileFields.getPackageWeight(pickup)
-    local pickUpTool = MoveableProfileFields.getSingleToolName(
-        pickup and pickup.tools,
-        pickup and pickup.skill
-    )
-    local placeTool = MoveableProfileFields.getSingleToolName(
-        replacement and replacement.tools,
-        pickup and pickup.skill
-    )
-    local pickUpLevel = MoveableProfileFields.getSingleSkillLevel(
-        pickup and pickup.skill
-    )
-    local entityName = shortName(commonProfile.entityId)
+    if type(pickup) ~= "table" or type(replacement) ~= "table" then
+        return nil
+    end
 
-    if entityName == nil
-        or weight == nil
-        or pickUpTool == nil
-        or placeTool == nil
-        or pickUpLevel == nil then
+    local weight = MoveableProfileFields.getPackageWeight(pickup)
+    if weight == nil then
         return nil
     end
 
     local itemTypes = {}
-    for index = 1, 3 do
-        local fullType = "Base.LMION_"
-            .. entityName
-            .. "_Part"
-            .. tostring(index)
-
-        if not MoveableProfileFields.hasScriptItem(fullType) then
+    for roleIndex, role in ipairs(ROLES) do
+        local itemType = MoveableProfileFields.getPackageItemType(definition, {
+            entityId = commonProfile.entityId,
+            role = role,
+            roleIndex = roleIndex,
+            partIndex = roleIndex,
+        })
+        if not MoveableProfileFields.hasScriptItem(itemType) then
             return nil
         end
-
-        itemTypes[index] = fullType
+        itemTypes[roleIndex] = itemType
     end
 
     return {
@@ -70,9 +49,10 @@ local function buildProfile(commonProfile)
         definition = definition,
         geometry = commonProfile.geometry,
         itemTypes = itemTypes,
-        pickUpTool = pickUpTool,
-        placeTool = placeTool,
-        pickUpLevel = pickUpLevel,
+        pickUpTool = MoveableProfileFields.getToolName(definition, "pickup"),
+        placeTool = MoveableProfileFields.getToolName(definition, "place"),
+        pickUpLevel = MoveableProfileFields.getSkillLevel(definition, "pickup"),
+        breakChance = MoveableProfileFields.getBreakChance(pickup),
         rawWeight = weight * 10,
         weight = weight,
     }
@@ -92,10 +72,8 @@ local function rebuild()
             for _, facing in ipairs(FACINGS) do
                 for roleIndex, role in ipairs(ROLES) do
                     local part = profile.geometry[facing][role]
-
                     for _, isOpen in ipairs({ false, true }) do
                         local spriteName = isOpen and part.open or part.closed
-
                         if segments[spriteName] ~= nil then
                             error("LMION: duplicate Garage sprite " .. spriteName, 2)
                         end
@@ -142,35 +120,29 @@ function GarageProfiles.getSegmentBySprite(sprite)
     if sprite == nil then
         return nil
     end
-
     local spriteName = type(sprite) == "string" and sprite or sprite:getName()
     ensureBuilt()
-
     return spriteName and segmentsBySpriteName[spriteName] or nil
 end
 
 function GarageProfiles.getDefinitionIds()
     ensureBuilt()
-
     local ids = {}
     for definitionId in pairs(profilesByDefinitionId) do
         ids[#ids + 1] = definitionId
     end
-
     table.sort(ids)
     return ids
 end
 
 function GarageProfiles.getClosedSpriteNames()
     ensureBuilt()
-
     local names = {}
     for spriteName, segment in pairs(segmentsBySpriteName) do
         if not segment.isOpen then
             names[#names + 1] = spriteName
         end
     end
-
     table.sort(names)
     return names
 end

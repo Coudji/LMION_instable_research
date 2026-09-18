@@ -4,9 +4,8 @@ local MoveableProfileFields = require "LMION/Services/Moveables/MoveableProfileF
 
 local PairedDoorProfiles = {}
 
-local PILOT_DEFINITION_ID = "Doors.Wood.BlueChurchDoubleDoor"
-
 local profilesBySpriteName = nil
+local builtRevision = nil
 
 local function getMemberFaces(definition, member)
     local geometry = definition.geometry
@@ -18,16 +17,12 @@ local function getMemberFaces(definition, member)
     if type(northMember) ~= "table" or type(westMember) ~= "table" then
         return nil
     end
-
     if type(northMember.closed) ~= "string" or northMember.closed == ""
         or type(westMember.closed) ~= "string" or westMember.closed == "" then
         return nil
     end
 
-    return {
-        N = northMember.closed,
-        W = westMember.closed,
-    }
+    return { N = northMember.closed, W = westMember.closed }
 end
 
 local function getMemberEntity(definition, member)
@@ -37,21 +32,22 @@ local function getMemberEntity(definition, member)
     end
 
     local entityId = entities[member]
-    if type(entityId) ~= "string" or entityId == "" then
-        return nil
-    end
-
-    return entityId
+    return type(entityId) == "string" and entityId ~= "" and entityId or nil
 end
 
 local function buildMemberProfile(definition, member, frameSide)
     local entityId = getMemberEntity(definition, member)
-    local itemType = MoveableProfileFields.getItemType(entityId)
+    if entityId == nil then
+        return nil
+    end
+
+    local itemType = MoveableProfileFields.getPackageItemType(
+        definition,
+        { entityId = entityId, member = member }
+    )
     local faces = getMemberFaces(definition, member)
 
-    if entityId == nil
-        or faces == nil
-        or not MoveableProfileFields.hasScriptItem(itemType) then
+    if faces == nil or not MoveableProfileFields.hasScriptItem(itemType) then
         return nil
     end
 
@@ -61,19 +57,13 @@ local function buildMemberProfile(definition, member, frameSide)
         return nil
     end
 
-    local pickUpTool = MoveableProfileFields.getSingleToolName(pickup.tools, pickup.skill)
-    local placeTool = MoveableProfileFields.getSingleToolName(replacement.tools, pickup.skill)
-    local pickUpLevel = MoveableProfileFields.getSingleSkillLevel(pickup.skill)
     local weight = MoveableProfileFields.getPackageWeight(pickup)
-
-    if pickUpTool == nil
-        or placeTool == nil
-        or pickUpLevel == nil
-        or weight == nil then
+    if weight == nil then
         return nil
     end
 
     return {
+        definition = definition,
         definitionId = definition.definitionId,
         doorType = definition.doorType,
         member = member,
@@ -81,21 +71,19 @@ local function buildMemberProfile(definition, member, frameSide)
         entityId = entityId,
         itemType = itemType,
         faces = faces,
-        pickUpTool = pickUpTool,
-        placeTool = placeTool,
-        pickUpLevel = pickUpLevel,
+        pickUpTool = MoveableProfileFields.getToolName(definition, "pickup"),
+        placeTool = MoveableProfileFields.getToolName(definition, "place"),
+        pickUpLevel = MoveableProfileFields.getSkillLevel(definition, "pickup"),
+        breakChance = MoveableProfileFields.getBreakChance(pickup),
         rawWeight = weight * 10,
         weight = weight,
     }
 end
 
 local function addMemberSprites(index, profile, definition, member)
-    local geometry = definition.geometry
-
     for _, facing in ipairs({ "N", "W" }) do
-        local orientation = type(geometry) == "table" and geometry[facing] or nil
+        local orientation = definition.geometry and definition.geometry[facing] or nil
         local face = type(orientation) == "table" and orientation[member] or nil
-
         if type(face) == "table" then
             if type(face.closed) == "string" then
                 index[face.closed] = profile
@@ -108,7 +96,7 @@ local function addMemberSprites(index, profile, definition, member)
 end
 
 local function addDefinition(index, definition)
-    if definition.definitionId ~= PILOT_DEFINITION_ID or definition.doorType ~= "Paired" then
+    if definition.doorType ~= "Paired" then
         return
     end
 
@@ -125,30 +113,28 @@ end
 
 local function buildIndex()
     local nextIndex = {}
-    local definitionIds = Registry.getDefinitionIds()
-
-    for index = 1, #definitionIds do
-        addDefinition(nextIndex, Resolver.resolveDefinition(definitionIds[index]))
+    for _, definitionId in ipairs(Registry.getDefinitionIds()) do
+        addDefinition(nextIndex, Resolver.resolveDefinition(definitionId))
     end
-
     profilesBySpriteName = nextIndex
+    builtRevision = Registry.getRevision()
 end
 
 local function ensureBuilt()
-    if profilesBySpriteName == nil then
+    if profilesBySpriteName == nil or builtRevision ~= Registry.getRevision() then
         buildIndex()
     end
 end
 
 function PairedDoorProfiles.invalidate()
     profilesBySpriteName = nil
+    builtRevision = nil
 end
 
 function PairedDoorProfiles.getBySprite(sprite)
     if sprite == nil then
         return nil
     end
-
     if type(sprite) == "string" then
         sprite = getSprite(sprite)
     end
@@ -164,12 +150,10 @@ end
 
 function PairedDoorProfiles.getConfiguredSpriteNames()
     ensureBuilt()
-
     local names = {}
     for spriteName in pairs(profilesBySpriteName) do
         names[#names + 1] = spriteName
     end
-
     return names
 end
 

@@ -6,14 +6,9 @@ return {
         materialType = "Metal_Light",
         doorSound = "MetalDoor",
         thumpSound = "ZombieThumpMetal",
-
         engineMaterials = { "MetalPlates", "Wood", "Screws" },
 
-        durability = {
-            worldHealth = 700,
-            health = 375,
-            skillBaseHealth = 250,
-        },
+        durability = { worldHealth = 700, health = 375, skillBaseHealth = 250 },
 
         construction = {
             category = "Welding",
@@ -23,7 +18,6 @@ return {
             time = 120,
             xp = 15,
             tools = { { tag = "base:screwdriver" } },
-
             materials = {
                 { item = "Base.SheetMetal", amount = 1 },
                 { item = "Base.SmallSheetMetal", amount = 1 },
@@ -36,13 +30,15 @@ return {
         pickup = {
             skill = { MetalWelding = 1 },
             tools = { { tag = "base:screwdriver" } },
+            action = { time = 100, sound = "Dismantle", soundIsWav = true, animation = "LMION_ScrewdriverHinge" },
             breakChance = 0,
-            packages = { count = 1, weight = 18 },
+            packages = { count = 1, weight = 18, itemTemplate = "Base.LMION_{entityName}" },
         },
 
         replacement = {
             packages = 1,
             tools = { { tag = "base:screwdriver" } },
+            action = { time = 100, sound = "Dismantle", soundIsWav = true, animation = "LMION_ScrewdriverHinge" },
             materials = {},
         },
     },

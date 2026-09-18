@@ -11,6 +11,7 @@ local SUPPORTED_TYPES = {
 }
 
 local profilesBySpriteName = nil
+local builtRevision = nil
 
 local function getClosedFaces(definition)
     local geometry = definition.geometry
@@ -27,10 +28,7 @@ local function getClosedFaces(definition)
         return nil
     end
 
-    return {
-        N = north,
-        W = west,
-    }
+    return { N = north, W = west }
 end
 
 local function buildProfile(definition)
@@ -38,7 +36,10 @@ local function buildProfile(definition)
         return nil
     end
 
-    local itemType = MoveableProfileFields.getItemType(definition.entity)
+    local itemType = MoveableProfileFields.getPackageItemType(
+        definition,
+        { entityId = definition.entity }
+    )
     if not MoveableProfileFields.hasScriptItem(itemType) then
         return nil
     end
@@ -54,27 +55,22 @@ local function buildProfile(definition)
         return nil
     end
 
-    local pickUpTool = MoveableProfileFields.getSingleToolName(pickup.tools, pickup.skill)
-    local placeTool = MoveableProfileFields.getSingleToolName(replacement.tools, pickup.skill)
-    local pickUpLevel = MoveableProfileFields.getSingleSkillLevel(pickup.skill)
     local weight = MoveableProfileFields.getPackageWeight(pickup)
-
-    if pickUpTool == nil
-        or placeTool == nil
-        or pickUpLevel == nil
-        or weight == nil then
+    if weight == nil then
         return nil
     end
 
     return {
+        definition = definition,
         definitionId = definition.definitionId,
         doorType = definition.doorType,
         entityId = definition.entity,
         itemType = itemType,
         faces = faces,
-        pickUpTool = pickUpTool,
-        placeTool = placeTool,
-        pickUpLevel = pickUpLevel,
+        pickUpTool = MoveableProfileFields.getToolName(definition, "pickup"),
+        placeTool = MoveableProfileFields.getToolName(definition, "place"),
+        pickUpLevel = MoveableProfileFields.getSkillLevel(definition, "pickup"),
+        breakChance = MoveableProfileFields.getBreakChance(pickup),
         rawWeight = weight * 10,
         weight = weight,
     }
@@ -98,35 +94,34 @@ end
 
 local function buildIndex()
     local nextIndex = {}
-    local definitionIds = Registry.getDefinitionIds()
 
-    for index = 1, #definitionIds do
-        local definition = Resolver.resolveDefinition(definitionIds[index])
+    for _, definitionId in ipairs(Registry.getDefinitionIds()) do
+        local definition = Resolver.resolveDefinition(definitionId)
         local profile = buildProfile(definition)
-
         if profile ~= nil then
             addProfileSprites(nextIndex, profile, definition)
         end
     end
 
     profilesBySpriteName = nextIndex
+    builtRevision = Registry.getRevision()
 end
 
 local function ensureBuilt()
-    if profilesBySpriteName == nil then
+    if profilesBySpriteName == nil or builtRevision ~= Registry.getRevision() then
         buildIndex()
     end
 end
 
 function SingleEntityDoorProfiles.invalidate()
     profilesBySpriteName = nil
+    builtRevision = nil
 end
 
 function SingleEntityDoorProfiles.getBySprite(sprite)
     if sprite == nil then
         return nil
     end
-
     if type(sprite) == "string" then
         sprite = getSprite(sprite)
     end
@@ -142,12 +137,10 @@ end
 
 function SingleEntityDoorProfiles.getConfiguredSpriteNames()
     ensureBuilt()
-
     local names = {}
     for spriteName in pairs(profilesBySpriteName) do
         names[#names + 1] = spriteName
     end
-
     return names
 end
 

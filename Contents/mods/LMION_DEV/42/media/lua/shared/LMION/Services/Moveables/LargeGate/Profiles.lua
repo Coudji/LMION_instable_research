@@ -1,3 +1,4 @@
+local Registry = require "LMION/Definitions/Registry"
 local CommonLargeGateProfiles = require "LMION/Services/Common/LargeGate/Profiles"
 local MoveableProfileFields = require "LMION/Services/Moveables/MoveableProfileFields"
 
@@ -8,76 +9,46 @@ local LEAVES = { "A", "B" }
 
 local profilesByDefinitionId = nil
 local segmentsBySpriteName = nil
+local builtRevision = nil
 
-local function getPackageWeight(pickup)
+local function getPackageWeight(definition)
+    local pickup = definition and definition.pickup or nil
     local packages = type(pickup) == "table" and pickup.packages or nil
     if type(packages) ~= "table" or tonumber(packages.count) ~= 2 then
         return nil
     end
 
     local weight = tonumber(packages.weight)
-    if weight == nil or weight <= 0 then
-        return nil
-    end
-
-    return weight
-end
-
-local function getTransportRequirements(definition)
-    local pickup = definition.pickup
-    local replacement = definition.replacement
-    if type(pickup) ~= "table" or type(replacement) ~= "table" then
-        return nil
-    end
-
-    local weight = getPackageWeight(pickup)
-    local pickUpTool = MoveableProfileFields.getSingleToolName(pickup.tools, pickup.skill)
-    local placeTool = MoveableProfileFields.getSingleToolName(replacement.tools, pickup.skill)
-    local pickUpLevel = MoveableProfileFields.getSingleSkillLevel(pickup.skill)
-
-    if weight == nil or pickUpTool == nil or placeTool == nil or pickUpLevel == nil then
-        return nil
-    end
-
-    return {
-        weight = weight,
-        pickUpTool = pickUpTool,
-        placeTool = placeTool,
-        pickUpLevel = pickUpLevel,
-    }
-end
-
-local function getSegmentItemType(entityId, leaf, partIndex)
-    local baseItemType = MoveableProfileFields.getItemType(entityId)
-    if baseItemType == nil then
-        return nil
-    end
-
-    return baseItemType .. leaf .. "_Part" .. tostring(partIndex)
+    return weight ~= nil and weight > 0 and weight or nil
 end
 
 local function getSegmentItemTypes(commonProfile)
-    local itemTypes = {}
+    local result = {}
+    local definition = commonProfile.definition
 
     for _, leaf in ipairs(LEAVES) do
-        itemTypes[leaf] = {}
-
+        result[leaf] = {}
         for partIndex = 1, 2 do
-            local itemType = getSegmentItemType(commonProfile.entityId, leaf, partIndex)
+            local itemType = MoveableProfileFields.getPackageItemType(definition, {
+                entityId = commonProfile.entityId,
+                leaf = leaf,
+                partIndex = partIndex,
+            })
             if not MoveableProfileFields.hasScriptItem(itemType) then
                 return nil
             end
-            itemTypes[leaf][partIndex] = itemType
+            result[leaf][partIndex] = itemType
         end
     end
 
-    return itemTypes
+    return result
 end
 
 local function buildProfile(commonProfile)
-    local requirements = getTransportRequirements(commonProfile.definition)
+    local definition = commonProfile.definition
+    local weight = getPackageWeight(definition)
     local itemTypes = getSegmentItemTypes(commonProfile)
-    if requirements == nil or itemTypes == nil then
+    if weight == nil or itemTypes == nil then
         return nil
     end
 
@@ -86,14 +57,15 @@ local function buildProfile(commonProfile)
         displayName = commonProfile.displayName,
         entityId = commonProfile.entityId,
         doorType = commonProfile.doorType,
-        definition = commonProfile.definition,
+        definition = definition,
         geometry = commonProfile.geometry,
         itemTypes = itemTypes,
-        pickUpTool = requirements.pickUpTool,
-        placeTool = requirements.placeTool,
-        pickUpLevel = requirements.pickUpLevel,
-        rawWeight = requirements.weight * 10,
-        weight = requirements.weight,
+        pickUpTool = MoveableProfileFields.getToolName(definition, "pickup"),
+        placeTool = MoveableProfileFields.getToolName(definition, "place"),
+        pickUpLevel = MoveableProfileFields.getSkillLevel(definition, "pickup"),
+        breakChance = MoveableProfileFields.getBreakChance(definition.pickup),
+        rawWeight = weight * 10,
+        weight = weight,
     }
 end
 
@@ -144,10 +116,13 @@ local function buildIndexes()
 
     profilesByDefinitionId = nextProfiles
     segmentsBySpriteName = nextSegments
+    builtRevision = Registry.getRevision()
 end
 
 local function ensureBuilt()
-    if profilesByDefinitionId == nil or segmentsBySpriteName == nil then
+    if profilesByDefinitionId == nil
+        or segmentsBySpriteName == nil
+        or builtRevision ~= Registry.getRevision() then
         buildIndexes()
     end
 end
@@ -155,6 +130,7 @@ end
 function LargeGateProfiles.invalidate()
     profilesByDefinitionId = nil
     segmentsBySpriteName = nil
+    builtRevision = nil
     CommonLargeGateProfiles.invalidate()
 end
 
@@ -167,7 +143,6 @@ function LargeGateProfiles.getSegmentBySprite(sprite)
     if sprite == nil then
         return nil
     end
-
     local spriteName = type(sprite) == "string" and sprite or sprite:getName()
     ensureBuilt()
     return spriteName and segmentsBySpriteName[spriteName] or nil
@@ -175,7 +150,6 @@ end
 
 function LargeGateProfiles.getDefinitionIds()
     ensureBuilt()
-
     local ids = {}
     for definitionId in pairs(profilesByDefinitionId) do
         ids[#ids + 1] = definitionId
@@ -186,7 +160,6 @@ end
 
 function LargeGateProfiles.getClosedSpriteNames()
     ensureBuilt()
-
     local names = {}
     for spriteName, segment in pairs(segmentsBySpriteName) do
         if segment.isOpen == false then

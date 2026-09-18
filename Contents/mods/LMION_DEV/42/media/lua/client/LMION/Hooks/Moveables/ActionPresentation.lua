@@ -47,24 +47,6 @@ local function equipResolvedTool(character, tool)
     end
 end
 
-local function playPresentationSound(action, soundName)
-    local character = action and action.character or nil
-    if character == nil or soundName == nil then
-        return nil
-    end
-
-    addSound(
-        character,
-        character:getX(),
-        character:getY(),
-        character:getZ(),
-        10,
-        5
-    )
-
-    return character:playSound(soundName)
-end
-
 function ActionPresentationHook.install()
     if ISMoveablesAction._lmionV3PresentationInstalled == true then
         return false
@@ -73,17 +55,6 @@ function ActionPresentationHook.install()
     ISMoveablesAction._lmionV3PresentationInstalled = true
 
     local originalStart = ISMoveablesAction.start
-    local originalSetActionSound = ISMoveablesAction.setActionSound
-
-    ISMoveablesAction.setActionSound = function(self)
-        local presentation = resolve(self)
-        if presentation == nil or presentation.sound == nil then
-            return originalSetActionSound(self)
-        end
-
-        self.sound = playPresentationSound(self, presentation.sound)
-    end
-
     ISMoveablesAction.start = function(self)
         local presentation = resolve(self)
         if presentation == nil then
@@ -91,11 +62,6 @@ function ActionPresentationHook.install()
         end
 
         local tool = getResolvedTool(self)
-
-        -- walkToAndEquip() still owns pathing and inventory validation. At action
-        -- start, make the already-resolved gameplay tool authoritative for the
-        -- hand model so the previous Moveables action cannot leak its tool into
-        -- the next animation.
         equipResolvedTool(self.character, tool)
 
         originalStart(self)

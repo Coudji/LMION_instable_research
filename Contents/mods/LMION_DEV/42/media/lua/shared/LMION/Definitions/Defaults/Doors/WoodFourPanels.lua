@@ -6,14 +6,9 @@ return {
         materialType = "Wood_Solid",
         doorSound = "WoodDoor",
         thumpSound = "ZombieThumpWood",
-
         engineMaterials = { "Wood", "Nails", "Screws" },
 
-        durability = {
-            worldHealth = 625,
-            health = 450,
-            skillBaseHealth = 275,
-        },
+        durability = { worldHealth = 625, health = 450, skillBaseHealth = 275 },
 
         construction = {
             category = "Carpentry",
@@ -23,13 +18,9 @@ return {
             time = 150,
             xp = 35,
             tools = {
-                {
-                    tag = "base:hammer",
-                    flags = { "Prop1", "MayDegradeVeryLight" },
-                },
+                { tag = "base:hammer", flags = { "Prop1", "MayDegradeVeryLight" } },
                 { tag = "base:screwdriver" },
             },
-
             materials = {
                 { item = "Base.Plank", amount = 4 },
                 { item = "Base.Nails", amount = 4 },
@@ -42,13 +33,15 @@ return {
         pickup = {
             skill = { Woodwork = 3 },
             tools = { { tag = "base:screwdriver" } },
+            action = { time = 100, sound = "Dismantle", soundIsWav = true, animation = "LMION_ScrewdriverHinge" },
             breakChance = 0,
-            packages = { count = 1, weight = 17 },
+            packages = { count = 1, weight = 17, itemTemplate = "Base.LMION_{entityName}" },
         },
 
         replacement = {
             packages = 1,
             tools = { { tag = "base:screwdriver" } },
+            action = { time = 100, sound = "Dismantle", soundIsWav = true, animation = "LMION_ScrewdriverHinge" },
             materials = {},
         },
     },
