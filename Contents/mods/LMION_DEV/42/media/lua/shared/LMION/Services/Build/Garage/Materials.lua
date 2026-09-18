@@ -6,6 +6,14 @@ local function fail(message)
     error("LMION GarageMaterials: " .. message, 3)
 end
 
+local function requireNumber(value, label)
+    local number = tonumber(value)
+    if number == nil then
+        fail(label .. " must be numeric")
+    end
+    return number
+end
+
 local function evaluateQuantity(value, width, label)
     if type(value) == "number" then
         return value
@@ -15,27 +23,37 @@ local function evaluateQuantity(value, width, label)
     end
 
     local amount = nil
+
     if value.perWidth ~= nil then
-        amount = width * tonumber(value.perWidth)
+        amount = width * requireNumber(value.perWidth, label .. ".perWidth")
     elseif value.perStep ~= nil then
-        local step = tonumber(value.step) or 1
+        local step = value.step ~= nil
+            and requireNumber(value.step, label .. ".step")
+            or 1
+
         if step <= 0 then
             fail(label .. ".step must be positive")
         end
-        amount = math.ceil(width / step) * tonumber(value.perStep)
-    elseif value.fixed ~= nil then
-        amount = tonumber(value.fixed)
-    end
 
-    if amount == nil then
+        amount = math.ceil(width / step)
+            * requireNumber(value.perStep, label .. ".perStep")
+    elseif value.fixed ~= nil then
+        amount = requireNumber(value.fixed, label .. ".fixed")
+    else
         fail(label .. " must define perWidth, perStep or fixed")
     end
 
     if value.min ~= nil then
-        amount = math.max(amount, tonumber(value.min) or amount)
+        amount = math.max(
+            amount,
+            requireNumber(value.min, label .. ".min")
+        )
     end
     if value.max ~= nil then
-        amount = math.min(amount, tonumber(value.max) or amount)
+        amount = math.min(
+            amount,
+            requireNumber(value.max, label .. ".max")
+        )
     end
 
     amount = math.floor(amount)
@@ -76,13 +94,21 @@ function GarageMaterials.getRequirements(definition, width)
     for index = 1, #materials do
         local material = materials[index]
         if type(material) ~= "table" then
-            fail("construction material at index " .. tostring(index) .. " must be a table")
+            fail(
+                "construction material at index "
+                    .. tostring(index)
+                    .. " must be a table"
+            )
         end
 
         local hasAmount = material.amount ~= nil
         local hasUses = material.uses ~= nil
         if hasAmount == hasUses then
-            fail("construction material at index " .. tostring(index) .. " must define exactly one of amount or uses")
+            fail(
+                "construction material at index "
+                    .. tostring(index)
+                    .. " must define exactly one of amount or uses"
+            )
         end
 
         local kind = hasUses and "uses" or "amount"
@@ -101,6 +127,7 @@ function GarageMaterials.getRequirements(definition, width)
             widthInput = material.widthInput == true,
             itemTypes = ItemSelector.getItemTypes(material),
         }
+
         requirements[#requirements + 1] = requirement
     end
 
@@ -121,6 +148,7 @@ function GarageMaterials.getRecipeMaterials(definition, width)
             mode = source.mode,
             flags = copyArray(source.flags),
         }
+
         copySelector(source, material)
 
         if requirement.uses then
