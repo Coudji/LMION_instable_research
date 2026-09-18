@@ -11,6 +11,7 @@ return {
         durability = { worldHealth = 650, health = 350, skillBaseHealth = 225 },
 
         construction = {
+            category = "Welding",
             timedAction = "BuildWallMetal",
             skill = { MetalWelding = 5 },
             time = 190,

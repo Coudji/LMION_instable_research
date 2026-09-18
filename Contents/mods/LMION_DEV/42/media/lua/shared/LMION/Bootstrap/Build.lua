@@ -9,7 +9,6 @@ local VariantMenuFilter = require "LMION/Runtime/Build/VariantMenuFilter"
 local BuildBootstrap = {}
 local hasRun = false
 local listenerInstalled = false
-local claimedEntityIds = {}
 local hydratedRevision = -1
 
 local function addEntityId(result, seen, entityId)
@@ -79,9 +78,11 @@ function BuildBootstrap.refresh(force)
                 local entityId = entityIds[entityIndex]
                 local recipe = BuildRecipe.getByEntityId(entityId)
 
-                if recipe ~= nil
-                    and (claimedEntityIds[entityId] or BuildRecipe.isEmptyShell(recipe)) then
-                    claimedEntityIds[entityId] = true
+                -- A registered LMION definition that exposes a construction
+                -- contract owns the effective CraftRecipe. Empty-shell
+                -- detection was only a migration aid and made vanilla-backed
+                -- entities depend on a second source of truth.
+                if recipe ~= nil then
                     hydrateDefinition(definitionId, definition, entityId)
                 end
             end

@@ -5,8 +5,9 @@ return {
         engineMaterials = { "Wood", "Nails", "Screws" },
         durability = { worldHealth = 750, health = 500, skillBaseHealth = 350 },
         construction = {
+            category = "Carpentry",
             timedAction = "BuildWallHammer", skill = { Woodwork = 7 }, time = 240, xp = 60,
-            tools = { { tag = "base:hammer" }, { tag = "base:screwdriver" } },
+            tools = { { tag = "base:hammer", flags = { "Prop1", "MayDegradeVeryLight" } }, { tag = "base:screwdriver" } },
             materials = {
                 { item = "Base.Plank", amount = 10 }, { item = "Base.Nails", amount = 10 }, { item = "Base.Screws", amount = 8 },
                 { item = "Base.Hinge", amount = 4 }, { item = "Base.Doorknob", amount = 2 },

@@ -11,6 +11,7 @@ return {
         durability = { worldHealth = 500, health = 300, skillBaseHealth = 200 },
 
         construction = {
+            category = "Carpentry",
             timedAction = "BuildWallHammer",
             skill = { Woodwork = 5 },
             time = 120,

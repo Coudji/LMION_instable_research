@@ -5,6 +5,7 @@ return {
         engineMaterials = { "MetalPipe", "MetalWire" },
         durability = { worldHealth = 850, health = 400, skillBaseHealth = 275 },
         construction = {
+            category = "Welding",
             timedAction = "BuildWallMetal", skill = { MetalWelding = 5 }, time = 220, xp = 40, tools = { { tag = "base:weldingmask" } },
             materials = {
                 { item = "Base.BlowTorch", uses = 10 }, { item = "Base.MetalPipe", amount = 8 }, { item = "Base.Wire", uses = 4 },

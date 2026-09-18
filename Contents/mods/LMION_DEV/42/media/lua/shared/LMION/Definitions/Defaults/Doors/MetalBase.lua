@@ -16,6 +16,7 @@ return {
         },
 
         construction = {
+            category = "Welding",
             timedAction = "BuildWallMetal",
             skill = { MetalWelding = 4 },
             time = 160,

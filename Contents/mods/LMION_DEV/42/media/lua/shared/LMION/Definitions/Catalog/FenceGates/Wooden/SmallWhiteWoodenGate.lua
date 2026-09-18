@@ -16,10 +16,12 @@ return {
     },
 
     construction = {
+        category = "Carpentry",
+        timedAction = "BuildWallHammer",
         skill = { Woodwork = 2 },
         time = 60,
         xp = 10,
-        tools = { { tag = "base:hammer" } },
+        tools = { { tag = "base:hammer", flags = { "Prop1", "MayDegradeVeryLight" } } },
         materials = {
             { item = "Base.Plank", amount = 2 },
             { item = "Base.Nails", amount = 2 },
