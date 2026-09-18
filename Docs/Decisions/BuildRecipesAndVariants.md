@@ -39,6 +39,37 @@ The empty-shell check is the migration boundary. It lets LMION discover definiti
 
 This also applies to definitions registered by third-party addons before Build bootstrap runs. A modder does not register a variant or recipe in a separate LMION list: registering the definition and supplying the corresponding empty `CraftRecipe` shell is sufficient.
 
+## Construction input descriptors
+
+`construction.tools` is definition data. The Build translator must not contain a whitelist that maps known tool ids to hand-authored recipe strings.
+
+A tool descriptor may select its input with one of:
+
+```lua
+{ tag = "base:screwdriver" }
+{ anyTagOf = { "base:hammer", "SomeMod:hammer" } }
+{ item = "Base.Screwdriver" }
+{ anyOf = { "Base.ToolA", "SomeMod.ToolB" } }
+```
+
+Tool identity is therefore open-ended: an addon may use a new item or tag without requiring an LMION core change. Tools default to `amount = 1` and `mode = "keep"`; either can be stated explicitly when a recipe needs something else.
+
+PZ input flags that are part of the authored recipe also live on the descriptor rather than in a hidden tag-specific lookup. For example the current woodworking hammer contract is:
+
+```lua
+tools = {
+    {
+        tag = "base:hammer",
+        flags = { "Prop1", "MayDegradeVeryLight" },
+    },
+    { tag = "base:screwdriver" },
+}
+```
+
+`Runtime/Build/CraftRecipeInputs.lua` owns the mechanical conversion of those descriptors to PZ input syntax. It is shared by the generic recipe hydrator and family-specific hydrators such as Garage. Family hydrators may still own genuinely family-specific input shapes, but they must read common tool requirements from the effective definition rather than restating a concrete tool.
+
+`construction.materials` uses the same selector vocabulary (`tag`, `anyTagOf`, `item`, `anyOf`). A material defines exactly one of `amount` or `uses`; `uses` is translated to the PZ non-recorded-input form used by drainable construction consumables. Optional `mode` and `flags` remain explicit definition data when required.
+
 ## Vanilla-facing categories
 
 Construction category is definition data, not an LMION branding category.
@@ -120,6 +151,9 @@ Once the actual variant recipe is restored, vanilla creates the correct ghost an
 ```text
 Bootstrap/Build.lua
     Build startup coordination and discovery of definition-owned recipe shells
+
+Runtime/Build/CraftRecipeInputs.lua
+    generic definition input descriptor -> PZ CraftRecipe input syntax
 
 Runtime/Build/CraftRecipeHydrator.lua
     generic effective definition -> PZ CraftRecipe translation
