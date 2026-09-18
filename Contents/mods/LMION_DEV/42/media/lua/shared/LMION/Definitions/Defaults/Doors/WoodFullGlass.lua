@@ -16,6 +16,8 @@ return {
         },
 
         construction = {
+            category = "Carpentry",
+            variantGroup = "Doors.Wood.FullGlass",
             skill = { Woodwork = 7 },
             time = 170,
             xp = 40,
