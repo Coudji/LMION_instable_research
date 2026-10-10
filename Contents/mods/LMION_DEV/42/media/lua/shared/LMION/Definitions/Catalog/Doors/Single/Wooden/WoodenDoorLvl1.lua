@@ -11,6 +11,7 @@ return {
 
     construction = {
         skill = { Woodwork = 3 },
+        unlock = { skill = "Woodwork", level = 3 },
         time = 90,
         xp = 15,
     },
