@@ -4,7 +4,7 @@ local BuildRecipe = require "LMION/PZ/BuildRecipe"
 local CraftRecipeHydrator = require "LMION/Runtime/Build/CraftRecipeHydrator"
 local GarageCraftRecipeHydrator = require "LMION/Runtime/Build/Garage/CraftRecipeHydrator"
 local VanillaLargeGateLeafPreparation = require "LMION/Runtime/Build/VanillaLargeGateLeafPreparation"
-local VariantMenuFilter = require "LMION/Runtime/Build/VariantMenuFilter"
+local MenuFilter = require "LMION/Runtime/Build/MenuFilter"
 
 local BuildBootstrap = {}
 local hasRun = false
@@ -78,10 +78,6 @@ function BuildBootstrap.refresh(force)
                 local entityId = entityIds[entityIndex]
                 local recipe = BuildRecipe.getByEntityId(entityId)
 
-                -- A registered LMION definition that exposes a construction
-                -- contract owns the effective CraftRecipe. Empty-shell
-                -- detection was only a migration aid and made vanilla-backed
-                -- entities depend on a second source of truth.
                 if recipe ~= nil then
                     hydrateDefinition(definitionId, definition, entityId)
                 end
@@ -123,7 +119,7 @@ function BuildBootstrap.run()
 
     hasRun = true
 
-    VariantMenuFilter.install()
+    MenuFilter.install()
     VanillaLargeGateLeafPreparation.install()
     installRegistryListener()
     BuildBootstrap.refresh(true)
