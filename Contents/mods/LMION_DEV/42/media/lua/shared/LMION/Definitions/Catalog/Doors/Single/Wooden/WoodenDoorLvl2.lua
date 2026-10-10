@@ -6,7 +6,6 @@ return {
     construction = {
         unlock = { skill = "Woodwork", level = 5 },
         variantGroup = "Doors.Wood.Solid",
-        variantOrder = 30,
     },
 
     geometry = {
