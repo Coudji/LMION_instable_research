@@ -31,6 +31,21 @@ local function getContract(definition)
     }
 end
 
+local function resolvePlayer(player)
+    if type(player) == "number" then
+        if getSpecificPlayer ~= nil then
+            return getSpecificPlayer(player)
+        end
+        return nil
+    end
+
+    if type(player) == "table" or type(player) == "userdata" then
+        return player
+    end
+
+    return nil
+end
+
 local function resolvePerk(skillName)
     if Perks ~= nil and Perks[skillName] ~= nil then
         return Perks[skillName]
@@ -58,6 +73,8 @@ function Unlock.shouldShow(definition, player)
     if contract == nil then
         return true
     end
+
+    player = resolvePlayer(player)
 
     -- Build-menu callbacks normally receive a player. If PZ invokes the
     -- callback from a non-player inspection path, don't hide content merely

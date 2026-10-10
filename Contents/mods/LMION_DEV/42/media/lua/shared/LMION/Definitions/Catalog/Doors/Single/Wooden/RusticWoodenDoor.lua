@@ -3,6 +3,12 @@ return {
     entity = "Base.RusticWoodenDoor",
     inherits = "Doors.Wood.Base",
 
+    construction = {
+        unlock = { skill = "Woodwork", level = 5 },
+        variantGroup = "Doors.Wood.Solid",
+        variantOrder = 40,
+    },
+
     geometry = {
         N = {
             closed = "fixtures_doors_01_9",

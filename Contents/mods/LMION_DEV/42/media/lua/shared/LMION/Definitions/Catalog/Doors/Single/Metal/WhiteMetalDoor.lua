@@ -3,6 +3,13 @@ return {
     entity = "Base.WhiteMetalDoor",
     inherits = "Doors.Metal.Base",
 
+    construction = {
+        skill = { MetalWelding = 5 },
+        unlock = { skill = "MetalWelding", level = 5 },
+        variantGroup = "Doors.Metal.Plain",
+        variantOrder = 30,
+    },
+
     geometry = {
         N = {
             closed = "fixtures_doors_01_57",

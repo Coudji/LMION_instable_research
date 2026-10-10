@@ -87,10 +87,16 @@ local function getMemberDisplayName(member)
 end
 
 function LMIONBuildVariantSelector:updateState()
-    local group = VariantState.getGroupFromLogic(self.logic)
-    local member = VariantState.getSelectedMember(self.logic)
+    local member = VariantState.ensureAvailableSelection(
+        self.logic,
+        self.player
+    )
+    local available = VariantState.getAvailableMembers(
+        self.logic,
+        self.player
+    )
 
-    if group == nil or member == nil then
+    if member == nil then
         self.value:setName("")
         self.previous.enable = false
         self.next.enable = false
@@ -99,14 +105,15 @@ function LMIONBuildVariantSelector:updateState()
 
     self.value:setName(getMemberDisplayName(member))
 
-    local canSwitch = #group.members > 1
+    local canSwitch = #available > 1
     self.previous.enable = canSwitch
     self.next.enable = canSwitch
 end
 
 function LMIONBuildVariantSelector:onClick(button)
     local delta = button == self.previous and -1 or 1
-    VariantState.selectRelative(self.logic, delta)
+    VariantState.selectRelative(self.logic, delta, self.player)
+    self:updateState()
 end
 
 function LMIONBuildVariantSelector:calculateLayout(panelWidth, panelHeight)

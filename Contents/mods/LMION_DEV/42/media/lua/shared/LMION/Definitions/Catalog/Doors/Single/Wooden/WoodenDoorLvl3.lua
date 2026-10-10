@@ -12,6 +12,8 @@ return {
     construction = {
         skill = { Woodwork = 7 },
         unlock = { skill = "Woodwork", level = 7 },
+        variantGroup = "Doors.Wood.Solid",
+        variantOrder = 50,
         time = 160,
         xp = 40,
     },

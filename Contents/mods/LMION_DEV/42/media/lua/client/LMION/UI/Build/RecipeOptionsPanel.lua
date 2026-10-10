@@ -24,8 +24,13 @@ function LMIONBuildRecipeOptionsPanel:createChildren()
 
     self.controls = {}
 
-    local group = VariantState.getGroupFromLogic(self.logic)
-    if group ~= nil and #group.members > 1 then
+    VariantState.ensureAvailableSelection(self.logic, self.player)
+
+    local availableVariants = VariantState.getAvailableMembers(
+        self.logic,
+        self.player
+    )
+    if #availableVariants > 1 then
         self.variantSelector = LMIONBuildVariantSelector:new(
             self.player,
             self.logic,

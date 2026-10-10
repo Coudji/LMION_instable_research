@@ -1,4 +1,5 @@
 local BuildRecipe = require "LMION/PZ/BuildRecipe"
+local VariantAvailability = require "LMION/Services/Build/VariantAvailability"
 local VariantGroups = require "LMION/Services/Build/VariantGroups"
 
 local VariantState = {}
@@ -19,7 +20,12 @@ function VariantState.getSelectedMember(logic)
     return VariantGroups.getMemberForRecipe(getRecipe(logic))
 end
 
-function VariantState.setSelectedDefinitionId(logic, definitionId)
+function VariantState.getAvailableMembers(logic, player)
+    local group = VariantState.getGroupFromLogic(logic)
+    return VariantAvailability.getMembers(group, player)
+end
+
+function VariantState.setSelectedDefinitionId(logic, definitionId, player)
     local group = VariantState.getGroupFromLogic(logic)
         or VariantGroups.getForDefinition(definitionId)
     if group == nil then
@@ -27,7 +33,7 @@ function VariantState.setSelectedDefinitionId(logic, definitionId)
     end
 
     local member = group.memberByDefinitionId[definitionId]
-    if member == nil then
+    if member == nil or not VariantAvailability.isAvailable(member, player) then
         return nil
     end
 
@@ -40,25 +46,67 @@ function VariantState.setSelectedDefinitionId(logic, definitionId)
     return member
 end
 
-function VariantState.selectRelative(logic, delta)
-    local group = VariantState.getGroupFromLogic(logic)
+function VariantState.ensureAvailableSelection(logic, player)
     local current = VariantState.getSelectedMember(logic)
-
-    if group == nil or current == nil or #group.members < 2 then
+    if current ~= nil and VariantAvailability.isAvailable(current, player) then
         return current
     end
 
-    local index = current.index + (tonumber(delta) or 0)
-    while index < 1 do
-        index = index + #group.members
-    end
-    while index > #group.members do
-        index = index - #group.members
+    local available = VariantState.getAvailableMembers(logic, player)
+    if #available == 0 then
+        return nil
     end
 
     return VariantState.setSelectedDefinitionId(
         logic,
-        group.members[index].definitionId
+        available[1].definitionId,
+        player
+    )
+end
+
+function VariantState.selectRelative(logic, delta, player)
+    local group = VariantState.getGroupFromLogic(logic)
+    local current = VariantState.getSelectedMember(logic)
+
+    if group == nil then
+        return current
+    end
+
+    local available = VariantAvailability.getMembers(group, player)
+    if #available == 0 then
+        return nil
+    end
+    if #available == 1 then
+        return VariantState.setSelectedDefinitionId(
+            logic,
+            available[1].definitionId,
+            player
+        )
+    end
+
+    local currentIndex = nil
+    for index = 1, #available do
+        if current ~= nil
+            and available[index].definitionId == current.definitionId then
+            currentIndex = index
+            break
+        end
+    end
+
+    currentIndex = currentIndex or 1
+
+    local index = currentIndex + (tonumber(delta) or 0)
+    while index < 1 do
+        index = index + #available
+    end
+    while index > #available do
+        index = index - #available
+    end
+
+    return VariantState.setSelectedDefinitionId(
+        logic,
+        available[index].definitionId,
+        player
     )
 end
 

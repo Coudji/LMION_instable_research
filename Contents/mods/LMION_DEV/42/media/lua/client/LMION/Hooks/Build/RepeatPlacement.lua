@@ -40,7 +40,8 @@ local function restoreVariant(panel, member)
 
     local restored = VariantState.setSelectedDefinitionId(
         panel.logic,
-        member.definitionId
+        member.definitionId,
+        panel.player
     )
 
     if restored == nil then

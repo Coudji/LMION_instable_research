@@ -1,6 +1,7 @@
 local Registry = require "LMION/Definitions/Registry"
 local Resolver = require "LMION/Definitions/Resolver"
 local BuildRecipe = require "LMION/PZ/BuildRecipe"
+local VariantAvailability = require "LMION/Services/Build/VariantAvailability"
 
 local VariantGroups = {}
 
@@ -16,6 +17,35 @@ local function getEntityShortName(entityId)
     end
 
     return string.match(entityId, "^[^.]+%.(.+)$") or entityId
+end
+
+local function getVariantOrder(construction)
+    local order = type(construction) == "table"
+        and tonumber(construction.variantOrder)
+        or nil
+
+    if order == nil then
+        return math.huge
+    end
+
+    return order
+end
+
+local function finalizeGroups()
+    for _, group in pairs(groupsById) do
+        table.sort(group.members, function(a, b)
+            if a.order ~= b.order then
+                return a.order < b.order
+            end
+            return a.registrationIndex < b.registrationIndex
+        end)
+
+        for index = 1, #group.members do
+            group.members[index].index = index
+        end
+
+        group.representative = group.members[1]
+    end
 end
 
 local function rebuild()
@@ -63,7 +93,8 @@ local function rebuild()
                 definitionId = definitionId,
                 entityId = entityId,
                 recipeName = recipeName,
-                index = #group.members + 1,
+                order = getVariantOrder(construction),
+                registrationIndex = index,
             }
 
             group.members[#group.members + 1] = member
@@ -78,13 +109,10 @@ local function rebuild()
             else
                 memberByRecipeName[recipeName] = false
             end
-
-            if group.representative == nil then
-                group.representative = member
-            end
         end
     end
 
+    finalizeGroups()
     cachedRevision = revision
 end
 
@@ -128,15 +156,20 @@ function VariantGroups.getForRecipe(recipe)
     return member and groupByDefinitionId[member.definitionId] or nil
 end
 
-function VariantGroups.shouldShowRecipe(recipe)
+function VariantGroups.shouldShowRecipe(recipe, player)
     local group = VariantGroups.getForRecipe(recipe)
     local member = VariantGroups.getMemberForRecipe(recipe)
 
-    if group == nil or group.representative == nil or member == nil then
+    if group == nil or member == nil then
         return true
     end
 
-    return member.entityId == group.representative.entityId
+    local representative = VariantAvailability.getRepresentative(group, player)
+    if representative == nil then
+        return false
+    end
+
+    return member.entityId == representative.entityId
 end
 
 return VariantGroups

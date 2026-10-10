@@ -27,8 +27,11 @@ local function shouldShow(params)
     end
 
     local recipe = params and params.recipe or nil
-    if not VariantGroups.shouldShowRecipe(recipe) then
-        return false
+    local player = params and params.player or nil
+
+    local group = VariantGroups.getForRecipe(recipe)
+    if group ~= nil then
+        return VariantGroups.shouldShowRecipe(recipe, player)
     end
 
     local definition = getDefinition(recipe)
@@ -36,7 +39,7 @@ local function shouldShow(params)
         return true
     end
 
-    return Unlock.shouldShow(definition, params and params.player or nil)
+    return Unlock.shouldShow(definition, player)
 end
 
 function MenuFilter.install()
