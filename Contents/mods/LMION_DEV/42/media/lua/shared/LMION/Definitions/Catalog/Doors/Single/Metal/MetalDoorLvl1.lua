@@ -19,6 +19,7 @@ return {
         category = "Welding",
         timedAction = "BuildWallMetal",
         skill = { MetalWelding = 3 },
+        unlock = { skill = "MetalWelding", level = 3 },
         time = 120,
         xp = 20,
         tools = { { tag = "base:weldingmask" } },
