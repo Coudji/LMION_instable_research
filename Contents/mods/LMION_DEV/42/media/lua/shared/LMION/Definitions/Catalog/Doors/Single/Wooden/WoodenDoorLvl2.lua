@@ -3,6 +3,10 @@ return {
     entity = "Base.WoodenDoorLvl2",
     inherits = "Doors.Wood.Base",
 
+    construction = {
+        unlock = { skill = "Woodwork", level = 5 },
+    },
+
     geometry = {
         N = {
             closed = "carpentry_01_53",
