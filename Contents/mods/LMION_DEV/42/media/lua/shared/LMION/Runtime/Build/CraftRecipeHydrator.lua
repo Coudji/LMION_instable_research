@@ -94,9 +94,10 @@ local function buildRecipeScript(definition)
     addValue(lines, "SkillRequired", skillRequired)
     addValue(lines, "xpAward", xpAward)
 
-    if type(construction.variantGroup) == "string"
-        and construction.variantGroup ~= "" then
-        addValue(lines, "OnAddToMenu", "LMIONBuildVariantOnAddToMenu")
+    local hasVariant = type(construction.variantGroup) == "string"
+        and construction.variantGroup ~= ""
+    if hasVariant or construction.unlock ~= nil then
+        addValue(lines, "OnAddToMenu", "LMIONBuildOnAddToMenu")
     end
 
     lines[#lines + 1] = ""
