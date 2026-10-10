@@ -7,7 +7,6 @@ return {
         skill = { MetalWelding = 5 },
         unlock = { skill = "MetalWelding", level = 5 },
         variantGroup = "Doors.Metal.Plain",
-        variantOrder = 10,
     },
 
     geometry = {
