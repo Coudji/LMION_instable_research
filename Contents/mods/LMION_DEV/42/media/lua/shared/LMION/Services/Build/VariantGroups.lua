@@ -19,25 +19,85 @@ local function getEntityShortName(entityId)
     return string.match(entityId, "^[^.]+%.(.+)$") or entityId
 end
 
-local function getVariantOrder(construction)
-    local order = type(construction) == "table"
-        and tonumber(construction.variantOrder)
-        or nil
+local function getHighestSkillLevel(construction)
+    local highest = 0
+    local skills = type(construction) == "table" and construction.skill or nil
 
-    if order == nil then
-        return math.huge
+    if type(skills) ~= "table" then
+        return highest
     end
 
-    return order
+    for _, value in pairs(skills) do
+        local level = tonumber(value)
+        if level ~= nil and level > highest then
+            highest = level
+        end
+    end
+
+    return highest
+end
+
+local function getProgressionLevel(definition)
+    local construction = type(definition) == "table"
+        and definition.construction
+        or nil
+    local unlock = type(construction) == "table"
+        and construction.unlock
+        or nil
+    local unlockLevel = type(unlock) == "table"
+        and tonumber(unlock.level)
+        or nil
+
+    if unlockLevel ~= nil then
+        return unlockLevel
+    end
+
+    return getHighestSkillLevel(construction)
+end
+
+local function getDurabilityAtLevel(definition, level)
+    local durability = type(definition) == "table"
+        and definition.durability
+        or nil
+
+    if type(durability) ~= "table" then
+        return -1
+    end
+
+    local health = tonumber(durability.health)
+    if health == nil then
+        return -1
+    end
+
+    local skillBaseHealth = tonumber(durability.skillBaseHealth) or 0
+    return health + skillBaseHealth * (tonumber(level) or 0)
+end
+
+local function getSortName(definitionId, definition, entityId)
+    local value = type(definition) == "table"
+        and definition.displayName
+        or nil
+
+    if type(value) ~= "string" or value == "" then
+        value = entityId or definitionId
+    end
+
+    return string.lower(tostring(value))
 end
 
 local function finalizeGroups()
     for _, group in pairs(groupsById) do
         table.sort(group.members, function(a, b)
-            if a.order ~= b.order then
-                return a.order < b.order
+            if a.progressionLevel ~= b.progressionLevel then
+                return a.progressionLevel < b.progressionLevel
             end
-            return a.registrationIndex < b.registrationIndex
+            if a.durabilityScore ~= b.durabilityScore then
+                return a.durabilityScore < b.durabilityScore
+            end
+            if a.sortName ~= b.sortName then
+                return a.sortName < b.sortName
+            end
+            return a.definitionId < b.definitionId
         end)
 
         for index = 1, #group.members do
@@ -89,12 +149,21 @@ local function rebuild()
                 groupsById[groupId] = group
             end
 
+            local progressionLevel = getProgressionLevel(definition)
             local member = {
                 definitionId = definitionId,
                 entityId = entityId,
                 recipeName = recipeName,
-                order = getVariantOrder(construction),
-                registrationIndex = index,
+                progressionLevel = progressionLevel,
+                durabilityScore = getDurabilityAtLevel(
+                    definition,
+                    progressionLevel
+                ),
+                sortName = getSortName(
+                    definitionId,
+                    definition,
+                    entityId
+                ),
             }
 
             group.members[#group.members + 1] = member
@@ -102,8 +171,6 @@ local function rebuild()
             groupByDefinitionId[definitionId] = group
             memberByEntityId[entityId] = member
 
-            -- Kept only as a compatibility fallback for PZ lifecycle points
-            -- where recipe -> parent GameEntity cannot be resolved yet.
             if memberByRecipeName[recipeName] == nil then
                 memberByRecipeName[recipeName] = member
             else
