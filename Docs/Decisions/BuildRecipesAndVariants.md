@@ -12,6 +12,7 @@ For a migrated LMION buildable entity, the effective definition owns:
 construction.category
 construction.timedAction
 construction.skill
+construction.unlock
 construction.time
 construction.xp
 construction.tools
@@ -29,9 +30,9 @@ This keeps one gameplay source of truth while preserving the parse-time GameEnti
 
 ## Recipe discovery and lifecycle
 
-`Bootstrap/Build.lua` does not keep a second list of definition-owned recipes. It iterates registered definitions, resolves their effective data, derives their GameEntity ids (`entity` and multipart `entities` members), and hydrates recipes whose existing CraftRecipe is an empty migration shell.
+`Bootstrap/Build.lua` does not keep a second list of definition-owned recipes. It iterates registered definitions, resolves their effective data, derives their build GameEntity ids and hydrates every matching definition-owned CraftRecipe. The definition registry is the ownership boundary; script-authored recipe bodies are not a second gameplay source of truth.
 
-The empty-shell check is the transitional migration boundary. It prevents LMION from overwriting recipes that are still explicitly authored in PZ scripts. Once an entity has been claimed by the definition-owned path, later registry revisions may rehydrate it from the new effective definition.
+LargeGate is the family-specific exception to direct entity projection: one definition describes the complete A+B gate while PZ exposes one CraftRecipe per leaf. `Runtime/Build/LargeGate/CraftRecipeHydrator.lua` projects the complete definition into equal A/B leaf recipes, including category, unlock/menu callback, half time/XP and half materials.
 
 The registry exposes a revision/change boundary. Build refreshes its projections when definitions/defaults/extensions are registered after initial bootstrap and retries at `OnGameBoot`. A third-party addon therefore does not need a second recipe-registration API or an LMION-specific CraftRecipe ModID.
 
@@ -155,11 +156,13 @@ This deliberately allows variants to differ in materials, skill, time or other r
 
 No group-specific registration list exists. Variant membership is derived entirely from the effective registered definitions.
 
-## Representative member
+Variant order is also derived. Members are sorted first by progression level, then by constructed durability at that level, then by a deterministic name fallback. There is no authored `variantOrder` field. Third-party definitions therefore join a group naturally without knowing built-in ordering values.
 
-The representative is the first registered definition in a variant group.
+## Unlocks and representative member
 
-Built-in registration is explicit through `Definitions/BuiltinContent.lua`, so the representative is reviewable and deterministic. Third-party definitions participate through the same registry and grouping mechanism.
+`construction.unlock` may explicitly define a skill threshold. When it is absent, Build derives the visibility threshold from `construction.skill`. Recipes are therefore added to the construction catalog only when their construction progression has been reached, while an explicit unlock can later represent a different progression contract.
+
+For a variant group, the visible representative is the first currently unlocked member in the derived group order. Locked members are omitted from the selector; newly unlocked members are added without removing earlier models.
 
 ## Build recipe options UI
 
@@ -209,8 +212,8 @@ Services/Build/Garage/Materials.lua
 Runtime/Build/Garage/CraftRecipeHydrator.lua
     Garage-specific variable-width PZ recipe translation
 
-Runtime/Build/VariantMenuFilter.lua
-    PZ OnAddToMenu callback boundary
+Runtime/Build/MenuFilter.lua
+    shared PZ OnAddToMenu boundary for unlocks and variants
 
 Services/Build/VariantGroups.lua
     semantic group membership and representative selection
