@@ -10,7 +10,6 @@ return {
     },
 
     construction = {
-        variantGroup = false,
         materials = {
             { item = "Base.SheetMetal", amount = 1 },
             { item = "Base.SmallSheetMetal", amount = 1 },

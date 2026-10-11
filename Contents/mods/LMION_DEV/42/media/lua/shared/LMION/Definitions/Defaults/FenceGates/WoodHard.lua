@@ -6,6 +6,7 @@ return {
         durability = { worldHealth = 600, health = 400, skillBaseHealth = 275 },
         construction = {
             category = "Carpentry",
+            variantGroup = "FenceGates.Wood.All",
             timedAction = "BuildWallHammer", skill = { Woodwork = 5 }, time = 150, xp = 30,
             tools = { { tag = "base:hammer", flags = { "Prop1", "MayDegradeVeryLight" } }, { tag = "base:screwdriver" } },
             materials = {

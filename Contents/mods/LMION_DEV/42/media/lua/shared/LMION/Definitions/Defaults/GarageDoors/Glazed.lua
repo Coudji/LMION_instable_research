@@ -5,7 +5,7 @@ return {
         engineMaterials = { "MetalPlates", "MetalBars", "Glass" },
         durability = { worldHealth = 1000, health = 500, skillBaseHealth = 350 },
         construction = {
-            category = "Welding", variantGroup = "GarageDoors.Glazed", timedAction = "BuildWallMetal",
+            category = "Welding", variantGroup = "GarageDoors.All", timedAction = "BuildWallMetal",
             skill = { MetalWelding = 6 }, time = 200, xp = 50, tools = { { tag = "base:weldingmask" } },
             materials = {
                 { item = "Base.BlowTorch", uses = { perStep = 1, step = 3, max = 10 } },

@@ -17,6 +17,7 @@ return {
 
     construction = {
         category = "Carpentry",
+        variantGroup = "FenceGates.Wood.All",
         timedAction = "BuildWallHammer",
         skill = { Woodwork = 2 },
         time = 60,
