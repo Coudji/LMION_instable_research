@@ -156,6 +156,8 @@ This deliberately allows variants to differ in materials, skill, time or other r
 
 No group-specific registration list exists. Variant membership is derived entirely from the effective registered definitions.
 
+Multipart definitions use the same logical `variantGroup` without inventing per-side ids. Build derives the structural role from the definition itself: Paired members become `left`/`right`, and LargeGate members become `A`/`B`. Members only group with variants sharing both the logical group id and the structural role. Addons therefore join the correct side automatically.
+
 Variant order is also derived. Members are sorted first by progression level, then by constructed durability at that level, then by a deterministic name fallback. There is no authored `variantOrder` field. Third-party definitions therefore join a group naturally without knowing built-in ordering values.
 
 ## Unlocks and representative member
