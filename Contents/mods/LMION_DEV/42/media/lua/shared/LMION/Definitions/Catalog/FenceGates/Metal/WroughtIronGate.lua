@@ -3,14 +3,12 @@ return {
     entity = "Base.WroughtIronGate",
     inherits = "FenceGates.Metal.Forged",
 
+    construction = {
+        variantGroup = "FenceGates.Metal.High",
+    },
+
     geometry = {
-        N = {
-            closed = "fixtures_doors_fences_01_21",
-            open = "fixtures_doors_fences_01_23",
-        },
-        W = {
-            closed = "fixtures_doors_fences_01_20",
-            open = "fixtures_doors_fences_01_22",
-        },
+        N = { closed = "fixtures_doors_fences_01_21", open = "fixtures_doors_fences_01_23" },
+        W = { closed = "fixtures_doors_fences_01_20", open = "fixtures_doors_fences_01_22" },
     },
 }

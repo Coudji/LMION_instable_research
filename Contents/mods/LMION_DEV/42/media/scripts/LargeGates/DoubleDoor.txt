@@ -1,43 +1,18 @@
 module Base
 {
-    item LMION_DoubleDoorA_Part1
-    {
-        DisplayCategory = Furniture,
-        ItemType = base:moveable,
-        Icon = Flatpack,
-        Weight = 18.0,
-        Tags = base:usedisplayname,
-    }
-
-    item LMION_DoubleDoorA_Part2
-    {
-        DisplayCategory = Furniture,
-        ItemType = base:moveable,
-        Icon = Flatpack,
-        Weight = 18.0,
-        Tags = base:usedisplayname,
-    }
-
-    item LMION_DoubleDoorB_Part1
-    {
-        DisplayCategory = Furniture,
-        ItemType = base:moveable,
-        Icon = Flatpack,
-        Weight = 18.0,
-        Tags = base:usedisplayname,
-    }
-
-    item LMION_DoubleDoorB_Part2
-    {
-        DisplayCategory = Furniture,
-        ItemType = base:moveable,
-        Icon = Flatpack,
-        Weight = 18.0,
-        Tags = base:usedisplayname,
-    }
+    item LMION_DoubleDoorA_Part1 { DisplayCategory = Furniture, ItemType = base:moveable, Icon = Flatpack, Weight = 18.0, Tags = base:usedisplayname, }
+    item LMION_DoubleDoorA_Part2 { DisplayCategory = Furniture, ItemType = base:moveable, Icon = Flatpack, Weight = 18.0, Tags = base:usedisplayname, }
+    item LMION_DoubleDoorB_Part1 { DisplayCategory = Furniture, ItemType = base:moveable, Icon = Flatpack, Weight = 18.0, Tags = base:usedisplayname, }
+    item LMION_DoubleDoorB_Part2 { DisplayCategory = Furniture, ItemType = base:moveable, Icon = Flatpack, Weight = 18.0, Tags = base:usedisplayname, }
 
     xuiSkin default
     {
+        entity ES_Dumbledoor
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_DoubleDoorA,
+            Icon = Build_DoubleWoodGate,
+        }
         entity ES_DoubleDoorB
         {
             LuaWindowClass = ISEntityWindow,
@@ -48,32 +23,12 @@ module Base
 
     entity DoubleDoorB
     {
-        component UiConfig
-        {
-            xuiSkin = default,
-            entityStyle = ES_DoubleDoorB,
-            uiEnabled = false,
-        }
-
+        component UiConfig { xuiSkin = default, entityStyle = ES_DoubleDoorB, uiEnabled = false, }
         component SpriteConfig
         {
-            face W
-            {
-                layer
-                {
-                    row = fixtures_doors_fences_01_105,
-                    row = fixtures_doors_fences_01_104,
-                }
-            }
-            face N
-            {
-                layer
-                {
-                    row = fixtures_doors_fences_01_106 fixtures_doors_fences_01_107,
-                }
-            }
+            face W { layer { row = fixtures_doors_fences_01_105, row = fixtures_doors_fences_01_104, } }
+            face N { layer { row = fixtures_doors_fences_01_106 fixtures_doors_fences_01_107, } }
         }
-
         component CraftRecipe
         {
             timedAction = BuildWallHammer,

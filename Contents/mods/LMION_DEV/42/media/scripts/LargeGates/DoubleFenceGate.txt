@@ -1,43 +1,18 @@
 module Base
 {
-    item LMION_DoubleFenceGateA_Part1
-    {
-        DisplayCategory = Furniture,
-        ItemType = base:moveable,
-        Icon = Flatpack,
-        Weight = 20.0,
-        Tags = base:usedisplayname,
-    }
-
-    item LMION_DoubleFenceGateA_Part2
-    {
-        DisplayCategory = Furniture,
-        ItemType = base:moveable,
-        Icon = Flatpack,
-        Weight = 20.0,
-        Tags = base:usedisplayname,
-    }
-
-    item LMION_DoubleFenceGateB_Part1
-    {
-        DisplayCategory = Furniture,
-        ItemType = base:moveable,
-        Icon = Flatpack,
-        Weight = 20.0,
-        Tags = base:usedisplayname,
-    }
-
-    item LMION_DoubleFenceGateB_Part2
-    {
-        DisplayCategory = Furniture,
-        ItemType = base:moveable,
-        Icon = Flatpack,
-        Weight = 20.0,
-        Tags = base:usedisplayname,
-    }
+    item LMION_DoubleFenceGateA_Part1 { DisplayCategory = Furniture, ItemType = base:moveable, Icon = Flatpack, Weight = 20.0, Tags = base:usedisplayname, }
+    item LMION_DoubleFenceGateA_Part2 { DisplayCategory = Furniture, ItemType = base:moveable, Icon = Flatpack, Weight = 20.0, Tags = base:usedisplayname, }
+    item LMION_DoubleFenceGateB_Part1 { DisplayCategory = Furniture, ItemType = base:moveable, Icon = Flatpack, Weight = 20.0, Tags = base:usedisplayname, }
+    item LMION_DoubleFenceGateB_Part2 { DisplayCategory = Furniture, ItemType = base:moveable, Icon = Flatpack, Weight = 20.0, Tags = base:usedisplayname, }
 
     xuiSkin default
     {
+        entity ES_DoubleFenceGate
+        {
+            LuaWindowClass = ISEntityWindow,
+            DisplayName = EC_LMION_DoubleFenceGateA,
+            Icon = Build_DoublePoleGate,
+        }
         entity ES_DoubleFenceGateB
         {
             LuaWindowClass = ISEntityWindow,
@@ -48,32 +23,12 @@ module Base
 
     entity DoubleFenceGateB
     {
-        component UiConfig
-        {
-            xuiSkin = default,
-            entityStyle = ES_DoubleFenceGateB,
-            uiEnabled = false,
-        }
-
+        component UiConfig { xuiSkin = default, entityStyle = ES_DoubleFenceGateB, uiEnabled = false, }
         component SpriteConfig
         {
-            face W
-            {
-                layer
-                {
-                    row = fixtures_doors_fences_01_89,
-                    row = fixtures_doors_fences_01_88,
-                }
-            }
-            face N
-            {
-                layer
-                {
-                    row = fixtures_doors_fences_01_90 fixtures_doors_fences_01_91,
-                }
-            }
+            face W { layer { row = fixtures_doors_fences_01_89, row = fixtures_doors_fences_01_88, } }
+            face N { layer { row = fixtures_doors_fences_01_90 fixtures_doors_fences_01_91, } }
         }
-
         component CraftRecipe
         {
             timedAction = BuildWireFence,

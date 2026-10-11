@@ -10,6 +10,7 @@ return {
     },
 
     construction = {
+        variantGroup = "FenceGates.Metal.Low",
         skill = { MetalWelding = 2 },
         time = 70,
         xp = 10,
@@ -28,13 +29,7 @@ return {
     },
 
     geometry = {
-        N = {
-            closed = "fixtures_doors_fences_01_17",
-            open = "fixtures_doors_fences_01_19",
-        },
-        W = {
-            closed = "fixtures_doors_fences_01_16",
-            open = "fixtures_doors_fences_01_18",
-        },
+        N = { closed = "fixtures_doors_fences_01_17", open = "fixtures_doors_fences_01_19" },
+        W = { closed = "fixtures_doors_fences_01_16", open = "fixtures_doors_fences_01_18" },
     },
 }

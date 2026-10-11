@@ -6,6 +6,7 @@ return {
         durability = { worldHealth = 1200, health = 500, skillBaseHealth = 375 },
         construction = {
             category = "Welding",
+            variantGroup = "LargeGates.Metal.All",
             timedAction = "BuildWallMetal", skill = { MetalWelding = 6 }, time = 260, xp = 50, tools = { { tag = "base:weldingmask" } },
             materials = {
                 { item = "Base.BlowTorch", uses = 8 }, { anyOf = { "Base.MetalBar", "Base.IronBar" }, amount = 8 },
