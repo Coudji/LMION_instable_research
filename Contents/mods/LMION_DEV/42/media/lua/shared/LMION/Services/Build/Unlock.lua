@@ -4,31 +4,74 @@ local function fail(message)
     error("LMION Build Unlock: " .. message, 3)
 end
 
-local function getContract(definition)
-    local construction = type(definition) == "table" and definition.construction or nil
-    local unlock = type(construction) == "table" and construction.unlock or nil
+local function getConstruction(definition)
+    return type(definition) == "table" and definition.construction or nil
+end
 
-    if unlock == nil then
-        return nil
-    end
-    if type(unlock) ~= "table" then
-        fail("construction.unlock must be a table")
-    end
-
-    local skillName = unlock.skill
-    local level = tonumber(unlock.level)
-
+local function addRequirement(result, skillName, level, label)
     if type(skillName) ~= "string" or skillName == "" then
-        fail("construction.unlock.skill must be a non-empty string")
-    end
-    if level == nil or level < 0 or level ~= math.floor(level) then
-        fail("construction.unlock.level must be a non-negative integer")
+        fail(label .. ".skill must be a non-empty string")
     end
 
-    return {
+    level = tonumber(level)
+    if level == nil or level < 0 or level ~= math.floor(level) then
+        fail(label .. ".level must be a non-negative integer")
+    end
+
+    result[#result + 1] = {
         skillName = skillName,
         level = level,
     }
+end
+
+local function getRequirements(definition)
+    local construction = getConstruction(definition)
+    if type(construction) ~= "table" then
+        return {}
+    end
+
+    local unlock = construction.unlock
+    if unlock ~= nil then
+        if type(unlock) ~= "table" then
+            fail("construction.unlock must be a table")
+        end
+
+        local result = {}
+        addRequirement(
+            result,
+            unlock.skill,
+            unlock.level,
+            "construction.unlock"
+        )
+        return result
+    end
+
+    local skills = construction.skill
+    if skills == nil then
+        return {}
+    end
+    if type(skills) ~= "table" then
+        fail("construction.skill must be a table")
+    end
+
+    local names = {}
+    for skillName in pairs(skills) do
+        names[#names + 1] = skillName
+    end
+    table.sort(names)
+
+    local result = {}
+    for index = 1, #names do
+        local skillName = names[index]
+        addRequirement(
+            result,
+            skillName,
+            skills[skillName],
+            "construction.skill." .. tostring(skillName)
+        )
+    end
+
+    return result
 end
 
 local function resolvePlayer(player)
@@ -64,27 +107,41 @@ local function resolvePerk(skillName)
 end
 
 function Unlock.hasContract(definition)
-    local construction = type(definition) == "table" and definition.construction or nil
-    return type(construction) == "table" and construction.unlock ~= nil
+    return #getRequirements(definition) > 0
+end
+
+function Unlock.getProgressionLevel(definition)
+    local requirements = getRequirements(definition)
+    local highest = 0
+
+    for index = 1, #requirements do
+        highest = math.max(highest, requirements[index].level)
+    end
+
+    return highest
 end
 
 function Unlock.shouldShow(definition, player)
-    local contract = getContract(definition)
-    if contract == nil then
+    local requirements = getRequirements(definition)
+    if #requirements == 0 then
         return true
     end
 
     player = resolvePlayer(player)
 
-    -- Build-menu callbacks normally receive a player. If PZ invokes the
-    -- callback from a non-player inspection path, don't hide content merely
-    -- because that context cannot evaluate progression.
     if player == nil or player.getPerkLevel == nil then
         return true
     end
 
-    local perk = resolvePerk(contract.skillName)
-    return player:getPerkLevel(perk) >= contract.level
+    for index = 1, #requirements do
+        local requirement = requirements[index]
+        local perk = resolvePerk(requirement.skillName)
+        if player:getPerkLevel(perk) < requirement.level then
+            return false
+        end
+    end
+
+    return true
 end
 
 return Unlock

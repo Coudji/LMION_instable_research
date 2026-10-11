@@ -3,6 +3,8 @@ local Resolver = require "LMION/Definitions/Resolver"
 local BuildRecipe = require "LMION/PZ/BuildRecipe"
 local CraftRecipeHydrator = require "LMION/Runtime/Build/CraftRecipeHydrator"
 local GarageCraftRecipeHydrator = require "LMION/Runtime/Build/Garage/CraftRecipeHydrator"
+local LargeGateCraftRecipeHydrator = require "LMION/Runtime/Build/LargeGate/CraftRecipeHydrator"
+local LargeGateEntityNames = require "LMION/Runtime/Build/LargeGateEntityNames"
 local VanillaLargeGateLeafPreparation = require "LMION/Runtime/Build/VanillaLargeGateLeafPreparation"
 local MenuFilter = require "LMION/Runtime/Build/MenuFilter"
 
@@ -23,6 +25,20 @@ end
 local function getDefinitionEntityIds(definition)
     local result = {}
     local seen = {}
+
+    if definition.doorType == "LargeGate" then
+        addEntityId(
+            result,
+            seen,
+            LargeGateEntityNames.getLeafEntityId(definition, "A")
+        )
+        addEntityId(
+            result,
+            seen,
+            LargeGateEntityNames.getLeafEntityId(definition, "B")
+        )
+        return result
+    end
 
     addEntityId(result, seen, definition.entity)
 
@@ -51,6 +67,14 @@ end
 local function hydrateDefinition(definitionId, definition, entityId)
     if definition.doorType == "Garage" then
         GarageCraftRecipeHydrator.hydrateDefinition(definitionId, entityId)
+        return
+    end
+
+    if definition.doorType == "LargeGate" then
+        LargeGateCraftRecipeHydrator.hydrateDefinition(
+            definitionId,
+            entityId
+        )
         return
     end
 

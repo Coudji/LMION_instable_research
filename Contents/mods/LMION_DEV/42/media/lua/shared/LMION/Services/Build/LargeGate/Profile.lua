@@ -68,11 +68,17 @@ local function getEntityId(gameScript)
     return nil
 end
 
-function LargeGateBuildProfile.getByGameScript(gameScript)
-    ensureBuilt()
+function LargeGateBuildProfile.getByEntityId(entityId)
+    if type(entityId) ~= "string" or entityId == "" then
+        return nil
+    end
 
-    local entityId = getEntityId(gameScript)
-    return entityId and profilesByEntityId[entityId] or nil
+    ensureBuilt()
+    return profilesByEntityId[entityId]
+end
+
+function LargeGateBuildProfile.getByGameScript(gameScript)
+    return LargeGateBuildProfile.getByEntityId(getEntityId(gameScript))
 end
 
 function LargeGateBuildProfile.invalidate()

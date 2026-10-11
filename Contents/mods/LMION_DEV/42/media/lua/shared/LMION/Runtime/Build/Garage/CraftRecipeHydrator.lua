@@ -1,6 +1,6 @@
 local Resolver = require "LMION/Definitions/Resolver"
 local BuildRecipe = require "LMION/PZ/BuildRecipe"
-local CraftRecipeInputs = require "LMION/Runtime/Build/CraftRecipeInputs"
+local CraftRecipeScript = require "LMION/Runtime/Build/CraftRecipeScript"
 local GarageBuild = require "LMION/Services/Build/Garage/Build"
 local GarageMaterials = require "LMION/Services/Build/Garage/Materials"
 
@@ -10,75 +10,49 @@ local function fail(message)
     error("LMION GarageCraftRecipeHydrator: " .. message, 3)
 end
 
-local function addValue(lines, key, value)
-    if value ~= nil then
-        lines[#lines + 1] = string.format("    %s = %s,", key, tostring(value))
-    end
-end
-
-local function getSingleSkill(skill)
+local function validateSingleSkill(skill)
     if type(skill) ~= "table" then
         fail("construction.skill must be a table")
     end
 
-    local name, level = nil, nil
+    local count = 0
     for skillName, skillLevel in pairs(skill) do
-        if name ~= nil then
-            fail("Garage Build currently supports one governing construction skill")
+        count = count + 1
+        if type(skillName) ~= "string"
+            or skillName == ""
+            or tonumber(skillLevel) == nil then
+            fail("construction.skill must contain one valid skill")
         end
-        name = skillName
-        level = tonumber(skillLevel)
     end
 
-    if type(name) ~= "string" or name == "" or level == nil then
-        fail("construction.skill must contain one valid skill")
+    if count ~= 1 then
+        fail("Garage Build currently supports one governing construction skill")
     end
-
-    return name, math.floor(level)
 end
 
-local function buildRecipeScript(definition)
+local function projectConstruction(definition)
     local construction = definition.construction
     if type(construction) ~= "table" then
         fail("definition has no construction contract")
     end
 
-    local timedAction = construction.timedAction
-    if type(timedAction) ~= "string" or timedAction == "" then
-        fail("construction.timedAction must be a non-empty string")
-    end
+    validateSingleSkill(construction.skill)
 
-    local skillName, skillLevel = getSingleSkill(construction.skill)
-    local materials = GarageMaterials.getRecipeMaterials(definition, GarageBuild.MinWidth)
+    local materials = GarageMaterials.getRecipeMaterials(
+        definition,
+        GarageBuild.MinWidth
+    )
     if materials == nil then
         fail("could not derive minimum-width garage materials")
     end
 
-    local lines = { "CraftRecipe", "{" }
-    addValue(lines, "timedAction", timedAction)
-    addValue(lines, "time", construction.time)
-    addValue(lines, "category", construction.category)
-    addValue(lines, "SkillRequired", skillName .. ":" .. tostring(skillLevel))
-
-    if construction.xp ~= nil then
-        addValue(lines, "xpAward", skillName .. ":" .. tostring(construction.xp))
+    local projected = {}
+    for key, value in pairs(construction) do
+        projected[key] = value
     end
+    projected.materials = materials
 
-    local hasVariant = type(construction.variantGroup) == "string"
-        and construction.variantGroup ~= ""
-    if hasVariant or construction.unlock ~= nil then
-        addValue(lines, "OnAddToMenu", "LMIONBuildOnAddToMenu")
-    end
-
-    lines[#lines + 1] = ""
-    lines[#lines + 1] = "    inputs"
-    lines[#lines + 1] = "    {"
-    CraftRecipeInputs.addTools(lines, construction.tools)
-    CraftRecipeInputs.addMaterials(lines, materials)
-    lines[#lines + 1] = "    }"
-    lines[#lines + 1] = "}"
-
-    return table.concat(lines, "\n")
+    return projected
 end
 
 function GarageCraftRecipeHydrator.hydrateDefinition(definitionId, entityId)
@@ -90,7 +64,10 @@ function GarageCraftRecipeHydrator.hydrateDefinition(definitionId, entityId)
         fail("buildable recipe not found for " .. tostring(entityId))
     end
 
-    return BuildRecipe.reload(recipe, buildRecipeScript(definition))
+    return BuildRecipe.reload(
+        recipe,
+        CraftRecipeScript.build(projectConstruction(definition))
+    )
 end
 
 return GarageCraftRecipeHydrator

@@ -1,6 +1,7 @@
 local Registry = require "LMION/Definitions/Registry"
 local Resolver = require "LMION/Definitions/Resolver"
 local BuildRecipe = require "LMION/PZ/BuildRecipe"
+local Unlock = require "LMION/Services/Build/Unlock"
 local VariantAvailability = require "LMION/Services/Build/VariantAvailability"
 
 local VariantGroups = {}
@@ -17,42 +18,6 @@ local function getEntityShortName(entityId)
     end
 
     return string.match(entityId, "^[^.]+%.(.+)$") or entityId
-end
-
-local function getHighestSkillLevel(construction)
-    local highest = 0
-    local skills = type(construction) == "table" and construction.skill or nil
-
-    if type(skills) ~= "table" then
-        return highest
-    end
-
-    for _, value in pairs(skills) do
-        local level = tonumber(value)
-        if level ~= nil and level > highest then
-            highest = level
-        end
-    end
-
-    return highest
-end
-
-local function getProgressionLevel(definition)
-    local construction = type(definition) == "table"
-        and definition.construction
-        or nil
-    local unlock = type(construction) == "table"
-        and construction.unlock
-        or nil
-    local unlockLevel = type(unlock) == "table"
-        and tonumber(unlock.level)
-        or nil
-
-    if unlockLevel ~= nil then
-        return unlockLevel
-    end
-
-    return getHighestSkillLevel(construction)
 end
 
 local function getDurabilityAtLevel(definition, level)
@@ -149,7 +114,7 @@ local function rebuild()
                 groupsById[groupId] = group
             end
 
-            local progressionLevel = getProgressionLevel(definition)
+            local progressionLevel = Unlock.getProgressionLevel(definition)
             local member = {
                 definitionId = definitionId,
                 entityId = entityId,

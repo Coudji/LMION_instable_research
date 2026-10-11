@@ -1,6 +1,7 @@
 local BuildRecipe = require "LMION/PZ/BuildRecipe"
 local EntityIndex = require "LMION/Definitions/EntityIndex"
 local Resolver = require "LMION/Definitions/Resolver"
+local LargeGateBuildProfile = require "LMION/Services/Build/LargeGate/Profile"
 local Unlock = require "LMION/Services/Build/Unlock"
 local VariantGroups = require "LMION/Services/Build/VariantGroups"
 
@@ -14,11 +15,12 @@ local function getDefinition(recipe)
     end
 
     local definitionId = EntityIndex.getDefinitionId(entityId)
-    if definitionId == nil then
-        return nil
+    if definitionId ~= nil then
+        return Resolver.resolveDefinition(definitionId)
     end
 
-    return Resolver.resolveDefinition(definitionId)
+    local largeGateProfile = LargeGateBuildProfile.getByEntityId(entityId)
+    return largeGateProfile and largeGateProfile.definition or nil
 end
 
 local function shouldShow(params)
@@ -53,8 +55,6 @@ function MenuFilter.install()
         return shouldShow(params)
     end
 
-    -- Compatibility for already-loaded projected recipes during development
-    -- reloads. New projections use LMIONBuildOnAddToMenu.
     function LMIONBuildVariantOnAddToMenu(params)
         return shouldShow(params)
     end
