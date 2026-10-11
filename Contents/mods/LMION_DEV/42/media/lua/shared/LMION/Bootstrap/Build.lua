@@ -4,65 +4,14 @@ local BuildRecipe = require "LMION/PZ/BuildRecipe"
 local CraftRecipeHydrator = require "LMION/Runtime/Build/CraftRecipeHydrator"
 local GarageCraftRecipeHydrator = require "LMION/Runtime/Build/Garage/CraftRecipeHydrator"
 local LargeGateCraftRecipeHydrator = require "LMION/Runtime/Build/LargeGate/CraftRecipeHydrator"
-local LargeGateEntityNames = require "LMION/Runtime/Build/LargeGateEntityNames"
 local VanillaLargeGateLeafPreparation = require "LMION/Runtime/Build/VanillaLargeGateLeafPreparation"
 local MenuFilter = require "LMION/Runtime/Build/MenuFilter"
+local DefinitionMembers = require "LMION/Services/Build/DefinitionMembers"
 
 local BuildBootstrap = {}
 local hasRun = false
 local listenerInstalled = false
 local hydratedRevision = -1
-
-local function addEntityId(result, seen, entityId)
-    if type(entityId) ~= "string" or entityId == "" or seen[entityId] then
-        return
-    end
-
-    seen[entityId] = true
-    result[#result + 1] = entityId
-end
-
-local function getDefinitionEntityIds(definition)
-    local result = {}
-    local seen = {}
-
-    if definition.doorType == "LargeGate" then
-        addEntityId(
-            result,
-            seen,
-            LargeGateEntityNames.getLeafEntityId(definition, "A")
-        )
-        addEntityId(
-            result,
-            seen,
-            LargeGateEntityNames.getLeafEntityId(definition, "B")
-        )
-        return result
-    end
-
-    addEntityId(result, seen, definition.entity)
-
-    local entities = definition.entities
-    if type(entities) == "table" then
-        addEntityId(result, seen, entities.left)
-        addEntityId(result, seen, entities.right)
-
-        local extraKeys = {}
-        for key, value in pairs(entities) do
-            if key ~= "left" and key ~= "right" and type(value) == "string" then
-                extraKeys[#extraKeys + 1] = key
-            end
-        end
-        table.sort(extraKeys, function(a, b)
-            return tostring(a) < tostring(b)
-        end)
-        for index = 1, #extraKeys do
-            addEntityId(result, seen, entities[extraKeys[index]])
-        end
-    end
-
-    return result
-end
 
 local function hydrateDefinition(definitionId, definition, entityId)
     if definition.doorType == "Garage" then
@@ -97,9 +46,9 @@ function BuildBootstrap.refresh(force)
             or nil
 
         if type(construction) == "table" then
-            local entityIds = getDefinitionEntityIds(definition)
-            for entityIndex = 1, #entityIds do
-                local entityId = entityIds[entityIndex]
+            local members = DefinitionMembers.get(definition)
+            for memberIndex = 1, #members do
+                local entityId = members[memberIndex].entityId
                 local recipe = BuildRecipe.getByEntityId(entityId)
 
                 if recipe ~= nil then

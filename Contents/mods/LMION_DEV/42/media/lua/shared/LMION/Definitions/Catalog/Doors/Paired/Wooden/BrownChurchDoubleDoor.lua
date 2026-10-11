@@ -8,6 +8,10 @@ return {
         right = "Base.BrownChurchDoubleDoorRight",
     },
 
+    construction = {
+        variantGroup = "Doors.Wood.Church",
+    },
+
     geometry = {
         N = {
             left = {

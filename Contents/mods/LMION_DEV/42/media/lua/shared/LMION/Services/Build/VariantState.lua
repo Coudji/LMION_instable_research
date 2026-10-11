@@ -12,27 +12,7 @@ local function getRecipe(logic)
     return logic:getRecipe()
 end
 
-function VariantState.getGroupFromLogic(logic)
-    return VariantGroups.getForRecipe(getRecipe(logic))
-end
-
-function VariantState.getSelectedMember(logic)
-    return VariantGroups.getMemberForRecipe(getRecipe(logic))
-end
-
-function VariantState.getAvailableMembers(logic, player)
-    local group = VariantState.getGroupFromLogic(logic)
-    return VariantAvailability.getMembers(group, player)
-end
-
-function VariantState.setSelectedDefinitionId(logic, definitionId, player)
-    local group = VariantState.getGroupFromLogic(logic)
-        or VariantGroups.getForDefinition(definitionId)
-    if group == nil then
-        return nil
-    end
-
-    local member = group.memberByDefinitionId[definitionId]
+local function setSelectedMember(logic, member, player)
     if member == nil or not VariantAvailability.isAvailable(member, player) then
         return nil
     end
@@ -46,6 +26,47 @@ function VariantState.setSelectedDefinitionId(logic, definitionId, player)
     return member
 end
 
+function VariantState.getGroupFromLogic(logic)
+    return VariantGroups.getForRecipe(getRecipe(logic))
+end
+
+function VariantState.getSelectedMember(logic)
+    return VariantGroups.getMemberForRecipe(getRecipe(logic))
+end
+
+function VariantState.getAvailableMembers(logic, player)
+    local group = VariantState.getGroupFromLogic(logic)
+    return VariantAvailability.getMembers(group, player)
+end
+
+function VariantState.setSelectedEntityId(logic, entityId, player)
+    local member = VariantGroups.getMemberForEntityId(entityId)
+    if member == nil then
+        return nil
+    end
+
+    local currentGroup = VariantState.getGroupFromLogic(logic)
+    if currentGroup ~= nil and currentGroup.key ~= member.group.key then
+        return nil
+    end
+
+    return setSelectedMember(logic, member, player)
+end
+
+function VariantState.setSelectedDefinitionId(logic, definitionId, player)
+    local group = VariantState.getGroupFromLogic(logic)
+        or VariantGroups.getForDefinition(definitionId)
+    if group == nil then
+        return nil
+    end
+
+    return setSelectedMember(
+        logic,
+        group.memberByDefinitionId[definitionId],
+        player
+    )
+end
+
 function VariantState.ensureAvailableSelection(logic, player)
     local current = VariantState.getSelectedMember(logic)
     if current ~= nil and VariantAvailability.isAvailable(current, player) then
@@ -57,11 +78,7 @@ function VariantState.ensureAvailableSelection(logic, player)
         return nil
     end
 
-    return VariantState.setSelectedDefinitionId(
-        logic,
-        available[1].definitionId,
-        player
-    )
+    return setSelectedMember(logic, available[1], player)
 end
 
 function VariantState.selectRelative(logic, delta, player)
@@ -77,17 +94,13 @@ function VariantState.selectRelative(logic, delta, player)
         return nil
     end
     if #available == 1 then
-        return VariantState.setSelectedDefinitionId(
-            logic,
-            available[1].definitionId,
-            player
-        )
+        return setSelectedMember(logic, available[1], player)
     end
 
     local currentIndex = nil
     for index = 1, #available do
         if current ~= nil
-            and available[index].definitionId == current.definitionId then
+            and available[index].entityId == current.entityId then
             currentIndex = index
             break
         end
@@ -103,11 +116,7 @@ function VariantState.selectRelative(logic, delta, player)
         index = index - #available
     end
 
-    return VariantState.setSelectedDefinitionId(
-        logic,
-        available[index].definitionId,
-        player
-    )
+    return setSelectedMember(logic, available[index], player)
 end
 
 return VariantState

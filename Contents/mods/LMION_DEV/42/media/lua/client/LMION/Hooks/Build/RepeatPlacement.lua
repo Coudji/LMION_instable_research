@@ -38,9 +38,9 @@ local function restoreVariant(panel, member)
         return false
     end
 
-    local restored = VariantState.setSelectedDefinitionId(
+    local restored = VariantState.setSelectedEntityId(
         panel.logic,
-        member.definitionId,
+        member.entityId,
         panel.player
     )
 

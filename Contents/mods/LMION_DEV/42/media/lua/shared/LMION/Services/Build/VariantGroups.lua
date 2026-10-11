@@ -1,14 +1,16 @@
 local Registry = require "LMION/Definitions/Registry"
 local Resolver = require "LMION/Definitions/Resolver"
 local BuildRecipe = require "LMION/PZ/BuildRecipe"
+local DefinitionMembers = require "LMION/Services/Build/DefinitionMembers"
 local Unlock = require "LMION/Services/Build/Unlock"
 local VariantAvailability = require "LMION/Services/Build/VariantAvailability"
 
 local VariantGroups = {}
 
 local cachedRevision = -1
-local groupsById = {}
-local groupByDefinitionId = {}
+local groupsByKey = {}
+local groupsByLogicalId = {}
+local groupsByDefinitionId = {}
 local memberByEntityId = {}
 local memberByRecipeName = {}
 
@@ -18,6 +20,10 @@ local function getEntityShortName(entityId)
     end
 
     return string.match(entityId, "^[^.]+%.(.+)$") or entityId
+end
+
+local function makeGroupKey(groupId, role)
+    return groupId .. "\31" .. tostring(role or "")
 end
 
 local function getDurabilityAtLevel(definition, level)
@@ -50,8 +56,50 @@ local function getSortName(definitionId, definition, entityId)
     return string.lower(tostring(value))
 end
 
+local function addDefinitionGroup(definitionId, group)
+    local groups = groupsByDefinitionId[definitionId]
+    if groups == nil then
+        groups = {}
+        groupsByDefinitionId[definitionId] = groups
+    end
+
+    for index = 1, #groups do
+        if groups[index] == group then
+            return
+        end
+    end
+
+    groups[#groups + 1] = group
+end
+
+local function getOrCreateGroup(groupId, role)
+    local key = makeGroupKey(groupId, role)
+    local group = groupsByKey[key]
+    if group ~= nil then
+        return group
+    end
+
+    group = {
+        key = key,
+        id = groupId,
+        role = role,
+        members = {},
+        memberByDefinitionId = {},
+    }
+    groupsByKey[key] = group
+
+    local logicalGroups = groupsByLogicalId[groupId]
+    if logicalGroups == nil then
+        logicalGroups = {}
+        groupsByLogicalId[groupId] = logicalGroups
+    end
+    logicalGroups[#logicalGroups + 1] = group
+
+    return group
+end
+
 local function finalizeGroups()
-    for _, group in pairs(groupsById) do
+    for _, group in pairs(groupsByKey) do
         table.sort(group.members, function(a, b)
             if a.progressionLevel ~= b.progressionLevel then
                 return a.progressionLevel < b.progressionLevel
@@ -73,14 +121,52 @@ local function finalizeGroups()
     end
 end
 
+local function addMember(definitionId, definition, groupId, buildMember)
+    local entityId = buildMember.entityId
+    local role = buildMember.role
+    local recipeName = getEntityShortName(entityId)
+    local group = getOrCreateGroup(groupId, role)
+    local progressionLevel = Unlock.getProgressionLevel(definition)
+
+    local member = {
+        definitionId = definitionId,
+        entityId = entityId,
+        recipeName = recipeName,
+        role = role,
+        progressionLevel = progressionLevel,
+        durabilityScore = getDurabilityAtLevel(
+            definition,
+            progressionLevel
+        ),
+        sortName = getSortName(
+            definitionId,
+            definition,
+            entityId
+        ),
+        group = group,
+    }
+
+    group.members[#group.members + 1] = member
+    group.memberByDefinitionId[definitionId] = member
+    addDefinitionGroup(definitionId, group)
+    memberByEntityId[entityId] = member
+
+    if memberByRecipeName[recipeName] == nil then
+        memberByRecipeName[recipeName] = member
+    else
+        memberByRecipeName[recipeName] = false
+    end
+end
+
 local function rebuild()
     local revision = Registry.getRevision()
     if cachedRevision == revision then
         return
     end
 
-    groupsById = {}
-    groupByDefinitionId = {}
+    groupsByKey = {}
+    groupsByLogicalId = {}
+    groupsByDefinitionId = {}
     memberByEntityId = {}
     memberByRecipeName = {}
 
@@ -94,52 +180,16 @@ local function rebuild()
         local groupId = type(construction) == "table"
             and construction.variantGroup
             or nil
-        local entityId = type(definition) == "table"
-            and definition.entity
-            or nil
 
-        if type(groupId) == "string"
-            and groupId ~= ""
-            and type(entityId) == "string"
-            and entityId ~= "" then
-            local recipeName = getEntityShortName(entityId)
-            local group = groupsById[groupId]
-
-            if group == nil then
-                group = {
-                    id = groupId,
-                    members = {},
-                    memberByDefinitionId = {},
-                }
-                groupsById[groupId] = group
-            end
-
-            local progressionLevel = Unlock.getProgressionLevel(definition)
-            local member = {
-                definitionId = definitionId,
-                entityId = entityId,
-                recipeName = recipeName,
-                progressionLevel = progressionLevel,
-                durabilityScore = getDurabilityAtLevel(
-                    definition,
-                    progressionLevel
-                ),
-                sortName = getSortName(
+        if type(groupId) == "string" and groupId ~= "" then
+            local buildMembers = DefinitionMembers.get(definition)
+            for memberIndex = 1, #buildMembers do
+                addMember(
                     definitionId,
                     definition,
-                    entityId
-                ),
-            }
-
-            group.members[#group.members + 1] = member
-            group.memberByDefinitionId[definitionId] = member
-            groupByDefinitionId[definitionId] = group
-            memberByEntityId[entityId] = member
-
-            if memberByRecipeName[recipeName] == nil then
-                memberByRecipeName[recipeName] = member
-            else
-                memberByRecipeName[recipeName] = false
+                    groupId,
+                    buildMembers[memberIndex]
+                )
             end
         end
     end
@@ -148,14 +198,43 @@ local function rebuild()
     cachedRevision = revision
 end
 
-function VariantGroups.getById(groupId)
+function VariantGroups.getById(groupId, role)
     rebuild()
-    return groupsById[groupId]
+
+    if role ~= nil then
+        return groupsByKey[makeGroupKey(groupId, role)]
+    end
+
+    local groups = groupsByLogicalId[groupId]
+    if groups ~= nil and #groups == 1 then
+        return groups[1]
+    end
+
+    return nil
 end
 
-function VariantGroups.getForDefinition(definitionId)
+function VariantGroups.getForDefinition(definitionId, role)
     rebuild()
-    return groupByDefinitionId[definitionId]
+
+    local groups = groupsByDefinitionId[definitionId]
+    if groups == nil then
+        return nil
+    end
+
+    if role ~= nil then
+        for index = 1, #groups do
+            if groups[index].role == role then
+                return groups[index]
+            end
+        end
+        return nil
+    end
+
+    if #groups == 1 then
+        return groups[1]
+    end
+
+    return nil
 end
 
 function VariantGroups.getMemberForEntityId(entityId)
@@ -185,12 +264,12 @@ end
 
 function VariantGroups.getForRecipe(recipe)
     local member = VariantGroups.getMemberForRecipe(recipe)
-    return member and groupByDefinitionId[member.definitionId] or nil
+    return member and member.group or nil
 end
 
 function VariantGroups.shouldShowRecipe(recipe, player)
-    local group = VariantGroups.getForRecipe(recipe)
     local member = VariantGroups.getMemberForRecipe(recipe)
+    local group = member and member.group or nil
 
     if group == nil or member == nil then
         return true
